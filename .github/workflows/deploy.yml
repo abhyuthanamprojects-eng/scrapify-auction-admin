@@ -24,6 +24,15 @@ jobs:
       - name: Build
         run: bun run build
 
+      - name: Enable workers.dev route
+        run: |
+          cd .output/server
+          node -e "
+            const cfg = JSON.parse(require('fs').readFileSync('wrangler.json','utf8'));
+            cfg.workers_dev = true;
+            require('fs').writeFileSync('wrangler.json', JSON.stringify(cfg, null, 2));
+          "
+
       - name: Deploy to Cloudflare Workers
         working-directory: .output/server
         env:
