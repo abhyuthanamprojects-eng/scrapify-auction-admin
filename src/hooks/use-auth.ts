@@ -17,58 +17,27 @@ export interface StaffUser {
   permissions?: string[];
 }
 
-const DEFAULT_USER: StaffUser = {
-  id: "USR-001",
-  name: "R. Iyer",
-  email: "r.iyer@scrapifyauctions.com",
-  phone: "+91 98765 43210",
-  employeeId: "STF-2026-0042",
-  role: "Super Admin",
-  department: "Platform Operations & Governance",
-  status: "active",
-  mfaEnabled: true,
-  lastLogin: "2 minutes ago (IP: 103.21.144.8)",
-  permissions: [
-    "view.operations",
-    "view.fulfilment",
-    "view.customers",
-    "view.vendors",
-    "view.finance",
-    "view.risk",
-    "view.config",
-    "view.system",
-    "act.auctionControl",
-    "act.approve",
-    "act.kyb",
-    "act.refund",
-    "act.forfeit",
-    "act.security",
-    "act.config",
-    "act.export",
-  ],
-};
-
 const USER_KEY = "scrapify_admin_user_session";
 const TOKEN_KEY = "scrapify_admin_token";
 const AUTH_EVENT = "scrapify:admin:auth";
 
-export function getStoredUser(): StaffUser {
-  if (typeof window === "undefined") return DEFAULT_USER;
+export function getStoredUser(): StaffUser | null {
+  if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(USER_KEY);
     if (raw) return JSON.parse(raw);
   } catch {
     /* fallback */
   }
-  return DEFAULT_USER;
+  return null;
 }
 
 export function getStoredToken(): string | null {
-  if (typeof window === "undefined") return "demo-admin-session-token";
-  return window.localStorage.getItem(TOKEN_KEY) || "demo-admin-session-token";
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(TOKEN_KEY);
 }
 
-export function setStoredSession(user: StaffUser, token: string = "demo-admin-session-token") {
+export function setStoredSession(user: StaffUser, token: string) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(USER_KEY, JSON.stringify(user));
   window.localStorage.setItem(TOKEN_KEY, token);
@@ -85,7 +54,7 @@ export function clearStoredSession() {
 }
 
 export function useAuth() {
-  const [user, setUser] = useState<StaffUser>(getStoredUser);
+  const [user, setUser] = useState<StaffUser | null>(getStoredUser);
   const [token, setToken] = useState<string | null>(getStoredToken);
 
   useEffect(() => {
@@ -100,26 +69,47 @@ export function useAuth() {
   const login = useCallback(async (identifier: string, role: AdminRole = "Super Admin", customName?: string) => {
     const mappedUser: StaffUser = {
       id: `USR-${Math.floor(Math.random() * 900 + 100)}`,
-      name: customName || (role === "Super Admin" ? "R. Iyer" : role === "Compliance" ? "Ananya Sharma" : role === "Finance" ? "Vikram Malhotra" : "Dev Ops Lead"),
+      name: customName || (role === "Super Admin" ? "R. Iyer" : role === "Compliance" ? "Ananya Sharma" : role === "Finance" ? "Vikram Malhotra" : role === "Operations" ? "Karan Johar" : "Dev Ops Lead"),
       email: identifier.includes("@") ? identifier : `${identifier.toLowerCase()}@scrapifyauctions.com`,
       phone: "+91 98765 43210",
       employeeId: `STF-2026-${Math.floor(Math.random() * 9000 + 1000)}`,
       role: role,
-      department: role === "Finance" ? "Treasury & Escrow" : role === "Compliance" ? "KYB & Risk Oversight" : "Operations Control",
+      department: role === "Finance" ? "Treasury & Escrow" : role === "Compliance" ? "KYB & Risk Oversight" : role === "Operations" ? "Live Floor Operations" : "Platform Governance",
       status: "active",
       mfaEnabled: true,
-      lastLogin: "Just now",
-      permissions: DEFAULT_USER.permissions,
+      lastLogin: "Just now (IP: 103.21.144.8)",
+      permissions: [
+        "view.operations",
+        "view.fulfilment",
+        "view.customers",
+        "view.vendors",
+        "view.finance",
+        "view.risk",
+        "view.config",
+        "view.system",
+        "act.auctionControl",
+        "act.approve",
+        "act.kyb",
+        "act.refund",
+        "act.forfeit",
+        "act.security",
+        "act.config",
+        "act.export",
+      ],
     };
 
-    setStoredSession(mappedUser, `tok_${Date.now()}`);
+    const generatedToken = `tok_staff_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    setStoredSession(mappedUser, generatedToken);
     setUser(mappedUser);
+    setToken(generatedToken);
     toast.success(`Welcome back, ${mappedUser.name}! Signed in as ${mappedUser.role}.`);
     return mappedUser;
   }, []);
 
   const logout = useCallback(() => {
     clearStoredSession();
+    setUser(null);
+    setToken(null);
     toast.info("Signed out from Scrapify Operations Console.");
     if (typeof window !== "undefined") {
       window.location.href = "/login";
@@ -128,16 +118,27 @@ export function useAuth() {
 
   const updateProfile = useCallback((updated: Partial<StaffUser>) => {
     setUser((prev) => {
+      if (!prev) return prev;
       const next = { ...prev, ...updated };
-      setStoredSession(next);
+      setStoredSession(next, token || `tok_staff_${Date.now()}`);
       toast.success("Profile details updated successfully.");
       return next;
     });
-  }, []);
+  }, [token]);
 
   return {
-    user,
-    role: user.role,
+    user: user || {
+      id: "GUEST",
+      name: "Guest Staff",
+      email: "guest@scrapifyauctions.com",
+      employeeId: "STF-GUEST",
+      role: "Super Admin" as AdminRole,
+      department: "Operations",
+      status: "active" as const,
+      mfaEnabled: false,
+    },
+    rawUser: user,
+    role: (user?.role || "Super Admin") as AdminRole,
     token,
     isAuthenticated: !!token,
     login,

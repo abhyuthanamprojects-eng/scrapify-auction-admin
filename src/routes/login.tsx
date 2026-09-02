@@ -90,7 +90,11 @@ function AdminLoginPage() {
     setLoading(true);
     try {
       await login(identifier, selectedRole);
-      navigate({ to: "/" });
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      } else {
+        navigate({ to: "/" });
+      }
     } finally {
       setLoading(false);
     }
@@ -102,7 +106,11 @@ function AdminLoginPage() {
     setLoading(true);
     try {
       await login(item.email, item.role, item.name);
-      navigate({ to: "/" });
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      } else {
+        navigate({ to: "/" });
+      }
     } finally {
       setLoading(false);
     }

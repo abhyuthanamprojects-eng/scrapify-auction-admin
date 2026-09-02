@@ -136,6 +136,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const routerState = useRouterState();
   const isLoginPage = routerState.location.pathname === "/login";
+  const { isAuthenticated, user } = useAuth();
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -156,11 +157,28 @@ function RootComponent() {
     }
   }, [collapsed]);
 
+  useEffect(() => {
+    if (!isLoginPage && !isAuthenticated && typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+  }, [isLoginPage, isAuthenticated]);
+
   if (isLoginPage) {
     return (
       <QueryClientProvider client={queryClient}>
         <div className="min-h-screen w-full bg-background">
           <Outlet />
+        </div>
+      </QueryClientProvider>
+    );
+  }
+
+  if (!isAuthenticated && typeof window !== "undefined") {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background p-4 text-center space-y-3">
+          <div className="h-8 w-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+          <p className="text-sm font-medium text-muted-foreground">Authenticating session…</p>
         </div>
       </QueryClientProvider>
     );
