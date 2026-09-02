@@ -38,8 +38,8 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsPage() {
   const [saved, setSaved] = useState(false);
-  const [apiUrl, setApiUrl] = useState("http://localhost:8000/api/v1");
-  const [wsUrl, setWsUrl] = useState("ws://localhost:8080/app");
+  const [apiUrl, setApiUrl] = useState("https://api.scrapifyauctions.com/api/v1");
+  const [wsUrl, setWsUrl] = useState("wss://api.scrapifyauctions.com/app");
   const [antiSnipeWindow, setAntiSnipeWindow] = useState("180");
   const [antiSnipeExtension, setAntiSnipeExtension] = useState("180");
   const [mfaMandatory, setMfaMandatory] = useState(true);
@@ -84,7 +84,7 @@ function SettingsPage() {
                 id="api-url"
                 value={apiUrl}
                 onChange={(e) => setApiUrl(e.target.value)}
-                placeholder="http://localhost:8000/api/v1"
+                placeholder="https://api.scrapifyauctions.com/api/v1"
                 className="font-mono text-sm"
               />
             </div>
@@ -94,7 +94,7 @@ function SettingsPage() {
                 id="ws-url"
                 value={wsUrl}
                 onChange={(e) => setWsUrl(e.target.value)}
-                placeholder="ws://localhost:8080/app"
+                placeholder="wss://api.scrapifyauctions.com/app"
                 className="font-mono text-sm"
               />
             </div>
