@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ChipTabs, DataTable, DetailDrawer, Field, FieldGrid, Section, StatCard, StatusPill, Timeline, type Column } from "@/components/ops/ops-ui";
-import { disputes, fmtDate, fmtDay, fmtMoney, orders, type Dispute, type Order } from "@/lib/ops/data";
+import { adminApi } from "@/lib/api-client";
 
 export const Route = createFileRoute("/fulfilment")({
   head: () => ({
@@ -20,13 +20,123 @@ export const Route = createFileRoute("/fulfilment")({
   component: Fulfilment,
 });
 
+/* ---------- inline formatting helpers ---------- */
+const fmtMoney = (n: number, currency = "INR") =>
+  new Intl.NumberFormat("en-IN", { style: "currency", currency, maximumFractionDigits: 0 }).format(n);
+
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+const fmtDay = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+
+/* ---------- types ---------- */
+type Order = {
+  id: string;
+  eventId: string;
+  customerName: string;
+  vendorName: string;
+  category: string;
+  value: number;
+  mode: string;
+  scheduled: string;
+  status: string;
+  acceptance: string;
+  variance: number;
+  slaBreached: boolean;
+  evidence: boolean;
+};
+
+type DisputeTimeline = { at: string; who: string; note: string };
+
+type Dispute = {
+  id: string;
+  eventId: string;
+  customerName: string;
+  vendorName: string;
+  category: string;
+  amount: number;
+  issue: string;
+  raisedAt: string;
+  stage: string;
+  owner: string;
+  severity: string;
+  timeline: DisputeTimeline[];
+};
+
 const TABS = ["Orders", "Exceptions", "Disputes"] as const;
 type Tab = (typeof TABS)[number];
+
+/* ---------- map API responses ---------- */
+function mapOrder(raw: any): Order {
+  return {
+    id: raw.id ?? raw.code ?? "",
+    eventId: raw.auction_id ?? raw.event_id ?? raw.eventId ?? "",
+    customerName: raw.customer_name ?? raw.customerName ?? raw.auction_title ?? "",
+    vendorName: raw.vendor_name ?? raw.vendorName ?? "",
+    category: raw.category ?? "",
+    value: Number(raw.value ?? raw.amount ?? 0),
+    mode: raw.mode ?? raw.fulfilment_mode ?? "Pickup",
+    scheduled: raw.scheduled ?? raw.scheduled_at ?? raw.created_at ?? "",
+    status: raw.status ?? "Scheduled",
+    acceptance: raw.acceptance ?? raw.acceptance_status ?? "Pending",
+    variance: Number(raw.variance ?? raw.quantity_variance ?? 0),
+    slaBreached: Boolean(raw.sla_breached ?? raw.slaBreached ?? false),
+    evidence: Boolean(raw.evidence ?? raw.evidence_uploaded ?? false),
+  };
+}
+
+function mapDispute(raw: any): Dispute {
+  return {
+    id: raw.id ?? raw.code ?? "",
+    eventId: raw.auction_id ?? raw.event_id ?? raw.eventId ?? "",
+    customerName: raw.customer_name ?? raw.customerName ?? "",
+    vendorName: raw.vendor_name ?? raw.vendorName ?? "",
+    category: raw.category ?? raw.type ?? "",
+    amount: Number(raw.amount ?? raw.disputed_amount ?? 0),
+    issue: raw.issue ?? raw.description ?? raw.summary ?? "",
+    raisedAt: raw.raised_at ?? raw.raisedAt ?? raw.created_at ?? "",
+    stage: raw.stage ?? raw.status ?? "New",
+    owner: raw.owner ?? raw.assigned_to ?? "",
+    severity: raw.severity ?? raw.priority ?? "Medium",
+    timeline: Array.isArray(raw.timeline)
+      ? raw.timeline.map((t: any) => ({ at: t.at ?? t.created_at ?? "", who: t.who ?? t.actor ?? "", note: t.note ?? t.message ?? "" }))
+      : [],
+  };
+}
 
 function Fulfilment() {
   const [tab, setTab] = useState<Tab>("Orders");
   const [order, setOrder] = useState<Order | null>(null);
   const [dispute, setDispute] = useState<Dispute | null>(null);
+
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [fulfilRes, dispRes] = await Promise.all([
+        adminApi.getFulfilments(),
+        adminApi.getDisputes(),
+      ]);
+      const rawOrders = Array.isArray(fulfilRes?.data) ? fulfilRes.data : Array.isArray(fulfilRes) ? fulfilRes : [];
+      const rawDisputes = Array.isArray(dispRes?.data) ? dispRes.data : Array.isArray(dispRes) ? dispRes : [];
+      setOrders(rawOrders.map(mapOrder));
+      setDisputes(rawDisputes.map(mapDispute));
+    } catch (err: any) {
+      setError(err?.message ?? "Failed to load fulfilment data");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const orderColumns: Column<Order>[] = [
     { key: "id", header: "Order", render: (o) => <span className="font-medium">{o.id}</span>, sortValue: (o) => o.id },
@@ -61,6 +171,35 @@ function Fulfilment() {
   ];
 
   const exceptionOrders = orders.filter((o) => o.status === "Exception" || o.status === "Overdue" || o.variance > 0);
+
+  if (error) {
+    return (
+      <>
+        <PageHeader
+          title="Fulfilment & Disputes"
+          description="What happens after the hammer falls: pickup and delivery execution, acceptance, quantity variance, SLA breaches and dispute resolution."
+        />
+        <div className="card-premium flex flex-col items-center justify-center gap-3 p-10 text-center">
+          <p className="text-sm text-destructive">{error}</p>
+          <Button variant="outline" onClick={fetchData}>Retry</Button>
+        </div>
+      </>
+    );
+  }
+
+  if (loading) {
+    return (
+      <>
+        <PageHeader
+          title="Fulfilment & Disputes"
+          description="What happens after the hammer falls: pickup and delivery execution, acceptance, quantity variance, SLA breaches and dispute resolution."
+        />
+        <div className="card-premium flex items-center justify-center p-10">
+          <p className="text-sm text-muted-foreground">Loading fulfilment data...</p>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
