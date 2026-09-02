@@ -95,6 +95,7 @@ export const NAV_GROUPS: NavGroup[] = [
     title: "System",
     permission: "view.system",
     items: [
+      { label: "Staff & RBAC", to: "/users", icon: Users },
       { label: "System Health", to: "/system", icon: Activity },
       { label: "Audit Log", to: "/audit-log", icon: ScrollText },
       { label: "Access Tokens", to: "/tokens", icon: Coins },

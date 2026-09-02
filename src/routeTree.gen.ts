@@ -9,12 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UsersRouteImport } from './routes/users'
 import { Route as TokensRouteImport } from './routes/tokens'
 import { Route as SystemRouteImport } from './routes/system'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SecurityRouteImport } from './routes/security'
 import { Route as RiskRouteImport } from './routes/risk'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as FulfilmentRouteImport } from './routes/fulfilment'
 import { Route as FinanceRouteImport } from './routes/finance'
 import { Route as ExceptionsRouteImport } from './routes/exceptions'
@@ -39,6 +41,11 @@ import { Route as AuctionsPublishRouteImport } from './routes/auctions.publish'
 import { Route as AuctionsLiveRouteImport } from './routes/auctions.live'
 import { Route as AuctionsIdRouteImport } from './routes/auctions.$id'
 
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TokensRoute = TokensRouteImport.update({
   id: '/tokens',
   path: '/tokens',
@@ -67,6 +74,11 @@ const RiskRoute = RiskRouteImport.update({
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FulfilmentRoute = FulfilmentRouteImport.update({
@@ -196,12 +208,14 @@ export interface FileRoutesByFullPath {
   '/exceptions': typeof ExceptionsRoute
   '/finance': typeof FinanceRoute
   '/fulfilment': typeof FulfilmentRoute
+  '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/risk': typeof RiskRoute
   '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
   '/system': typeof SystemRoute
   '/tokens': typeof TokensRoute
+  '/users': typeof UsersRoute
   '/auctions/$id': typeof AuctionsIdRoute
   '/auctions/live': typeof AuctionsLiveRoute
   '/auctions/publish': typeof AuctionsPublishRoute
@@ -226,12 +240,14 @@ export interface FileRoutesByTo {
   '/exceptions': typeof ExceptionsRoute
   '/finance': typeof FinanceRoute
   '/fulfilment': typeof FulfilmentRoute
+  '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/risk': typeof RiskRoute
   '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
   '/system': typeof SystemRoute
   '/tokens': typeof TokensRoute
+  '/users': typeof UsersRoute
   '/auctions/$id': typeof AuctionsIdRoute
   '/auctions/live': typeof AuctionsLiveRoute
   '/auctions/publish': typeof AuctionsPublishRoute
@@ -258,12 +274,14 @@ export interface FileRoutesById {
   '/exceptions': typeof ExceptionsRoute
   '/finance': typeof FinanceRoute
   '/fulfilment': typeof FulfilmentRoute
+  '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/risk': typeof RiskRoute
   '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
   '/system': typeof SystemRoute
   '/tokens': typeof TokensRoute
+  '/users': typeof UsersRoute
   '/auctions/$id': typeof AuctionsIdRoute
   '/auctions/live': typeof AuctionsLiveRoute
   '/auctions/publish': typeof AuctionsPublishRoute
@@ -291,12 +309,14 @@ export interface FileRouteTypes {
     | '/exceptions'
     | '/finance'
     | '/fulfilment'
+    | '/login'
     | '/reports'
     | '/risk'
     | '/security'
     | '/settings'
     | '/system'
     | '/tokens'
+    | '/users'
     | '/auctions/$id'
     | '/auctions/live'
     | '/auctions/publish'
@@ -321,12 +341,14 @@ export interface FileRouteTypes {
     | '/exceptions'
     | '/finance'
     | '/fulfilment'
+    | '/login'
     | '/reports'
     | '/risk'
     | '/security'
     | '/settings'
     | '/system'
     | '/tokens'
+    | '/users'
     | '/auctions/$id'
     | '/auctions/live'
     | '/auctions/publish'
@@ -352,12 +374,14 @@ export interface FileRouteTypes {
     | '/exceptions'
     | '/finance'
     | '/fulfilment'
+    | '/login'
     | '/reports'
     | '/risk'
     | '/security'
     | '/settings'
     | '/system'
     | '/tokens'
+    | '/users'
     | '/auctions/$id'
     | '/auctions/live'
     | '/auctions/publish'
@@ -384,12 +408,14 @@ export interface RootRouteChildren {
   ExceptionsRoute: typeof ExceptionsRoute
   FinanceRoute: typeof FinanceRoute
   FulfilmentRoute: typeof FulfilmentRoute
+  LoginRoute: typeof LoginRoute
   ReportsRoute: typeof ReportsRoute
   RiskRoute: typeof RiskRoute
   SecurityRoute: typeof SecurityRoute
   SettingsRoute: typeof SettingsRoute
   SystemRoute: typeof SystemRoute
   TokensRoute: typeof TokensRoute
+  UsersRoute: typeof UsersRoute
   CustomersIdRoute: typeof CustomersIdRoute
   EventsIdRoute: typeof EventsIdRoute
   OrganizationsIdRoute: typeof OrganizationsIdRoute
@@ -403,6 +429,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tokens': {
       id: '/tokens'
       path: '/tokens'
@@ -443,6 +476,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fulfilment': {
@@ -638,12 +678,14 @@ const rootRouteChildren: RootRouteChildren = {
   ExceptionsRoute: ExceptionsRoute,
   FinanceRoute: FinanceRoute,
   FulfilmentRoute: FulfilmentRoute,
+  LoginRoute: LoginRoute,
   ReportsRoute: ReportsRoute,
   RiskRoute: RiskRoute,
   SecurityRoute: SecurityRoute,
   SettingsRoute: SettingsRoute,
   SystemRoute: SystemRoute,
   TokensRoute: TokensRoute,
+  UsersRoute: UsersRoute,
   CustomersIdRoute: CustomersIdRoute,
   EventsIdRoute: EventsIdRoute,
   OrganizationsIdRoute: OrganizationsIdRoute,
