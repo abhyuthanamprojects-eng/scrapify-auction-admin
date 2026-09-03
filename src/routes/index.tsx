@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -17,22 +18,11 @@ import {
 } from "recharts";
 import { PageHeader } from "@/components/admin/page-header";
 import { DataTable, Section, StatCard, StatusPill, RiskDot, type Column } from "@/components/ops/ops-ui";
-import {
-  ageLabel,
-  auctionTypeMix,
-  categoryMix,
-  countdown,
-  dashboardKpis,
-  disputes,
-  events,
-  exceptions,
-  fmtMoney,
-  gmvSeries,
-  liveEvents,
-  settlementAging,
-  auditLog,
-  type ExceptionItem,
-} from "@/lib/ops/data";
+import { ageLabel, countdown, fmtMoney, type ExceptionItem } from "@/lib/ops/data";
+import { useAuctions } from "@/lib/auctions-store";
+import { useExceptions } from "@/lib/exceptions-store";
+import { adminApi } from "@/lib/api-client";
+import { generateDashboardData } from "@/lib/dashboard-aggregator";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -54,6 +44,28 @@ export const Route = createFileRoute("/")({
 const PIE_COLORS = ["#1F3251", "#E65100", "#2E7D32", "#7C3AED", "#0891B2", "#B45309", "#BE123C"];
 
 function CommandCenter() {
+  const auctions = useAuctions();
+  const exceptions = useExceptions();
+  const [dashData, setDashData] = useState(generateDashboardData(auctions, [], {}, []));
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const finance = await adminApi.getFinanceSummary();
+        setDashData(generateDashboardData(auctions, [], finance, []));
+      } catch (error) {
+        console.error("Dashboard load error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (auctions.length > 0) fetch();
+  }, [auctions]);
+
+  const { kpis: dashboardKpis, gmvSeries, auctionTypeMix, categoryMix, settlementAging, liveEvents } = dashData;
+  const disputes: any[] = [];
+
   const exceptionColumns: Column<ExceptionItem>[] = [
     { key: "kind", header: "Exception", render: (r) => <span className="font-medium">{r.kind}</span>, sortValue: (r) => r.kind },
     { key: "entity", header: "Entity", render: (r) => <span className="text-muted-foreground">{r.entity}</span>, sortValue: (r) => r.entity },
@@ -75,7 +87,7 @@ function CommandCenter() {
     { key: "action", header: "Recommended action", render: (r) => <span className="text-muted-foreground">{r.recommended}</span> },
   ];
 
-  const openExceptions = exceptions.filter((e) => e.status !== "Resolved");
+  const openExceptions = exceptions.filter((e: any) => e.status !== "Resolved");
 
   return (
     <>

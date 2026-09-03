@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { adminApi } from "./api-client";
 
 export type VendorStatus = "Pending" | "Approved" | "Rejected" | "Suspended";
 
@@ -249,10 +250,39 @@ export function updateVendor(id: string, patch: Partial<Vendor>) {
 export function useVendors(): Vendor[] {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   useEffect(() => {
-    setVendors(read());
-    const onChange = () => setVendors(read());
-    window.addEventListener(EVT, onChange);
-    return () => window.removeEventListener(EVT, onChange);
+    const fetchVendors = async () => {
+      try {
+        const data = await adminApi.listVendors();
+        const mapped = (data as any[]).map((v: any) => ({
+          id: v.code,
+          companyName: v.company_name,
+          location: v.location,
+          contactName: v.contact_name,
+          email: v.email,
+          phone: v.phone,
+          gstNumber: v.gst_number,
+          licenseNumber: v.license_number,
+          materialInterest: (v.materials || []).map((m: any) => m.name),
+          status: (v.status || 'Pending').charAt(0).toUpperCase() + (v.status || 'Pending').slice(1) as VendorStatus,
+          createdAt: v.created_at,
+          rejectionReason: v.rejection_reason,
+          suspensionReason: v.suspension_reason,
+          documents: (v.documents || []).map((d: any) => ({
+            id: d.id,
+            name: d.name,
+            kind: d.kind as any,
+            fileName: d.file_name,
+            sizeKb: d.size_kb,
+            uploadedAt: d.uploaded_at,
+          })),
+          participation: [],
+        }));
+        setVendors(mapped);
+      } catch {
+        setVendors(read());
+      }
+    };
+    fetchVendors();
   }, []);
   return vendors;
 }

@@ -2,19 +2,8 @@ import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PageHeader } from "@/components/admin/page-header";
 import { DataTable, FilterSelect, ChipTabs, StatCard, StatusPill, RiskDot, type Column } from "@/components/ops/ops-ui";
-import {
-  CATEGORIES,
-  EVENT_STATUSES,
-  EVENT_TEMPLATES,
-  ageLabel,
-  countdown,
-  customers,
-  events,
-  fmtDay,
-  fmtMoney,
-  liveEvents,
-  type AuctionEvent,
-} from "@/lib/ops/data";
+import { CATEGORIES, EVENT_STATUSES, EVENT_TEMPLATES, ageLabel, countdown, fmtDay, fmtMoney } from "@/lib/ops/data";
+import { useAuctionEvents, type AuctionEvent } from "@/lib/events-store";
 
 export const Route = createFileRoute("/events/")({
   head: () => ({
@@ -47,6 +36,10 @@ const NEEDS_ACTION: string[] = [
 
 function EventsIndex() {
   const navigate = useNavigate();
+  const events = useAuctionEvents();
+  const customers = Array.from(new Set(events.map(e => e.customerName)));
+  const liveEvents = events.filter(e => e.status === "Live");
+
   const [tab, setTab] = useState<Tab>("All");
   const [status, setStatus] = useState("All");
   const [category, setCategory] = useState("All");

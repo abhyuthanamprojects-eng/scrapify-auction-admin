@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { adminApi } from "./api-client";
 
 export type OrgStatus = "Draft" | "Pending Super Admin Approval" | "Approved" | "Rejected";
 
@@ -186,10 +187,36 @@ export function newOrgId() {
 export function useOrganizations(): Organization[] {
   const [orgs, setOrgs] = useState<Organization[]>([]);
   useEffect(() => {
-    setOrgs(read());
-    const onChange = () => setOrgs(read());
-    window.addEventListener(EVT, onChange);
-    return () => window.removeEventListener(EVT, onChange);
+    const fetchOrganizations = async () => {
+      try {
+        const data = await adminApi.listOrganizations();
+        const mapped = (data as any[]).map((o: any) => ({
+          id: o.code,
+          companyName: o.name,
+          location: o.location || '',
+          totalUnits: (o.units || []).length,
+          units: (o.units || []).map((u: any) => ({
+            id: u.id,
+            name: u.name,
+            gst: u.gst || '',
+            location: u.location || '',
+            bank: { accountNumber: '', ifsc: '', bankName: '' },
+          })),
+          status: 'Approved' as OrgStatus,
+          createdAt: o.created_at,
+          documents: (o.documents || []).map((d: any) => ({
+            id: d.id,
+            type: d.type || 'Document',
+            fileName: d.file_name || '',
+            uploadedAt: d.uploaded_at || '',
+          })),
+        }));
+        setOrgs(mapped);
+      } catch {
+        setOrgs(read());
+      }
+    };
+    fetchOrganizations();
   }, []);
   return orgs;
 }

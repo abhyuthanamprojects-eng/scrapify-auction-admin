@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ChipTabs, DataTable, DetailDrawer, Field, FieldGrid, FilterSelect, StatCard, StatusPill, type Column } from "@/components/ops/ops-ui";
-import { ageLabel, exceptions, fmtDate, type ExceptionItem } from "@/lib/ops/data";
+import { ageLabel, fmtDate, type ExceptionItem } from "@/lib/ops/data";
+import { useExceptions, type Exception } from "@/lib/exceptions-store";
 
 export const Route = createFileRoute("/exceptions")({
   head: () => ({
@@ -25,6 +26,12 @@ const TABS = ["Open", "In Progress", "Resolved", "All"] as const;
 type Tab = (typeof TABS)[number];
 
 function Exceptions() {
+  const apiExceptions = useExceptions();
+  const exceptions: ExceptionItem[] = apiExceptions.map((e: any) => ({
+    ...e,
+    slaHours: 24,
+  }));
+
   const [tab, setTab] = useState<Tab>("Open");
   const [severity, setSeverity] = useState("All");
   const [kind, setKind] = useState("All");

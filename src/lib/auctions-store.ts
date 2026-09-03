@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { adminApi } from "./api-client";
 
 export type AuctionStatus =
   | "Pending Approval"
@@ -366,10 +367,36 @@ export function updateAuction(id: string, patch: Partial<Auction>) {
 export function useAuctions(): Auction[] {
   const [rows, setRows] = useState<Auction[]>([]);
   useEffect(() => {
-    setRows(read());
-    const on = () => setRows(read());
-    window.addEventListener(EVT, on);
-    return () => window.removeEventListener(EVT, on);
+    const fetchAuctions = async () => {
+      try {
+        const data = await adminApi.listAuctions();
+        const mapped = (data as any[]).map((a: any) => ({
+          id: a.code,
+          title: a.title,
+          company: a.customer?.company_name || 'Unknown',
+          plant: a.location || '',
+          warehouse: a.warehouse || '',
+          location: a.location || '',
+          category: (a.category || 'Ferrous') as AuctionCategory,
+          lotType: 'Lot-wise' as const,
+          reservePriceInr: a.reserve_price || 0,
+          startingPriceInr: a.reserve_price || 0,
+          currentHighestInr: a.current_price || a.reserve_price || 0,
+          finalPriceInr: a.final_price || null,
+          bidders: a.bids_count || 0,
+          winner: a.winner_vendor?.company_name || null,
+          status: (a.status || 'Pending Approval') as AuctionStatus,
+          submittedAt: a.created_at,
+          closedAt: a.closed_at,
+          publishedAt: a.published_at,
+          liveAt: a.live_at,
+        }));
+        setRows(mapped);
+      } catch {
+        setRows(read());
+      }
+    };
+    fetchAuctions();
   }, []);
   return rows;
 }

@@ -1,27 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ChipTabs, DataTable, StatCard, StatusPill, type Column } from "@/components/ops/ops-ui";
-import {
-  fmtDay,
-  fmtMoney,
-  invoices,
-  payments,
-  reconItems,
-  refunds,
-  securities,
-  settlements,
-  type Invoice,
-  type Payment,
-  type ReconItem,
-  type Refund,
-  type Security,
-  type Settlement,
-} from "@/lib/ops/data";
+import { fmtDay, fmtMoney } from "@/lib/ops/data";
+import { adminApi } from "@/lib/api-client";
 import { useRole } from "@/hooks/use-role";
 import { roleCan } from "@/lib/ops/roles";
+
+type Security = { id: string; vendorName: string; eventId: string; amount: number; mode: string; state: string; since: string };
+type Payment = { id: string; type: string; eventId: string; vendorName: string; customerName: string; amount: number; provider: string; status: string; at: string };
+type Refund = { id: string; vendorName: string; eventId: string; amount: number; reason: string; dueDate: string; status: string; failureReason?: string };
+type Settlement = { id: string; vendorName: string; eventId: string; amount: number; initiated: string; cleared: string; bank: string; status: string };
+type Invoice = { id: string; to: string; for: string; amount: number; issued: string; due: string; status: string };
+type ReconItem = { id: string; eventId: string; platform: number; gateway: number; variance: number; severity: string; notes: string };
 
 export const Route = createFileRoute("/finance")({
   head: () => ({
@@ -45,6 +38,56 @@ function FinanceConsole() {
   const canRefund = roleCan(role, "act.refund");
   const canForfeit = roleCan(role, "act.forfeit");
   const [tab, setTab] = useState<Tab>("Securities / EMD");
+
+  // API data states
+  const [securities, setSecurities] = useState<Security[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [refunds, setRefunds] = useState<Refund[]>([]);
+  const [settlements, setSettlements] = useState<Settlement[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [reconItems, setReconItems] = useState<ReconItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const summary = await adminApi.getFinanceSummary();
+        // Map API response to component types
+        setSecurities((summary.emd_list || []).map((s: any) => ({
+          id: s.code,
+          vendorName: s.vendor_name,
+          eventId: s.auction_code,
+          amount: s.amount,
+          mode: s.mode || 'Bank Transfer',
+          state: s.status,
+          since: s.locked_since || new Date().toISOString(),
+        })));
+        setPayments((summary.payments || []).map((p: any) => ({
+          id: p.id,
+          type: p.type,
+          eventId: p.auction_code,
+          vendorName: p.vendor_name,
+          customerName: p.customer_name,
+          amount: p.amount,
+          provider: p.provider,
+          status: p.status,
+          at: p.created_at,
+        })));
+        setRefunds([]);
+        setSettlements([]);
+        setInvoices([]);
+        setReconItems([]);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load finance data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const eventLink = (id: string) => (
     <Link to="/events/$id" params={{ id }} className="text-primary hover:underline">
@@ -142,6 +185,28 @@ function FinanceConsole() {
   ];
 
   const held = securities.filter((s) => s.state === "Held").reduce((a, s) => a + s.amount, 0);
+
+  if (loading) {
+    return (
+      <>
+        <PageHeader title="Finance Console" description="Loading..." />
+        <div className="flex items-center justify-center h-64">
+          <p className="text-muted-foreground">Loading finance data...</p>
+        </div>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <PageHeader title="Finance Console" description="Error loading data" />
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <p className="text-red-800">Error: {error}</p>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
