@@ -1,9 +1,9 @@
 // Scrapify Auctions Admin Unified API Client
 // Connects Super Admin & Operations Console directly to Laravel REST API (/api/v1)
 
-const API_BASE_URL = typeof window !== 'undefined' && (window as any).ENV_API_URL 
-  ? (window as any).ENV_API_URL 
-  : 'https://api.scrapifyauctions.com/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+  || (typeof window !== 'undefined' && (window as any).ENV_API_URL)
+  || 'https://api.scrapifyauctions.com/api/v1';
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -166,11 +166,15 @@ class ScrapifyAdminApiClient {
     });
   }
 
-  async reviewVendorDocument(vendorCode: string, docId: number, status: 'approved' | 'rejected', reason?: string) {
+  async reviewVendorDocument(vendorCode: string, docId: number | string, status: 'approved' | 'rejected', reason?: string) {
     return this.request<any>(`/vendors/${vendorCode}/documents/${docId}`, {
       method: 'PATCH',
       body: JSON.stringify({ status, reason }),
     });
+  }
+
+  getVendorDocumentDownloadUrl(vendorCode: string, docId: number | string): string {
+    return `${API_BASE_URL}/vendors/${vendorCode}/documents/${docId}/download`;
   }
 
   /* ---------------- Auctions & Control Room ---------------- */

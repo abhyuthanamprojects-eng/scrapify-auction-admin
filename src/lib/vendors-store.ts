@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { adminApi } from "./api-client";
 
-export type VendorStatus = "Pending" | "Approved" | "Rejected" | "Suspended";
+export type VendorStatus = "Pending" | "Approved" | "Rejected" | "Suspended" | "Draft";
 
 export type MaterialCategory = "Ferrous" | "Non-Ferrous" | "E-Waste" | "Paper" | "Plastic" | "Rubber";
 export const MATERIAL_CATEGORIES: MaterialCategory[] = [
@@ -16,10 +16,17 @@ export const MATERIAL_CATEGORIES: MaterialCategory[] = [
 export type VendorDocument = {
   id: string;
   name: string;
-  kind: "License" | "GST Certificate" | "PAN Card" | "Cancelled Cheque";
+  kind: string;
+  key?: string;
   fileName: string;
   sizeKb: number;
   uploadedAt: string;
+  status: "approved" | "rejected" | "pending";
+  reason?: string;
+  ocrStatus?: string;
+  ocrConfidence?: number;
+  ocrExtractedData?: Record<string, any>;
+  approvedOn?: string;
 };
 
 export type AuctionParticipation = {
@@ -33,304 +40,264 @@ export type AuctionParticipation = {
 
 export type Vendor = {
   id: string;
+  code: string;
+  userRole: "buyer" | "seller" | "admin";
   companyName: string;
+  tradeName?: string;
+  businessType?: string;
+  cinNumber?: string;
+  turnoverBand?: string;
+  yearsInBusiness?: string;
+  annualCapacity?: string;
+
   location: string;
+  address?: string;
+  addressLine1?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  operatingStates?: string[];
+
   contactName: string;
   email: string;
   phone: string;
+
   gstNumber: string;
-  materialInterest: MaterialCategory[];
+  gstStatus: string;
+  panNumber?: string;
+  panStatus?: string;
   licenseNumber: string;
+
+  bankName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  accountHolderName?: string;
+  branchName?: string;
+  accountType?: string;
+  bankStatus?: string;
+
+  signatoryName?: string;
+  signatoryDesignation?: string;
+  signatoryEmail?: string;
+  signatoryPhone?: string;
+
+  materialInterest: MaterialCategory[];
   status: VendorStatus;
+  canBid: boolean;
   createdAt: string;
+  submittedAt?: string;
+  approvedAt?: string;
   rejectionReason?: string;
+  rejectionItems?: string[];
   suspensionReason?: string;
   documents: VendorDocument[];
   participation: AuctionParticipation[];
 };
 
-const KEY = "admin.vendors.v1";
-const EVT = "admin:vendors";
+/** Map a single vendor from the Laravel API snake_case shape to the front-end camelCase Vendor type. */
+function mapVendor(v: any): Vendor {
+  const rawStatus = (v.status || "pending") as string;
+  const status = (rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1)) as VendorStatus;
+  return {
+    id: v.code ?? v.id,
+    code: v.code ?? v.id,
+    userRole: v.user_role ?? v.user?.role ?? (v.role === 'seller' ? 'seller' : 'buyer'),
+    companyName: v.company_name ?? v.companyName ?? "",
+    tradeName: v.trade_name ?? v.tradeName ?? "",
+    businessType: v.business_type ?? v.businessType ?? "Private Limited",
+    cinNumber: v.cin_number ?? v.cinNumber ?? "",
+    turnoverBand: v.turnover_band ?? v.turnoverBand ?? "",
+    yearsInBusiness: v.years_in_business ?? v.yearsInBusiness ?? "",
+    annualCapacity: v.annual_capacity ?? v.annualCapacity ?? "",
 
-function doc(id: string, kind: VendorDocument["kind"], fileName: string, sizeKb: number): VendorDocument {
-  return { id, kind, name: kind, fileName, sizeKb, uploadedAt: "2026-07-20T10:00:00Z" };
+    location: v.location ?? (v.city && v.state ? `${v.city}, ${v.state}` : ""),
+    address: v.address ?? "",
+    addressLine1: v.address_line1 ?? v.addressLine1 ?? v.address ?? "",
+    city: v.city ?? "",
+    state: v.state ?? "",
+    pincode: v.pincode ?? "",
+    operatingStates: v.operating_states ?? v.operatingStates ?? [],
+
+    contactName: v.contact_name ?? v.contactName ?? "",
+    email: v.email ?? "",
+    phone: v.phone ?? "",
+
+    gstNumber: v.gst_number ?? v.gstNumber ?? "",
+    gstStatus: v.gst_status ?? v.gstStatus ?? "not_checked",
+    panNumber: v.pan_number ?? v.panNumber ?? "",
+    panStatus: v.pan_status ?? v.panStatus ?? "not_checked",
+    licenseNumber: v.license_number ?? v.licenseNumber ?? "",
+
+    bankName: v.bank_name ?? v.bankName ?? "",
+    accountNumber: v.account_number ?? v.accountNumber ?? "",
+    ifscCode: v.ifsc_code ?? v.ifscCode ?? "",
+    accountHolderName: v.account_holder_name ?? v.accountHolderName ?? "",
+    branchName: v.branch_name ?? v.branchName ?? "",
+    accountType: v.account_type ?? v.accountType ?? "Current Account",
+    bankStatus: v.bank_status ?? v.bankStatus ?? "not_checked",
+
+    signatoryName: v.signatory_name ?? v.signatoryName ?? "",
+    signatoryDesignation: v.signatory_designation ?? v.signatoryDesignation ?? "",
+    signatoryEmail: v.signatory_email ?? v.signatoryEmail ?? "",
+    signatoryPhone: v.signatory_phone ?? v.signatoryPhone ?? "",
+
+    materialInterest: (v.materials || v.material_interest || []).map((m: any) =>
+      typeof m === "string" ? m : m.name,
+    ),
+    status,
+    canBid: typeof v.can_bid === 'boolean' ? v.can_bid : status === 'Approved',
+    createdAt: v.created_at ?? v.createdAt ?? "",
+    submittedAt: v.submitted_at ?? v.submittedAt,
+    approvedAt: v.approved_at ?? v.approvedAt,
+    rejectionReason: v.rejection_reason ?? v.rejectionReason,
+    rejectionItems: v.rejection_items ?? v.rejectionItems ?? [],
+    suspensionReason: v.suspension_reason ?? v.suspensionReason,
+    documents: (v.documents || []).map((d: any) => ({
+      id: String(d.id),
+      key: d.key ?? d.doc_key,
+      name: d.name ?? d.kind ?? "",
+      kind: d.kind ?? "KYC Document",
+      fileName: d.file_name ?? d.fileName ?? "",
+      sizeKb: d.size_kb ?? d.sizeKb ?? 0,
+      uploadedAt: d.uploaded_at ?? d.uploadedAt ?? "",
+      status: d.status ?? "approved",
+      reason: d.reason ?? "",
+      ocrStatus: d.ocr_status ?? d.ocrStatus,
+      ocrConfidence: d.ocr_confidence ?? d.ocrConfidence,
+      ocrExtractedData: d.ocr_extracted_data ?? d.ocrExtractedData,
+      approvedOn: d.approved_on ?? d.approvedOn,
+    })),
+    participation: (v.participation || []).map((p: any) => ({
+      id: String(p.id),
+      auction: p.auction ?? "",
+      date: p.date ?? "",
+      bids: p.bids ?? 0,
+      won: !!p.won,
+      amountInr: p.amount_inr ?? p.amountInr ?? 0,
+    })),
+  };
 }
 
-function seed(): Vendor[] {
-  return [
-    {
-      id: "V-1042",
-      companyName: "Meridian Metals Pvt Ltd",
-      location: "Pune, MH",
-      contactName: "Rahul Deshmukh",
-      email: "rahul@meridianmetals.in",
-      phone: "+91 98220 11223",
-      gstNumber: "27AABCM1234N1Z5",
-      materialInterest: ["Ferrous", "Non-Ferrous"],
-      licenseNumber: "MPCB/PUN/2025/0421",
-      status: "Pending",
-      createdAt: "2026-07-24T09:12:00Z",
-      documents: [
-        doc("d1", "License", "mpcb-license.pdf", 420),
-        doc("d2", "GST Certificate", "gst-cert.pdf", 210),
-        doc("d3", "PAN Card", "pan.jpg", 88),
-        doc("d4", "Cancelled Cheque", "cheque.jpg", 96),
-      ],
-      participation: [],
-    },
-    {
-      id: "V-1051",
-      companyName: "Coastal Recyclers LLP",
-      location: "Kandla, GJ",
-      contactName: "Nisha Patel",
-      email: "nisha@coastalrecyclers.co",
-      phone: "+91 98980 44112",
-      gstNumber: "24AAFFC1234Q1Z2",
-      materialInterest: ["E-Waste", "Plastic"],
-      licenseNumber: "GPCB/KND/2025/0187",
-      status: "Pending",
-      createdAt: "2026-07-25T02:30:00Z",
-      documents: [
-        doc("d1", "License", "gpcb-license.pdf", 512),
-        doc("d2", "GST Certificate", "gst.pdf", 245),
-        doc("d3", "PAN Card", "pan.pdf", 102),
-        doc("d4", "Cancelled Cheque", "cheque.pdf", 118),
-      ],
-      participation: [],
-    },
-    {
-      id: "V-1060",
-      companyName: "Deccan E-Waste Solutions",
-      location: "Hyderabad, TS",
-      contactName: "K. Srinivas",
-      email: "srinivas@deccanewaste.in",
-      phone: "+91 90000 51122",
-      gstNumber: "36AABCD5678L1Z9",
-      materialInterest: ["E-Waste"],
-      licenseNumber: "TSPCB/HYD/2025/0902",
-      status: "Pending",
-      createdAt: "2026-07-25T06:45:00Z",
-      documents: [
-        doc("d1", "License", "tspcb-license.pdf", 380),
-        doc("d2", "GST Certificate", "gst.pdf", 205),
-        doc("d3", "PAN Card", "pan.jpg", 74),
-        doc("d4", "Cancelled Cheque", "cheque.jpg", 90),
-      ],
-      participation: [],
-    },
-    {
-      id: "V-0904",
-      companyName: "Novus Alloys Pvt Ltd",
-      location: "Faridabad, HR",
-      contactName: "Ankit Bansal",
-      email: "ankit@novusalloys.com",
-      phone: "+91 98111 33445",
-      gstNumber: "06AAECN7788M1Z6",
-      materialInterest: ["Ferrous", "Non-Ferrous"],
-      licenseNumber: "HSPCB/FBD/2024/1102",
-      status: "Approved",
-      createdAt: "2026-05-14T11:20:00Z",
-      documents: [
-        doc("d1", "License", "hspcb-license.pdf", 466),
-        doc("d2", "GST Certificate", "gst.pdf", 219),
-        doc("d3", "PAN Card", "pan.jpg", 82),
-        doc("d4", "Cancelled Cheque", "cheque.jpg", 91),
-      ],
-      participation: [
-        { id: "p1", auction: "AUC-2026-0021 — Populated PCBs", date: "2026-07-14", bids: 8, won: true, amountInr: 1_820_000 },
-        { id: "p2", auction: "AUC-2026-0018 — HMS Bundles", date: "2026-07-02", bids: 12, won: false, amountInr: 0 },
-        { id: "p3", auction: "AUC-2026-0015 — Copper Wire Scrap", date: "2026-06-24", bids: 5, won: true, amountInr: 940_000 },
-      ],
-    },
-    {
-      id: "V-0987",
-      companyName: "Vaayu Recyclers",
-      location: "Bengaluru, KA",
-      contactName: "Priya Menon",
-      email: "priya@vaayurecyclers.in",
-      phone: "+91 99000 22334",
-      gstNumber: "29AAECV6543P1Z1",
-      materialInterest: ["Paper", "Plastic", "Rubber"],
-      licenseNumber: "KSPCB/BLR/2025/0234",
-      status: "Approved",
-      createdAt: "2026-06-02T08:00:00Z",
-      documents: [
-        doc("d1", "License", "kspcb-license.pdf", 402),
-        doc("d2", "GST Certificate", "gst.pdf", 231),
-        doc("d3", "PAN Card", "pan.jpg", 76),
-        doc("d4", "Cancelled Cheque", "cheque.jpg", 88),
-      ],
-      participation: [
-        { id: "p1", auction: "AUC-2026-0025 — HMS Bundles", date: "2026-07-20", bids: 6, won: false, amountInr: 0 },
-      ],
-    },
-    {
-      id: "V-0788",
-      companyName: "Everblue Traders",
-      location: "Vizag, AP",
-      contactName: "M. Sudhakar",
-      email: "sudhakar@everbluetraders.in",
-      phone: "+91 90101 44556",
-      gstNumber: "37AAECE1234K1ZA",
-      materialInterest: ["Ferrous"],
-      licenseNumber: "APPCB/VZG/2024/0765",
-      status: "Rejected",
-      createdAt: "2026-07-10T09:00:00Z",
-      rejectionReason: "Incomplete KYC — PAN card copy illegible; license expired 2024-12.",
-      documents: [
-        doc("d1", "License", "appcb-license.pdf", 344),
-        doc("d2", "GST Certificate", "gst.pdf", 198),
-        doc("d3", "PAN Card", "pan.jpg", 60),
-        doc("d4", "Cancelled Cheque", "cheque.jpg", 82),
-      ],
-      participation: [],
-    },
-    {
-      id: "V-0655",
-      companyName: "Prime Scrap Co.",
-      location: "Ludhiana, PB",
-      contactName: "Harpreet Singh",
-      email: "harpreet@primescrap.co",
-      phone: "+91 98150 88221",
-      gstNumber: "03AAKCP4321H1Z7",
-      materialInterest: ["Ferrous", "Non-Ferrous"],
-      licenseNumber: "PPCB/LDH/2024/0088",
-      status: "Suspended",
-      createdAt: "2026-04-18T09:00:00Z",
-      suspensionReason: "Compliance flag — repeated payment defaults on AUC-2026-0011.",
-      documents: [
-        doc("d1", "License", "ppcb-license.pdf", 360),
-        doc("d2", "GST Certificate", "gst.pdf", 214),
-        doc("d3", "PAN Card", "pan.jpg", 79),
-        doc("d4", "Cancelled Cheque", "cheque.jpg", 84),
-      ],
-      participation: [
-        { id: "p1", auction: "AUC-2026-0011 — Aluminium UBC", date: "2026-05-10", bids: 4, won: true, amountInr: 620_000 },
-      ],
-    },
-  ];
+/* ------------------------------------------------------------------ */
+/*  API-backed fetching                                                */
+/* ------------------------------------------------------------------ */
+
+export async function fetchVendors(params: Record<string, any> = {}): Promise<Vendor[]> {
+  const res = await adminApi.getVendors(params);
+  const list = Array.isArray(res) ? res : (res as any).data ?? [];
+  return list.map(mapVendor);
 }
 
-function read(): Vendor[] {
-  if (typeof window === "undefined") return seed();
+export async function fetchVendorById(id: string): Promise<Vendor | null> {
   try {
-    const raw = window.localStorage.getItem(KEY);
-    if (!raw) {
-      const s = seed();
-      window.localStorage.setItem(KEY, JSON.stringify(s));
-      return s;
-    }
-    return JSON.parse(raw) as Vendor[];
-  } catch {
-    return seed();
+    const res = await adminApi.getVendor(id);
+    const data = (res as any).data ?? res;
+    return mapVendor(data);
+  } catch (err) {
+    console.error("fetchVendorById error:", err);
+    return null;
   }
 }
 
-function write(v: Vendor[]) {
-  window.localStorage.setItem(KEY, JSON.stringify(v));
-  window.dispatchEvent(new CustomEvent(EVT));
+export async function approveVendorApi(id: string): Promise<void> {
+  await adminApi.approveVendor(id);
 }
 
-export function listVendors(): Vendor[] {
-  return read();
+export async function rejectVendorApi(id: string, reason: string): Promise<void> {
+  await adminApi.rejectVendor(id, reason);
 }
 
-export function getVendor(id: string): Vendor | undefined {
-  return read().find((v) => v.id === id);
+export async function suspendVendorApi(id: string, reason: string): Promise<void> {
+  await adminApi.suspendVendor(id, reason);
 }
 
-export function updateVendor(id: string, patch: Partial<Vendor>) {
-  const all = read();
-  const idx = all.findIndex((v) => v.id === id);
-  if (idx < 0) return;
-  all[idx] = { ...all[idx], ...patch };
-  write(all);
+export async function reviewVendorDocumentApi(vendorCode: string, docId: string, status: "approved" | "rejected", reason?: string): Promise<void> {
+  await adminApi.reviewVendorDocument(vendorCode, docId, status, reason);
 }
 
-export function useVendors(): Vendor[] {
+export function useVendors() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  useEffect(() => {
-    const fetchVendors = async () => {
-      try {
-        const data = await adminApi.listVendors();
-        const mapped = (data as any[]).map((v: any) => ({
-          id: v.code,
-          companyName: v.company_name,
-          location: v.location,
-          contactName: v.contact_name,
-          email: v.email,
-          phone: v.phone,
-          gstNumber: v.gst_number,
-          licenseNumber: v.license_number,
-          materialInterest: (v.materials || []).map((m: any) => m.name),
-          status: (v.status || 'Pending').charAt(0).toUpperCase() + (v.status || 'Pending').slice(1) as VendorStatus,
-          createdAt: v.created_at,
-          rejectionReason: v.rejection_reason,
-          suspensionReason: v.suspension_reason,
-          documents: (v.documents || []).map((d: any) => ({
-            id: d.id,
-            name: d.name,
-            kind: d.kind as any,
-            fileName: d.file_name,
-            sizeKb: d.size_kb,
-            uploadedAt: d.uploaded_at,
-          })),
-          participation: [],
-        }));
-        setVendors(mapped);
-      } catch {
-        setVendors(read());
-      }
-    };
-    fetchVendors();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchVendors();
+      setVendors(data);
+    } catch (err: any) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
-  return vendors;
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return { vendors, loading, error, refetch: load };
 }
 
-export function vendorStatusTone(s: VendorStatus): { bg: string; text: string; ring: string; dot: string } {
-  switch (s) {
+export function useVendor(id: string) {
+  const [vendor, setVendor] = useState<Vendor | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const load = useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const v = await fetchVendorById(id);
+      setVendor(v);
+    } catch (err: any) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return { vendor, loading, error, refetch: load };
+}
+
+export function vendorStatusTone(status: VendorStatus) {
+  switch (status) {
     case "Approved":
-      return { bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200", dot: "bg-emerald-500" };
+      return "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
+    case "Pending":
+      return "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400";
     case "Rejected":
-      return { bg: "bg-red-50", text: "text-red-700", ring: "ring-red-200", dot: "bg-red-500" };
+      return "border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400";
     case "Suspended":
-      return { bg: "bg-amber-50", text: "text-amber-700", ring: "ring-amber-200", dot: "bg-amber-500" };
+      return "border-slate-500/40 bg-slate-500/10 text-slate-400";
+    case "Draft":
+      return "border-blue-500/40 bg-blue-500/10 text-blue-400";
     default:
-      return { bg: "bg-accent/10", text: "text-accent", ring: "ring-accent/30", dot: "bg-accent" };
+      return "border-border bg-muted/40 text-muted-foreground";
   }
 }
 
 export function vendorsToCSV(vendors: Vendor[]): string {
-  const headers = [
-    "ID",
-    "Company Name",
-    "Location",
-    "Contact Name",
-    "Email",
-    "Phone",
-    "GST Number",
-    "License Number",
-    "Material Interest",
-    "Status",
-    "Created",
-  ];
-  const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
-  const rows = vendors.map((v) =>
-    [
-      v.id,
-      v.companyName,
-      v.location,
-      v.contactName,
-      v.email,
-      v.phone,
-      v.gstNumber,
-      v.licenseNumber,
-      v.materialInterest.join(" | "),
-      v.status,
-      new Date(v.createdAt).toISOString(),
-    ]
-      .map(escape)
-      .join(","),
-  );
-  return [headers.map(escape).join(","), ...rows].join("\n");
+  const headers = ["Vendor ID", "Company", "Role", "Location", "Contact", "Email", "Phone", "GSTIN", "Bank", "IFSC", "Status", "Registered"];
+  const rows = vendors.map((v) => [
+    v.id,
+    `"${v.companyName.replace(/"/g, '""')}"`,
+    v.userRole,
+    `"${v.location.replace(/"/g, '""')}"`,
+    `"${v.contactName.replace(/"/g, '""')}"`,
+    v.email,
+    v.phone,
+    v.gstNumber,
+    `"${(v.bankName || '').replace(/"/g, '""')}"`,
+    v.ifscCode || '',
+    v.status,
+    v.createdAt,
+  ]);
+  return [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
 }

@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ChipTabs, DataTable, DetailDrawer, Field, FieldGrid, StatCard, StatusPill, type Column } from "@/components/ops/ops-ui";
-import { ageLabel, events, fmtDate, fmtMoney, vendors, refunds, type AuctionEvent } from "@/lib/ops/data";
+import { ageLabel, events, fmtDate, fmtMoney, refunds, type AuctionEvent } from "@/lib/ops/data";
+import { useVendors } from "@/lib/vendors-store";
 import { useRole } from "@/hooks/use-role";
 import { roleCan } from "@/lib/ops/roles";
 
@@ -42,6 +43,7 @@ function Approvals() {
   const [tab, setTab] = useState<Tab>("Event Publishing");
   const [selected, setSelected] = useState<Row | null>(null);
   const [reason, setReason] = useState("");
+  const { vendors: apiVendors, loading: vendorsLoading } = useVendors();
 
   const canApprove = roleCan(role, "act.approve");
   const canKyb = roleCan(role, "act.kyb");
@@ -75,14 +77,14 @@ function Approvals() {
           eventId: e.id,
         }));
     if (tab === "Vendor KYB")
-      return vendors
-        .filter((v) => v.status === "Pending KYB" || v.status === "On Hold")
+      return apiVendors
+        .filter((v) => v.status === "Pending")
         .map((v) => ({
           id: v.id,
-          title: v.name,
-          context: `${v.city} · ${v.categories.join(", ")} · ${v.documents.filter((d) => d.status === "Pending Verification").length} documents pending`,
+          title: v.companyName,
+          context: `${v.location} · ${v.materialInterest.join(", ")} · ${v.documents.length} documents`,
           amount: 0,
-          raisedAt: v.submittedAt,
+          raisedAt: v.createdAt,
           sla: 24,
           tier: "Compliance",
         }));
@@ -98,7 +100,7 @@ function Approvals() {
         tier: "Checker",
         eventId: r.eventId,
       }));
-  }, [tab]);
+  }, [tab, apiVendors]);
 
   const allowed = tab === "Vendor KYB" ? canKyb : tab === "Finance Maker-Checker" ? canFinance : canApprove;
 
@@ -141,7 +143,7 @@ function Approvals() {
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="Event publishing" value={events.filter((e) => ["Draft Review", "Ready to Publish"].includes(e.status)).length} tone="warn" />
         <StatCard label="Award decisions" value={events.filter((e) => e.award?.state === "Pending Approval").length} tone="warn" />
-        <StatCard label="Vendor KYB" value={vendors.filter((v) => v.status === "Pending KYB" || v.status === "On Hold").length} tone="warn" />
+        <StatCard label="Vendor KYB" value={apiVendors.filter((v) => v.status === "Pending").length} tone="warn" />
         <StatCard label="Finance checks" value={refunds.filter((r) => r.status !== "Refunded").length} tone="warn" />
       </div>
 

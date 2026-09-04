@@ -132,8 +132,8 @@ export function AdminSidebar({
       <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border/60 relative shrink-0">
         {showLabels ? (
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-md gradient-gold flex items-center justify-center shadow-lg shadow-black/30 ring-1 ring-white/20">
-              <Sparkles className="h-4 w-4 text-primary" />
+            <div className="h-8 w-8 overflow-hidden rounded-md bg-white flex items-center justify-center shadow-lg shadow-black/30 ring-1 ring-white/20">
+              <img src="/scrapify-auction-app-icon.png" alt="Scrapify Auctions" className="h-full w-full object-contain" />
             </div>
             <div className="leading-tight">
               <div className="font-display text-lg italic tracking-tight text-white">Scrapify</div>
@@ -141,8 +141,8 @@ export function AdminSidebar({
             </div>
           </div>
         ) : (
-          <div className="h-8 w-8 mx-auto rounded-md gradient-gold flex items-center justify-center shadow-lg shadow-black/30 ring-1 ring-white/20">
-            <Sparkles className="h-4 w-4 text-primary" />
+          <div className="h-8 w-8 mx-auto overflow-hidden rounded-md bg-white flex items-center justify-center shadow-lg shadow-black/30 ring-1 ring-white/20">
+            <img src="/scrapify-auction-app-icon.png" alt="Scrapify Auctions" className="h-full w-full object-contain" />
           </div>
         )}
         {!isMobile && (

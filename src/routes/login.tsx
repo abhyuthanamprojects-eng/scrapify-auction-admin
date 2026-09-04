@@ -204,8 +204,8 @@ function AdminLoginPage() {
                     Sign in with your enterprise credentials or choose a pre-authorized role.
                   </CardDescription>
                 </div>
-                <div className="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 shrink-0">
-                  <Gavel className="h-5 w-5" />
+                <div className="h-10 w-10 overflow-hidden rounded-xl bg-white border border-amber-500/25 flex items-center justify-center shrink-0">
+                  <img src="/scrapify-auction-app-icon.png" alt="Scrapify Auctions" className="h-full w-full object-contain" />
                 </div>
               </div>
             </CardHeader>
