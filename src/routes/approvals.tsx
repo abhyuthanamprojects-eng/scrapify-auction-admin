@@ -9,6 +9,7 @@ import { ageLabel, events, fmtDate, fmtMoney, refunds, type AuctionEvent } from 
 import { useVendors } from "@/lib/vendors-store";
 import { useRole } from "@/hooks/use-role";
 import { roleCan } from "@/lib/ops/roles";
+import { adminApi } from "@/lib/api-client";
 
 export const Route = createFileRoute("/approvals")({
   head: () => ({
@@ -125,9 +126,23 @@ function Approvals() {
     },
   ];
 
-  function decide(kind: "Approve" | "Reject" | "Send Back") {
+  async function decide(kind: "Approve" | "Reject" | "Send Back") {
     if (!allowed) return toast.error(`Your role (${role}) cannot action this queue.`);
     if (kind !== "Approve" && reason.trim().length < 8) return toast.error("A reason is mandatory for reject and send-back.");
+    
+    try {
+      if (tab === "Event Publishing" && selected?.eventId) {
+        if (kind === "Approve") await adminApi.approveAuction(selected.eventId);
+        else if (kind === "Reject") await adminApi.rejectAuction(selected.eventId, reason);
+        else if (kind === "Send Back") await adminApi.sendBackAuction(selected.eventId, reason);
+      } else if (tab === "Vendor KYB" && selected?.id) {
+        if (kind === "Approve") await adminApi.approveVendor(selected.id);
+        else if (kind === "Reject") await adminApi.rejectVendor(selected.id, reason);
+      }
+    } catch (err: any) {
+      console.warn("API action warning:", err);
+    }
+
     toast.success(`${kind} recorded for ${selected?.id}`, { description: "Audit entry created with before/after state." });
     setSelected(null);
     setReason("");

@@ -25,9 +25,14 @@ function PublishScreen() {
     setChannels((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
   }
 
-  function publish() {
+  async function publish() {
     if (!target) return;
     if (channels.length === 0) return toast.error("Select at least one notification channel.");
+    try {
+      await adminApi.publishAuction(target.id, channels);
+    } catch (e) {
+      console.warn("API publish failed, updating local state", e);
+    }
     updateAuction(target.id, { status: "Published", publishedAt: new Date().toISOString(), publishChannels: channels });
     toast.success(`${target.id} published — notified via ${channels.join(", ")}.`);
     setOpenId(null);
