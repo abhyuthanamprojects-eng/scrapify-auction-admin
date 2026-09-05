@@ -1,31 +1,27 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  ShieldCheck,
-  Lock,
   Mail,
   KeyRound,
   ArrowRight,
   Eye,
   EyeOff,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Staff Login — Scrapify Auctions Operations Console" },
+      { title: "Staff Login — Scrapify Auctions" },
       {
         name: "description",
-        content: "Sign in with your authorized staff credentials to access the Scrapify Auctions Operations Console.",
+        content: "Sign in to the Scrapify Auctions admin console.",
       },
-      { property: "og:title", content: "Staff Login | Scrapify Auctions Operations Console" },
-      { property: "og:description", content: "Authorized access for platform administrators, auctioneers, compliance officers, and treasury controllers." },
     ],
   }),
   component: AdminLoginPage,
@@ -61,164 +57,158 @@ function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 md:p-10 bg-[#0B132B] text-slate-100 relative overflow-hidden font-sans selection:bg-amber-500 selection:text-slate-900">
-      {/* Ambient background glows */}
-      <div className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-gradient-to-br from-amber-500/15 via-orange-600/10 to-transparent rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute -bottom-40 -right-40 w-[600px] h-[600px] bg-gradient-to-tl from-emerald-500/10 via-cyan-600/10 to-transparent rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293d0f_1px,transparent_1px),linear-gradient(to_bottom,#1f293d0f_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none" />
+    <div className="min-h-screen w-full flex bg-white">
+      {/* Left: Illustration Panel */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 items-center justify-center overflow-hidden">
+        {/* Decorative shapes */}
+        <div className="absolute top-0 left-0 w-full h-full">
+          <div className="absolute top-10 left-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-10 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-400/5 rounded-full blur-2xl" />
+        </div>
 
-      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
-        {/* Left Column: Brand & Security Guarantee */}
-        <div className="lg:col-span-5 space-y-6 text-left hidden lg:block">
-          <div className="space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-400 font-semibold text-xs tracking-wide">
-              <span className="h-2 w-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)] animate-pulse" />
-              SCRAPIFY AUCTIONS ENTERPRISE
-            </div>
-
-            <h1 className="text-3xl xl:text-4xl font-black text-white tracking-tight font-display leading-[1.15]">
-              Operations <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-300 to-orange-400">
-                Command Console
-              </span>
-            </h1>
-
-            <p className="text-sm text-slate-400 leading-relaxed font-normal">
-              High-throughput B2B industrial scrap asset liquidation, forward/reverse live floor control, automated OCR KYB verification, and escrow settlement governance.
-            </p>
+        <div className="relative z-10 px-12 xl:px-16 max-w-lg text-center">
+          <div className="mx-auto mb-8 h-20 w-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-2xl">
+            <img
+              src="/scrapify-auction-app-icon.png"
+              alt="Scrapify"
+              className="h-14 w-14 object-contain"
+            />
           </div>
 
-          {/* Compliance Badges */}
-          <div className="space-y-2 pt-1 border-t border-slate-800/80 text-xs text-slate-400">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
-              <span>NABL &amp; GSTN Compliant Automated OCR Pipeline</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
-              <span>SOC-2 Type II Immutable Audit Ledger</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
-              <span>Dual-Factor Hardware &amp; TOTP Authentication</span>
-            </div>
+          <h1 className="text-3xl xl:text-4xl font-bold text-white tracking-tight leading-tight">
+            Scrapify Auctions
+          </h1>
+          <p className="mt-2 text-lg text-amber-400 font-semibold">
+            Operations Console
+          </p>
+          <p className="mt-4 text-sm text-slate-400 leading-relaxed">
+            Manage auctions, vendors, compliance, and settlements — all from one unified admin dashboard.
+          </p>
+
+          {/* Feature highlights */}
+          <div className="mt-10 grid grid-cols-2 gap-4 text-left">
+            {[
+              { label: "Live Auctions", desc: "Real-time bidding control" },
+              { label: "Vendor Management", desc: "KYB verification & approval" },
+              { label: "Finance", desc: "Settlements & reconciliation" },
+              { label: "Compliance", desc: "Audit logs & governance" },
+            ].map((item) => (
+              <div key={item.label} className="rounded-xl bg-white/5 border border-white/10 p-3">
+                <p className="text-sm font-semibold text-white">{item.label}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{item.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Right Column: Sign In Card */}
-        <div className="lg:col-span-7">
-          <Card className="border border-slate-800/90 bg-slate-900/90 backdrop-blur-2xl shadow-2xl rounded-2xl overflow-hidden text-slate-100 relative">
-            {/* Top Accent Gold Bar */}
-            <div className="h-1.5 w-full bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500" />
+        {/* Bottom copyright */}
+        <p className="absolute bottom-6 left-0 right-0 text-center text-[11px] text-slate-500">
+          © {new Date().getFullYear()} Scrapify Auctions Ltd.
+        </p>
+      </div>
 
-            <CardHeader className="pb-4 pt-6 px-6 sm:px-8">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-xl sm:text-2xl font-black text-white tracking-tight font-display">
-                    Authorized Staff Access
-                  </CardTitle>
-                  <CardDescription className="text-xs text-slate-400 mt-1">
-                    Sign in with your enterprise credentials.
-                  </CardDescription>
-                </div>
-                <div className="h-10 w-10 overflow-hidden rounded-xl bg-white border border-amber-500/25 flex items-center justify-center shrink-0">
-                  <img src="/scrapify-auction-app-icon.png" alt="Scrapify Auctions" className="h-full w-full object-contain" />
-                </div>
+      {/* Right: Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 sm:px-10 py-12">
+        <div className="w-full max-w-md">
+          {/* Mobile logo */}
+          <div className="lg:hidden flex items-center gap-3 mb-8">
+            <div className="h-10 w-10 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
+              <img
+                src="/scrapify-auction-app-icon.png"
+                alt="Scrapify"
+                className="h-8 w-8 object-contain"
+              />
+            </div>
+            <div>
+              <p className="text-base font-bold text-slate-900">Scrapify Auctions</p>
+              <p className="text-xs text-slate-500">Operations Console</p>
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+              Welcome back
+            </h2>
+            <p className="mt-1.5 text-sm text-slate-500">
+              Sign in to your admin account to continue.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+                <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                <p className="text-sm text-red-700">{error}</p>
               </div>
-            </CardHeader>
+            )}
 
-            <CardContent className="space-y-5 px-6 sm:px-8">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {error && (
-                  <div className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5">
-                    <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
-                    <p className="text-xs text-red-300 leading-relaxed">{error}</p>
-                  </div>
-                )}
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-sm font-medium text-slate-700">
+                Email Address
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={identifier}
+                  onChange={(e) => { setIdentifier(e.target.value); setError(null); }}
+                  placeholder="you@scrapifyauctions.com"
+                  className="pl-10 h-11 text-sm bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus-visible:border-amber-500 focus-visible:ring-amber-500/20 rounded-lg"
+                />
+              </div>
+            </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-xs font-semibold text-slate-200">
-                    Email Address
-                  </Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      id="email"
-                      type="email"
-                      required
-                      autoComplete="email"
-                      value={identifier}
-                      onChange={(e) => { setIdentifier(e.target.value); setError(null); }}
-                      placeholder="you@scrapifyauctions.com"
-                      className="pl-10 h-10 text-sm bg-slate-950/60 border-slate-800 text-white placeholder:text-slate-500 focus-visible:border-amber-500 focus-visible:ring-amber-500/20 rounded-xl"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password" className="text-xs font-semibold text-slate-200">
-                      Password
-                    </Label>
-                  </div>
-                  <div className="relative">
-                    <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      required
-                      autoComplete="current-password"
-                      value={password}
-                      onChange={(e) => { setPassword(e.target.value); setError(null); }}
-                      placeholder="••••••••••••"
-                      className="pl-10 pr-10 h-10 text-sm bg-slate-950/60 border-slate-800 text-white placeholder:text-slate-500 focus-visible:border-amber-500 focus-visible:ring-amber-500/20 rounded-xl font-mono"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end text-xs pt-1">
-                  <span className="text-slate-400 flex items-center gap-1 font-mono text-[11px]">
-                    <Lock className="h-3 w-3 text-emerald-400" /> TLS 1.3 / 256-bit
-                  </span>
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={loading || !identifier.trim() || !password.trim()}
-                  className="w-full h-11 bg-gradient-to-r from-amber-500 via-amber-400 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-sm rounded-xl gap-2 shadow-lg shadow-amber-500/20 transition-all font-sans disabled:opacity-50 disabled:cursor-not-allowed"
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-sm font-medium text-slate-700">
+                Password
+              </Label>
+              <div className="relative">
+                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setError(null); }}
+                  placeholder="Enter your password"
+                  className="pl-10 pr-10 h-11 text-sm bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus-visible:border-amber-500 focus-visible:ring-amber-500/20 rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                 >
-                  {loading ? (
-                    <>
-                      <div className="h-4 w-4 rounded-full border-2 border-slate-950 border-t-transparent animate-spin" />
-                      Authenticating…
-                    </>
-                  ) : (
-                    <>
-                      Sign In
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              </form>
-            </CardContent>
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
 
-            <CardFooter className="bg-slate-950/60 px-6 sm:px-8 py-3.5 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-              <span className="flex items-center gap-1.5 text-[11px]">
-                <ShieldCheck className="h-4 w-4 text-emerald-400" /> SOC-2 Type II · ISO 27001 Certified
-              </span>
-              <span className="font-mono text-[11px] text-slate-500">v2.4.0-enterprise</span>
-            </CardFooter>
-          </Card>
+            <Button
+              type="submit"
+              disabled={loading || !identifier.trim() || !password.trim()}
+              className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-lg gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Signing in…
+                </>
+              ) : (
+                <>
+                  Sign In
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </form>
 
-          <p className="text-center text-[11px] text-slate-500 mt-4">
-            © {new Date().getFullYear()} Scrapify Auctions Ltd. All operations are cryptographically signed &amp; audited.
+          <p className="mt-8 text-center text-xs text-slate-400">
+            Protected by enterprise-grade security. Contact your administrator if you need access.
           </p>
         </div>
       </div>
