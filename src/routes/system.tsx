@@ -38,6 +38,7 @@ export const Route = createFileRoute("/system")({
 });
 
 type ServiceHealth = {
+  id: string;
   name: string;
   category: "Core Engine" | "Integrations" | "Async Workers";
   latencyMs: number;
@@ -57,13 +58,13 @@ type BackgroundJob = {
 };
 
 const SERVICES: ServiceHealth[] = [
-  { name: "Live Auction WebSocket Cluster", category: "Core Engine", latencyMs: 14, uptimePct: "99.99%", status: "Operational", lastChecked: "5s ago" },
-  { name: "Anti-Sniping Clock & Timer Engine", category: "Core Engine", latencyMs: 8, uptimePct: "100.00%", status: "Operational", lastChecked: "2s ago" },
-  { name: "PostgreSQL Primary & Read Replicas", category: "Core Engine", latencyMs: 12, uptimePct: "99.98%", status: "Operational", lastChecked: "10s ago" },
-  { name: "Payment Gateway & Webhook Ingestion", category: "Integrations", latencyMs: 85, uptimePct: "99.95%", status: "Operational", lastChecked: "15s ago" },
-  { name: "KYB Document OCR Extraction Pipeline", category: "Integrations", latencyMs: 240, uptimePct: "99.80%", status: "Operational", lastChecked: "30s ago" },
-  { name: "Multi-Channel Notification Dispatcher", category: "Async Workers", latencyMs: 45, uptimePct: "99.92%", status: "Operational", lastChecked: "12s ago" },
-  { name: "Post-Auction Decision Pack Generator", category: "Async Workers", latencyMs: 180, uptimePct: "99.90%", status: "Operational", lastChecked: "40s ago" },
+  { id: "svc-1", name: "Live Auction WebSocket Cluster", category: "Core Engine", latencyMs: 14, uptimePct: "99.99%", status: "Operational", lastChecked: "5s ago" },
+  { id: "svc-2", name: "Anti-Sniping Clock & Timer Engine", category: "Core Engine", latencyMs: 8, uptimePct: "100.00%", status: "Operational", lastChecked: "2s ago" },
+  { id: "svc-3", name: "PostgreSQL Primary & Read Replicas", category: "Core Engine", latencyMs: 12, uptimePct: "99.98%", status: "Operational", lastChecked: "10s ago" },
+  { id: "svc-4", name: "Payment Gateway & Webhook Ingestion", category: "Integrations", latencyMs: 85, uptimePct: "99.95%", status: "Operational", lastChecked: "15s ago" },
+  { id: "svc-5", name: "KYB Document OCR Extraction Pipeline", category: "Integrations", latencyMs: 240, uptimePct: "99.80%", status: "Operational", lastChecked: "30s ago" },
+  { id: "svc-6", name: "Multi-Channel Notification Dispatcher", category: "Async Workers", latencyMs: 45, uptimePct: "99.92%", status: "Operational", lastChecked: "12s ago" },
+  { id: "svc-7", name: "Post-Auction Decision Pack Generator", category: "Async Workers", latencyMs: 180, uptimePct: "99.90%", status: "Operational", lastChecked: "40s ago" },
 ];
 
 const JOBS: BackgroundJob[] = [

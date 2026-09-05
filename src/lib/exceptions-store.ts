@@ -20,7 +20,8 @@ export function useExceptions(): Exception[] {
     const fetchExceptions = async () => {
       try {
         // Fetch auctions to derive exceptions
-        const auctions = await adminApi.listAuctions();
+        const response = await adminApi.getAuctions();
+        const auctions = response?.data ?? response;
         const exc: Exception[] = [];
 
         (auctions as any[]).forEach((a: any) => {

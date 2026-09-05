@@ -369,7 +369,8 @@ export function useAuctions(): Auction[] {
   useEffect(() => {
     const fetchAuctions = async () => {
       try {
-        const data = await adminApi.listAuctions();
+        const response = await adminApi.getAuctions();
+        const data = response?.data ?? response;
         const mapped = (data as any[]).map((a: any) => ({
           id: a.code,
           title: a.title,
@@ -390,6 +391,15 @@ export function useAuctions(): Auction[] {
           closedAt: a.closed_at,
           publishedAt: a.published_at,
           liveAt: a.live_at,
+          submittedBy: a.submitted_by || '',
+          scheduleStart: a.schedule_start || '',
+          scheduleEnd: a.schedule_end || '',
+          inspection: a.inspection || '',
+          terms: a.terms || '',
+          contact: a.contact || { name: '', phone: '', email: '' },
+          photos: a.photos || [],
+          subLots: a.sub_lots || [],
+          bids: a.bids || [],
         }));
         setRows(mapped);
       } catch {

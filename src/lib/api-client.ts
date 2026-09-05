@@ -20,12 +20,27 @@ export interface ApiResponse<T> {
   };
 }
 
+export class ApiUnauthorizedError extends Error {
+  constructor(message = "Unauthorized") {
+    super(message);
+    this.name = "ApiUnauthorizedError";
+  }
+}
+
+export class ApiForbiddenError extends Error {
+  constructor(message = "Forbidden") {
+    super(message);
+    this.name = "ApiForbiddenError";
+  }
+}
+
 class ScrapifyAdminApiClient {
   private token: string | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('scrapify_admin_token');
+      // Read from sessionStorage (session-only auth)
+      this.token = sessionStorage.getItem('scrapify_admin_token');
     }
   }
 
@@ -33,8 +48,10 @@ class ScrapifyAdminApiClient {
     this.token = token;
     if (typeof window !== 'undefined') {
       if (token) {
-        localStorage.setItem('scrapify_admin_token', token);
+        sessionStorage.setItem('scrapify_admin_token', token);
       } else {
+        sessionStorage.removeItem('scrapify_admin_token');
+        // Also clean up any stale localStorage from old implementation
         localStorage.removeItem('scrapify_admin_token');
       }
     }
@@ -56,20 +73,57 @@ class ScrapifyAdminApiClient {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
+    let res: Response;
     try {
-      const res = await fetch(url, {
-        ...options,
-        headers,
-      });
-
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json.message || `API Error: ${res.status}`);
-      }
-      return json;
+      res = await fetch(url, { ...options, headers });
     } catch (err) {
-      console.warn(`[ScrapifyAdminApiClient] Network request failed for ${endpoint}:`, err);
-      throw err;
+      console.warn(`[AdminApi] Network error for ${endpoint}:`, err);
+      throw new Error(`Network error: Unable to reach the server. Please check your connection.`);
+    }
+
+    // Handle auth errors centrally
+    if (res.status === 401) {
+      this.handleUnauthorized();
+      throw new ApiUnauthorizedError("Your session has expired. Please log in again.");
+    }
+
+    if (res.status === 403) {
+      const json = await res.json().catch(() => ({}));
+      throw new ApiForbiddenError(json.message || "You don't have permission to perform this action.");
+    }
+
+    let json: any;
+    try {
+      json = await res.json();
+    } catch {
+      if (!res.ok) throw new Error(`Server error (${res.status})`);
+      return {} as T;
+    }
+
+    if (!res.ok) {
+      const message = json.message
+        || json.error?.message
+        || (json.errors ? Object.values(json.errors).flat().join(', ') : null)
+        || `API Error: ${res.status}`;
+      throw new Error(message);
+    }
+
+    return json;
+  }
+
+  private handleUnauthorized() {
+    this.setToken(null);
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('scrapify_admin_user_session');
+      sessionStorage.removeItem('admin.role.v2');
+      // Clear any stale localStorage
+      localStorage.removeItem('scrapify_admin_user_session');
+      localStorage.removeItem('scrapify_admin_token');
+      localStorage.removeItem('admin.role.v2');
+      // Redirect to login — only if not already there
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
     }
   }
 
@@ -131,18 +185,11 @@ class ScrapifyAdminApiClient {
     formData.append('file', file);
 
     const url = `${API_BASE_URL}/vendors/${vendorCode}/documents`;
-    const headers: Record<string, string> = {
-      'Accept': 'application/json',
-    };
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
-    }
+    const headers: Record<string, string> = { 'Accept': 'application/json' };
+    if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
+    const res = await fetch(url, { method: 'POST', headers, body: formData });
+    if (res.status === 401) { this.handleUnauthorized(); throw new ApiUnauthorizedError(); }
     const json = await res.json();
     if (!res.ok) throw new Error(json.message || 'Document upload failed');
     return json;
@@ -429,6 +476,7 @@ class ScrapifyAdminApiClient {
     if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
 
     const res = await fetch(url, { method: 'POST', headers, body: formData });
+    if (res.status === 401) { this.handleUnauthorized(); throw new ApiUnauthorizedError(); }
     const json = await res.json();
     if (!res.ok) throw new Error(json.message || 'Evidence upload failed');
     return json;

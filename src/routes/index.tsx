@@ -18,7 +18,7 @@ import {
 } from "recharts";
 import { PageHeader } from "@/components/admin/page-header";
 import { DataTable, Section, StatCard, StatusPill, RiskDot, type Column } from "@/components/ops/ops-ui";
-import { ageLabel, countdown, fmtMoney, type ExceptionItem } from "@/lib/ops/data";
+import { ageLabel, countdown, fmtMoney, events, auditLog, type ExceptionItem } from "@/lib/ops/data";
 import { useAuctions } from "@/lib/auctions-store";
 import { useExceptions } from "@/lib/exceptions-store";
 import { adminApi } from "@/lib/api-client";
@@ -87,7 +87,7 @@ function CommandCenter() {
     { key: "action", header: "Recommended action", render: (r) => <span className="text-muted-foreground">{r.recommended}</span> },
   ];
 
-  const openExceptions = exceptions.filter((e: any) => e.status !== "Resolved");
+  const openExceptions = exceptions.filter((e: any) => e.status !== "Resolved") as any[];
 
   return (
     <>
@@ -225,16 +225,12 @@ function CommandCenter() {
                   </div>
                   <div>
                     <p className="text-[10px] uppercase text-muted-foreground">Bidders</p>
-                    <p className="font-semibold">{e.participants.length}</p>
+                    <p className="font-semibold">{e.participants}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase text-muted-foreground">Ends in</p>
-                    <p className="font-semibold text-accent">{countdown(e.endAt)}</p>
+                    <p className="text-[10px] uppercase text-muted-foreground">Hours left</p>
+                    <p className="font-semibold text-accent">{(e as any).endAt ? countdown((e as any).endAt) : `${e.hoursLeft ?? 0}h`}</p>
                   </div>
-                </div>
-                <div className="mt-2 flex items-center justify-between">
-                  <RiskDot level={e.risk} />
-                  <span className="text-[11px] text-muted-foreground">{e.connectionHealth}</span>
                 </div>
               </Link>
             ))}

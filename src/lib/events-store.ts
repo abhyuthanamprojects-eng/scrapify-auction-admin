@@ -28,7 +28,8 @@ export function useAuctionEvents(): AuctionEvent[] {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const auctions = await adminApi.listAuctions();
+        const response = await adminApi.getAuctions();
+        const auctions = response?.data ?? response;
         const mapped = (auctions as any[]).map((a: any) => ({
           id: a.code,
           name: a.title,

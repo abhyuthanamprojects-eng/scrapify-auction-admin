@@ -12,9 +12,9 @@ import { roleCan } from "@/lib/ops/roles";
 type Security = { id: string; vendorName: string; eventId: string; amount: number; mode: string; state: string; since: string };
 type Payment = { id: string; type: string; eventId: string; vendorName: string; customerName: string; amount: number; provider: string; status: string; at: string };
 type Refund = { id: string; vendorName: string; eventId: string; amount: number; reason: string; dueDate: string; status: string; failureReason?: string };
-type Settlement = { id: string; vendorName: string; eventId: string; amount: number; initiated: string; cleared: string; bank: string; status: string };
-type Invoice = { id: string; to: string; for: string; amount: number; issued: string; due: string; status: string };
-type ReconItem = { id: string; eventId: string; platform: number; gateway: number; variance: number; severity: string; notes: string };
+type Settlement = { id: string; vendorName?: string; eventId: string; amount?: number; initiated?: string; cleared?: string; bank?: string; status: string; customerName: string; gross: number; fee: number; tax: number; net: number; dueDate?: string; ageDays: number };
+type Invoice = { id: string; to?: string; for?: string; amount: number; issued: string; due: string; status: string; party: string; type: string; gst: number };
+type ReconItem = { id: string; eventId?: string; platform?: number; gateway?: number; variance: number; severity: string; notes?: string; kind: string; reference: string; platformAmount: number; providerAmount: number; provider: string; status: string };
 
 export const Route = createFileRoute("/finance")({
   head: () => ({

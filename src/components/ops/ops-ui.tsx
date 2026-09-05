@@ -223,7 +223,8 @@ export type Column<T> = {
 };
 
 export function DataTable<T extends { id: string }>({
-  rows,
+  rows: rowsProp,
+  data,
   columns,
   onRowClick,
   searchable = true,
@@ -233,8 +234,10 @@ export function DataTable<T extends { id: string }>({
   empty = "No records match the current filters.",
   dense,
   pageSize = 12,
+  searchPlaceholder,
 }: {
-  rows: T[];
+  rows?: T[];
+  data?: T[];
   columns: Column<T>[];
   onRowClick?: (row: T) => void;
   searchable?: boolean;
@@ -244,7 +247,9 @@ export function DataTable<T extends { id: string }>({
   empty?: string;
   dense?: boolean;
   pageSize?: number;
+  searchPlaceholder?: string;
 }) {
+  const rows = rowsProp ?? data ?? [];
   const [q, setQ] = React.useState("");
   const [sort, setSort] = React.useState<{ key: string; dir: 1 | -1 } | null>(null);
   const [page, setPage] = React.useState(0);

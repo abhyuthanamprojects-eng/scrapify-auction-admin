@@ -13,12 +13,12 @@ function isRole(v: string | null): v is AdminRole {
 
 export function getRole(): AdminRole {
   if (typeof window === "undefined") return "Super Admin";
-  const v = window.localStorage.getItem(KEY);
+  const v = window.sessionStorage.getItem(KEY);
   return isRole(v) ? v : "Super Admin";
 }
 
 export function setRole(role: AdminRole) {
-  window.localStorage.setItem(KEY, role);
+  window.sessionStorage.setItem(KEY, role);
   window.dispatchEvent(new CustomEvent(EVT));
 }
 

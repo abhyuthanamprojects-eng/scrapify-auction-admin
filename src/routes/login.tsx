@@ -1,29 +1,20 @@
 import { useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   ShieldCheck,
   Lock,
   Mail,
   KeyRound,
   ArrowRight,
-  Gavel,
-  ShieldAlert,
-  Building2,
-  Wallet,
-  Activity,
-  CheckCircle2,
-  Cpu,
-  Sparkles,
   Eye,
   EyeOff,
+  AlertCircle,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { type AdminRole } from "@/lib/ops/roles";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -40,92 +31,30 @@ export const Route = createFileRoute("/login")({
   component: AdminLoginPage,
 });
 
-const QUICK_ROLES: Array<{
-  role: AdminRole;
-  name: string;
-  email: string;
-  dept: string;
-  badgeColor: string;
-  icon: React.ComponentType<{ className?: string }>;
-}> = [
-  {
-    role: "Super Admin",
-    name: "R. Iyer",
-    email: "admin@scrapify.com",
-    dept: "Master Platform Governance",
-    badgeColor: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
-    icon: ShieldCheck,
-  },
-  {
-    role: "Operations",
-    name: "Karan Johar",
-    email: "ops@scrapify.com",
-    dept: "Live Floor & Dynamic Extension",
-    badgeColor: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30",
-    icon: Gavel,
-  },
-  {
-    role: "Compliance",
-    name: "Ananya Sharma",
-    email: "compliance@scrapify.com",
-    dept: "Vendor KYB & OCR Vision Audits",
-    badgeColor: "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30",
-    icon: ShieldAlert,
-  },
-  {
-    role: "Finance",
-    name: "Vikram Malhotra",
-    email: "finance@scrapify.com",
-    dept: "EMD Escrow & Payout Approvals",
-    badgeColor: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
-    icon: Wallet,
-  },
-  {
-    role: "Auditor",
-    name: "Rajesh Koothrappali",
-    email: "auditor@scrapify.com",
-    dept: "SOC-2 Immutable Ledger Review",
-    badgeColor: "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30",
-    icon: Activity,
-  },
-];
-
 function AdminLoginPage() {
-  const navigate = useNavigate();
   const { login } = useAuth();
-  const [identifier, setIdentifier] = useState("admin@scrapify.com");
-  const [password, setPassword] = useState("Password@1234");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<AdminRole>("Super Admin");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    try {
-      await login(identifier, selectedRole);
-      if (typeof window !== "undefined") {
-        window.location.href = "/";
-      } else {
-        navigate({ to: "/" });
-      }
-    } finally {
-      setLoading(false);
+    if (!identifier.trim() || !password.trim()) {
+      setError("Please enter your email and password.");
+      return;
     }
-  };
-
-  const handleQuickLogin = async (item: (typeof QUICK_ROLES)[number]) => {
-    setIdentifier(item.email);
-    setSelectedRole(item.role);
-    setPassword("Password@1234");
+    setError(null);
     setLoading(true);
     try {
-      await login(item.email, item.role, item.name);
+      await login(identifier.trim(), password);
       if (typeof window !== "undefined") {
         window.location.href = "/";
-      } else {
-        navigate({ to: "/" });
       }
+    } catch (err: any) {
+      const message = err?.message || "Login failed. Please check your credentials and try again.";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -159,30 +88,18 @@ function AdminLoginPage() {
             </p>
           </div>
 
-          {/* KPI Mini-Tiles */}
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-sm backdrop-blur">
-              <p className="text-[11px] text-slate-400 font-medium">Platform Realization</p>
-              <p className="text-lg font-black text-white mt-0.5 font-display">₹4,200 Cr+</p>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-sm backdrop-blur">
-              <p className="text-[11px] text-slate-400 font-medium">Live Floor Latency</p>
-              <p className="text-lg font-black text-emerald-400 mt-0.5 font-mono">&lt; 50ms</p>
-            </div>
-          </div>
-
           {/* Compliance Badges */}
           <div className="space-y-2 pt-1 border-t border-slate-800/80 text-xs text-slate-400">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+              <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
               <span>NABL &amp; GSTN Compliant Automated OCR Pipeline</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+              <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
               <span>SOC-2 Type II Immutable Audit Ledger</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+              <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
               <span>Dual-Factor Hardware &amp; TOTP Authentication</span>
             </div>
           </div>
@@ -201,7 +118,7 @@ function AdminLoginPage() {
                     Authorized Staff Access
                   </CardTitle>
                   <CardDescription className="text-xs text-slate-400 mt-1">
-                    Sign in with your enterprise credentials or choose a pre-authorized role.
+                    Sign in with your enterprise credentials.
                   </CardDescription>
                 </div>
                 <div className="h-10 w-10 overflow-hidden rounded-xl bg-white border border-amber-500/25 flex items-center justify-center shrink-0">
@@ -212,9 +129,16 @@ function AdminLoginPage() {
 
             <CardContent className="space-y-5 px-6 sm:px-8">
               <form onSubmit={handleSubmit} className="space-y-4">
+                {error && (
+                  <div className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5">
+                    <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
+                    <p className="text-xs text-red-300 leading-relaxed">{error}</p>
+                  </div>
+                )}
+
                 <div className="space-y-1.5">
                   <Label htmlFor="email" className="text-xs font-semibold text-slate-200">
-                    Official Staff Identifier / Email
+                    Email Address
                   </Label>
                   <div className="relative">
                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -222,9 +146,10 @@ function AdminLoginPage() {
                       id="email"
                       type="email"
                       required
+                      autoComplete="email"
                       value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder="admin@scrapify.com"
+                      onChange={(e) => { setIdentifier(e.target.value); setError(null); }}
+                      placeholder="you@scrapifyauctions.com"
                       className="pl-10 h-10 text-sm bg-slate-950/60 border-slate-800 text-white placeholder:text-slate-500 focus-visible:border-amber-500 focus-visible:ring-amber-500/20 rounded-xl"
                     />
                   </div>
@@ -233,11 +158,8 @@ function AdminLoginPage() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password" className="text-xs font-semibold text-slate-200">
-                      Security Password
+                      Password
                     </Label>
-                    <span className="text-[11px] text-amber-400 hover:text-amber-300 hover:underline cursor-pointer font-medium">
-                      Reset Key?
-                    </span>
                   </div>
                   <div className="relative">
                     <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -245,8 +167,9 @@ function AdminLoginPage() {
                       id="password"
                       type={showPassword ? "text" : "password"}
                       required
+                      autoComplete="current-password"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => { setPassword(e.target.value); setError(null); }}
                       placeholder="••••••••••••"
                       className="pl-10 pr-10 h-10 text-sm bg-slate-950/60 border-slate-800 text-white placeholder:text-slate-500 focus-visible:border-amber-500 focus-visible:ring-amber-500/20 rounded-xl font-mono"
                     />
@@ -260,15 +183,7 @@ function AdminLoginPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-xs pt-1">
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-400 hover:text-slate-300">
-                    <input
-                      type="checkbox"
-                      defaultChecked
-                      className="rounded border-slate-700 bg-slate-800 text-amber-500 focus:ring-amber-500 h-3.5 w-3.5"
-                    />
-                    <span>Remember this workstation</span>
-                  </label>
+                <div className="flex items-center justify-end text-xs pt-1">
                   <span className="text-slate-400 flex items-center gap-1 font-mono text-[11px]">
                     <Lock className="h-3 w-3 text-emerald-400" /> TLS 1.3 / 256-bit
                   </span>
@@ -276,54 +191,22 @@ function AdminLoginPage() {
 
                 <Button
                   type="submit"
-                  disabled={loading}
-                  className="w-full h-11 bg-gradient-to-r from-amber-500 via-amber-400 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-sm rounded-xl gap-2 shadow-lg shadow-amber-500/20 transition-all font-sans"
+                  disabled={loading || !identifier.trim() || !password.trim()}
+                  className="w-full h-11 bg-gradient-to-r from-amber-500 via-amber-400 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-sm rounded-xl gap-2 shadow-lg shadow-amber-500/20 transition-all font-sans disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? "Authenticating Session…" : "Sign In to Operations Console"}
-                  <ArrowRight className="h-4 w-4" />
+                  {loading ? (
+                    <>
+                      <div className="h-4 w-4 rounded-full border-2 border-slate-950 border-t-transparent animate-spin" />
+                      Authenticating…
+                    </>
+                  ) : (
+                    <>
+                      Sign In
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
                 </Button>
               </form>
-
-              {/* 1-Click Role Access Demo Grid */}
-              <div className="pt-3 border-t border-slate-800/80 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Instant Demo Accounts (1-Click)
-                  </span>
-                  <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-500/30 bg-amber-500/5">
-                    Live Session
-                  </Badge>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {QUICK_ROLES.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <button
-                        key={item.role}
-                        type="button"
-                        onClick={() => handleQuickLogin(item)}
-                        className="flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-800 bg-slate-950/40 hover:bg-slate-800/60 hover:border-amber-500/40 text-left transition-all group cursor-pointer"
-                      >
-                        <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 group-hover:border-amber-500/40 transition-colors shrink-0 mt-0.5">
-                          <Icon className="h-4 w-4 text-amber-400" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="font-bold text-xs text-white group-hover:text-amber-300 transition-colors truncate">
-                              {item.role}
-                            </span>
-                            <span className="text-[10px] text-slate-400 truncate">{item.name}</span>
-                          </div>
-                          <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5 font-normal">
-                            {item.dept}
-                          </p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
             </CardContent>
 
             <CardFooter className="bg-slate-950/60 px-6 sm:px-8 py-3.5 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">

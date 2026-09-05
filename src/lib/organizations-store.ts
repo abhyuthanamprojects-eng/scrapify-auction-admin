@@ -189,7 +189,8 @@ export function useOrganizations(): Organization[] {
   useEffect(() => {
     const fetchOrganizations = async () => {
       try {
-        const data = await adminApi.listOrganizations();
+        const response = await adminApi.getOrganizations();
+        const data = response?.data ?? response;
         const mapped = (data as any[]).map((o: any) => ({
           id: o.code,
           companyName: o.name,

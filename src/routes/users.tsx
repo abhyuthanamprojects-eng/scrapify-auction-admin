@@ -444,7 +444,7 @@ function StaffUsersPage() {
                   .slice(0, 2)
                   .toUpperCase();
 
-                const isSelf = staff.email === currentUser.email;
+                const isSelf = staff.email === currentUser?.email;
 
                 return (
                   <tr key={staff.id} className="hover:bg-muted/20 transition-colors">

@@ -193,10 +193,6 @@ function VendorDetail() {
     <>
       <PageHeader
         title={vendor.companyName}
-        crumbs={[
-          { label: "Vendors & KYC", href: "/vendors" },
-          { label: vendor.companyName },
-        ]}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button asChild variant="outline" size="sm" className="gap-1.5">

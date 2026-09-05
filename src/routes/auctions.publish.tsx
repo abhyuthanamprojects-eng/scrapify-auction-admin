@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { auctionStatusTone, formatInr, updateAuction, useAuctions } from "@/lib/auctions-store";
+import { adminApi } from "@/lib/api-client";
 
 export const Route = createFileRoute("/auctions/publish")({
   component: PublishScreen,

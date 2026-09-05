@@ -18,6 +18,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/use-auth";
+import { ApiUnauthorizedError, ApiForbiddenError } from "@/lib/api-client";
 
 function NotFoundComponent() {
   return (
@@ -42,21 +43,53 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
   const router = useRouter();
+
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
+  // If it's an auth error, redirect to login instead of showing error page
+  if (error instanceof ApiUnauthorizedError) {
+    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+      window.location.href = "/login";
+    }
+    return null;
+  }
+
+  const isForbidden = error instanceof ApiForbiddenError;
+  const isNetworkError = error.message?.includes("Network error") || error.message?.includes("Failed to fetch");
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
-        </p>
+        {isForbidden ? (
+          <>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">Access denied</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              You don't have permission to access this page. Contact your administrator if you believe this is an error.
+            </p>
+          </>
+        ) : isNetworkError ? (
+          <>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">Connection problem</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Unable to reach the server. Please check your internet connection and try again.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">Something went wrong</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              An unexpected error occurred. You can try refreshing or head back home.
+            </p>
+            {import.meta.env.DEV && error.message && (
+              <pre className="mt-3 max-h-32 overflow-auto rounded bg-muted p-2 text-left text-xs text-destructive">
+                {error.message}
+              </pre>
+            )}
+          </>
+        )}
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
@@ -139,7 +172,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const routerState = useRouterState();
   const isLoginPage = routerState.location.pathname === "/login";
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isChecking } = useAuth();
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -160,13 +193,12 @@ function RootComponent() {
     }
   }, [collapsed]);
 
-  useEffect(() => {
-    if (!isLoginPage && !isAuthenticated && typeof window !== "undefined") {
-      window.location.href = "/login";
-    }
-  }, [isLoginPage, isAuthenticated]);
-
+  // Login page: always accessible, redirect to dashboard if already authenticated
   if (isLoginPage) {
+    if (isAuthenticated && typeof window !== "undefined") {
+      window.location.href = "/";
+      return null;
+    }
     return (
       <QueryClientProvider client={queryClient}>
         <div className="min-h-screen w-full bg-background">
@@ -176,17 +208,34 @@ function RootComponent() {
     );
   }
 
-  if (!isAuthenticated && typeof window !== "undefined") {
+  // Auth is being validated — show a clean loading state, NOT the dashboard
+  if (isChecking) {
     return (
       <QueryClientProvider client={queryClient}>
         <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background p-4 text-center space-y-3">
           <div className="h-8 w-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
-          <p className="text-sm font-medium text-muted-foreground">Authenticating session…</p>
+          <p className="text-sm font-medium text-muted-foreground">Verifying session…</p>
         </div>
       </QueryClientProvider>
     );
   }
 
+  // Not authenticated — redirect to login. Do NOT render any protected UI.
+  if (!isAuthenticated) {
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+    return (
+      <QueryClientProvider client={queryClient}>
+        <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background p-4 text-center space-y-3">
+          <div className="h-8 w-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+          <p className="text-sm font-medium text-muted-foreground">Redirecting to login…</p>
+        </div>
+      </QueryClientProvider>
+    );
+  }
+
+  // Authenticated — render the admin shell
   return (
     <QueryClientProvider client={queryClient}>
       <div className="flex h-dvh w-full overflow-hidden bg-background">

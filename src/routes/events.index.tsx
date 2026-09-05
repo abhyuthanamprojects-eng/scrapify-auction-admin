@@ -130,7 +130,7 @@ function EventsIndex() {
               <FilterSelect label="Status" value={status} options={EVENT_STATUSES} onChange={setStatus} />
               <FilterSelect label="Category" value={category} options={CATEGORIES} onChange={setCategory} />
               <FilterSelect label="Template" value={template} options={EVENT_TEMPLATES} onChange={setTemplate} />
-              <FilterSelect label="Customer" value={customer} options={customers.map((c) => c.name)} onChange={setCustomer} />
+              <FilterSelect label="Customer" value={customer} options={customers} onChange={setCustomer} />
               <FilterSelect label="Direction" value={direction} options={["Forward", "Reverse"]} onChange={setDirection} />
             </div>
           }
