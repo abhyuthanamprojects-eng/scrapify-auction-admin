@@ -489,6 +489,11 @@ class ScrapifyAdminApiClient {
     });
   }
 
+  /* ---------------- Pincode Lookup ---------------- */
+  async lookupPincode(pincode: string) {
+    return this.request<{ pincode: string; city: string; state: string; country: string; post_offices: Array<{ name: string; type: string; delivery: string }> }>(`/pincode/${pincode}`);
+  }
+
   /* ---------------- Categories & Platform Config ---------------- */
   async getCategories() {
     return this.request<any>('/categories');
