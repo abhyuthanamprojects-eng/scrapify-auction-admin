@@ -14,26 +14,6 @@ const dt = (s?: string) =>
 const dOnly = (s: string) => new Date(s).toLocaleDateString("en-GB");
 const tOnly = (s: string) => new Date(s).toLocaleTimeString("en-GB", { hour12: false });
 
-function alias(seed: string) {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  let out = "";
-  for (let i = 0; i < 8; i++) {
-    h = (h * 1103515245 + 12345) >>> 0;
-    out += chars[h % chars.length];
-  }
-  return out;
-}
-
-const email = (name: string) => `${name.toLowerCase().replace(/[^a-z]+/g, ".").replace(/^\.|\.$/g, "")}@vendor.in`;
-const phone = (seed: string) => {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 33 + seed.charCodeAt(i)) >>> 0;
-  return `9${String(h).padStart(9, "0").slice(0, 9)}`;
-};
-const gstNo = (seed: string) => `27${alias(seed).slice(0, 5)}1Z${alias(seed).slice(5, 6)}`;
-
 function header(doc: jsPDF, auction: Auction, title: string) {
   const W = doc.internal.pageSize.getWidth();
   doc.setFillColor(...NAVY);
@@ -86,14 +66,14 @@ export function generateAllBidReport(auction: Auction) {
   const bids = [...auction.bids].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
   const body = bids.map((b, i) => [
     String(i + 1),
-    b.vendorName,
-    alias(b.vendorId),
-    phone(b.vendorId),
-    email(b.vendorName),
+    b.vendorName ?? "—",
+    b.vendorAlias ?? b.alias ?? "—",
+    b.phone ?? b.mobile ?? "—",
+    b.email ?? "—",
     dOnly(b.at),
     tOnly(b.at),
     n(b.amountInr),
-    `103.${(i * 7) % 255}.${(i * 13) % 255}.${(i * 29) % 255} / ${auction.location}`,
+    b.ipAddress ?? b.ip_address ?? b.ip ?? (b.location ? `${b.location}` : "—"),
   ]);
 
   autoTable(doc, {
@@ -112,21 +92,20 @@ export function generateAllBidderReport(auction: Auction) {
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   header(doc, auction, "All Bidder Report");
 
-  const seen = new Map<string, string>();
-  auction.bids.forEach((b) => { if (!seen.has(b.vendorId)) seen.set(b.vendorId, b.vendorName); });
-  const [city, state] = auction.location.split(",").map((s) => s.trim());
+  const seen = new Map<string, any>();
+  auction.bids.forEach((b) => { if (!seen.has(b.vendorId)) seen.set(b.vendorId, b); });
 
-  const body = [...seen.entries()].map(([id, name], i) => [
+  const body = [...seen.entries()].map(([, bid], i) => [
     String(i + 1),
-    name,
-    alias(id),
-    phone(id),
-    email(name),
-    gstNo(id),
-    `${name}, ${auction.location}`,
-    state ?? "—",
-    city ?? "—",
-    `4${String(10000 + (i * 137) % 89999).slice(0, 5)}`,
+    bid.vendorName ?? "—",
+    bid.vendorAlias ?? bid.alias ?? "—",
+    bid.phone ?? bid.mobile ?? "—",
+    bid.email ?? "—",
+    bid.gstNumber ?? bid.gst_number ?? "—",
+    bid.address ?? bid.location ?? "—",
+    bid.state ?? "—",
+    bid.city ?? "—",
+    bid.pincode ?? bid.pinCode ?? bid.pin_code ?? "—",
   ]);
 
   autoTable(doc, {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/admin/page-header";
 import {
@@ -50,6 +50,7 @@ import {
 import { ADMIN_ROLES, type AdminRole } from "@/lib/ops/roles";
 import { toast } from "sonner";
 import { useAuth, type StaffUser } from "@/hooks/use-auth";
+import { adminApi } from "@/lib/api-client";
 
 export const Route = createFileRoute("/users")({
   head: () => ({
@@ -66,84 +67,8 @@ export const Route = createFileRoute("/users")({
   component: StaffUsersPage,
 });
 
-const INITIAL_STAFF: StaffUser[] = [
-  {
-    id: "USR-001",
-    name: "R. Iyer",
-    email: "r.iyer@scrapifyauctions.com",
-    phone: "+91 98765 43210",
-    employeeId: "STF-2026-0042",
-    role: "Super Admin",
-    department: "Executive Platform Ops",
-    status: "active",
-    mfaEnabled: true,
-    lastLogin: "Active Now (IP: 103.21.144.8)",
-  },
-  {
-    id: "USR-002",
-    name: "Karan Johar",
-    email: "ops.lead@scrapifyauctions.com",
-    phone: "+91 98765 43211",
-    employeeId: "STF-2026-0043",
-    role: "Operations",
-    department: "Live Floor & Control Room",
-    status: "active",
-    mfaEnabled: true,
-    lastLogin: "10 mins ago (IP: 103.21.144.12)",
-  },
-  {
-    id: "USR-003",
-    name: "Ananya Sharma",
-    email: "compliance@scrapifyauctions.com",
-    phone: "+91 98765 43212",
-    employeeId: "STF-2026-0044",
-    role: "Compliance",
-    department: "KYB & Legal Verification",
-    status: "active",
-    mfaEnabled: true,
-    lastLogin: "1 hour ago",
-  },
-  {
-    id: "USR-004",
-    name: "Vikram Malhotra",
-    email: "finance@scrapifyauctions.com",
-    phone: "+91 98765 43213",
-    employeeId: "STF-2026-0045",
-    role: "Finance",
-    department: "Treasury & Escrow",
-    status: "active",
-    mfaEnabled: true,
-    lastLogin: "3 hours ago",
-  },
-  {
-    id: "USR-005",
-    name: "Pooja Hegde",
-    email: "auctioneer@scrapifyauctions.com",
-    phone: "+91 98765 43214",
-    employeeId: "STF-2026-0046",
-    role: "Auction Manager",
-    department: "Metals & Heavy Scrap Desk",
-    status: "active",
-    mfaEnabled: true,
-    lastLogin: "Yesterday",
-  },
-  {
-    id: "USR-006",
-    name: "Rajesh Koothrappali",
-    email: "audit@scrapifyauctions.com",
-    phone: "+91 98765 43215",
-    employeeId: "STF-2026-0047",
-    role: "Auditor",
-    department: "SOC-2 Risk & Oversight",
-    status: "active",
-    mfaEnabled: true,
-    lastLogin: "2 days ago",
-  },
-];
-
 function StaffUsersPage() {
-  const { user: currentUser } = useAuth();
-  const [staffList, setStaffList] = useState<StaffUser[]>(INITIAL_STAFF);
+  const [staffList, setStaffList] = useState<StaffUser[]>([]);
   const [search, setSearch] = useState("");
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -152,52 +77,84 @@ function StaffUsersPage() {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState<AdminRole>("Operations");
   const [newDepartment, setNewDepartment] = useState("");
   const [newMfa, setNewMfa] = useState(true);
 
-  const handleAddStaff = (e: React.FormEvent) => {
+  const loadStaff = async () => {
+    try {
+      const response = await adminApi.getOrgUsers();
+      const rows = response.data ?? response.users ?? [];
+      setStaffList(rows.map((row: any) => ({
+        id: String(row.id ?? row.code ?? ""),
+        name: row.name ?? row.full_name ?? "",
+        email: row.email ?? "",
+        phone: row.phone ?? undefined,
+        employeeId: row.employee_id ?? row.code ?? String(row.id ?? ""),
+        role: (row.role_label ?? row.role ?? "Operations") as AdminRole,
+        department: row.department ?? "",
+        status: row.status === "active" ? "active" : row.status === "pending_mfa" ? "pending_mfa" : "suspended",
+        mfaEnabled: Boolean(row.mfa_enabled),
+        lastLogin: row.last_login_at ?? undefined,
+        permissions: row.permissions ?? [],
+      })));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to load staff users.");
+    }
+  };
+
+  useEffect(() => {
+    void loadStaff();
+  }, []);
+
+  const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName || !newEmail) {
-      toast.error("Please fill in the staff name and official email.");
+    if (!newName || !newEmail || newPassword.length < 8) {
+      toast.error("Please provide the staff name, official email, and a password of at least 8 characters.");
       return;
     }
 
-    const newStaff: StaffUser = {
-      id: `USR-${Math.floor(Math.random() * 900 + 100)}`,
-      name: newName,
-      email: newEmail,
-      phone: newPhone || "+91 98765 43210",
-      employeeId: `STF-2026-${Math.floor(Math.random() * 9000 + 1000)}`,
-      role: newRole,
-      department: newDepartment || `${newRole} Unit`,
-      status: "active",
-      mfaEnabled: newMfa,
-      lastLogin: "Never logged in (Invitation sent)",
-    };
-
-    setStaffList((prev) => [newStaff, ...prev]);
-    toast.success(`Staff user ${newStaff.name} created as ${newStaff.role}! Activation email dispatched.`);
+    try {
+      await adminApi.createOrgUser({
+        name: newName,
+        email: newEmail,
+        phone: newPhone || undefined,
+        password: newPassword,
+        role: newRole,
+        department: newDepartment || undefined,
+        mfa_enabled: newMfa,
+      });
+      await loadStaff();
+      toast.success(`Staff user ${newName} created.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to create staff user.");
+      return;
+    }
 
     // Reset Form
     setNewName("");
     setNewEmail("");
     setNewPhone("");
+    setNewPassword("");
     setNewDepartment("");
     setDialogOpen(false);
   };
 
-  const toggleStatus = (id: string) => {
-    setStaffList((prev) =>
-      prev.map((s) => {
-        if (s.id === id) {
-          const nextStatus = s.status === "active" ? "suspended" : "active";
-          toast.info(`Staff user ${s.name} is now ${nextStatus.toUpperCase()}.`);
-          return { ...s, status: nextStatus };
-        }
-        return s;
-      })
-    );
+  const toggleStatus = async (id: string) => {
+    const staff = staffList.find((item) => item.id === id);
+    if (!staff || !/^\d+$/.test(id)) {
+      toast.error("This staff record cannot be updated because it has no API identifier.");
+      return;
+    }
+    const nextStatus = staff.status === "active" ? "suspended" : "active";
+    try {
+      await adminApi.updateOrgUser(Number(id), { status: nextStatus });
+      await loadStaff();
+      toast.info(`Staff user ${staff.name} is now ${nextStatus.toUpperCase()}.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to update staff user.");
+    }
   };
 
   const filteredStaff = staffList.filter((s) => {
@@ -265,6 +222,22 @@ function StaffUsersPage() {
                     className="text-sm"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="add-password" className="text-xs font-semibold">
+                  Initial Password *
+                </Label>
+                <Input
+                  id="add-password"
+                  type="password"
+                  required
+                  minLength={8}
+                  placeholder="Set a temporary password (8+ characters)"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="text-sm"
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

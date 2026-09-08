@@ -283,7 +283,7 @@ function SettingsPage() {
             </div>
             <div className="space-y-1.5 pt-2 border-t">
               <Label className="text-xs font-medium">Admin Session Inactivity Timeout</Label>
-              <Input defaultValue="30 minutes" className="text-sm" />
+              <Input value="" placeholder="Not configured by API" readOnly className="text-sm" />
             </div>
           </CardContent>
         </Card>

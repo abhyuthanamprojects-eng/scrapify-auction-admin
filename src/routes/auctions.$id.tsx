@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Check, MessageSquare, X, MapPin, Calendar, Phone, Mail, User, FileText, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Check, MessageSquare, X, Trash2, MapPin, Calendar, Phone, Mail, User, FileText, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { auctionStatusTone, formatInr, getAuction, updateAuction, type Auction } from "@/lib/auctions-store";
 import { adminApi } from "@/lib/api-client";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/auctions/$id")({
   component: AuctionReview,
@@ -15,8 +16,9 @@ export const Route = createFileRoute("/auctions/$id")({
 function AuctionReview() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const a = getAuction(id);
-  const [modal, setModal] = useState<null | "sendback" | "reject">(null);
+  const [modal, setModal] = useState<null | "sendback" | "reject" | "archive">(null);
   const [reason, setReason] = useState("");
   const [result, setResult] = useState<any>(null);
   const [settlement, setSettlement] = useState<any>(null);
@@ -33,6 +35,8 @@ function AuctionReview() {
   }
 
   const t = auctionStatusTone(a.status);
+  const canArchive = ["Super Admin", "Admin"].includes(user?.role ?? "")
+    && !["Live", "Closed", "Cancelled"].includes(a.status);
 
   useEffect(() => {
     if (!['Closed', 'Live', 'closed', 'live'].includes(a.status)) return;
@@ -57,7 +61,7 @@ function AuctionReview() {
     toast.success(`Auction ${a!.id} approved and moved to Publish queue.`);
     navigate({ to: "/auctions" });
   }
-  function submitModal() {
+  async function submitModal() {
     if (!reason.trim()) return toast.error("A reason is required.");
     if (modal === "sendback") {
       updateAuction(a!.id, { status: "Sent Back", reviewComment: reason });
@@ -65,6 +69,15 @@ function AuctionReview() {
     } else if (modal === "reject") {
       updateAuction(a!.id, { status: "Rejected", reviewComment: reason });
       toast.success("Auction rejected. Seller notified.");
+    } else if (modal === "archive") {
+      try {
+        await adminApi.archiveAuction(a!.id, reason);
+        updateAuction(a!.id, { status: "Cancelled", reviewComment: reason });
+        toast.success("Auction archived. Its history remains retained for audit.");
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Auction could not be archived.");
+        return;
+      }
     }
     setModal(null);
     setReason("");
@@ -245,6 +258,15 @@ function AuctionReview() {
             <div className="card-premium p-5">
               <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Status</div>
               <p className="text-sm">This auction is <span className="font-medium">{a.status}</span> — no review actions available.</p>
+              {canArchive && (
+                <Button
+                  onClick={() => setModal("archive")}
+                  variant="outline"
+                  className="mt-4 w-full gap-2 border-red-300 text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" /> Archive auction
+                </Button>
+              )}
             </div>
           )}
                 </div>
@@ -267,17 +289,25 @@ function AuctionReview() {
       <Dialog open={modal !== null} onOpenChange={(o) => !o && setModal(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{modal === "sendback" ? "Send Back for Changes" : "Reject Auction"}</DialogTitle>
+            <DialogTitle>{modal === "sendback" ? "Send Back for Changes" : modal === "reject" ? "Reject Auction" : "Archive Auction"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
             <label className="text-sm font-medium">Reason (required)</label>
+            {modal === "archive" && (
+              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-900">
+                <div><b>Auction:</b> {a.id}</div>
+                <div><b>Title:</b> {a.title}</div>
+                <div><b>Current status:</b> {a.status}</div>
+                <div className="mt-1">This archives the record as cancelled; bidding, EMD, settlement and audit history are retained.</div>
+              </div>
+            )}
             <Textarea rows={5} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={modal === "sendback" ? "Explain what needs to change…" : "Explain why this auction is being rejected…"} />
-            <p className="text-xs text-muted-foreground">This message will be sent to the submitter.</p>
+            <p className="text-xs text-muted-foreground">{modal === "archive" ? "The reason is recorded in the immutable audit trail." : "This message will be sent to the submitter."}</p>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setModal(null)}>Cancel</Button>
-            <Button onClick={submitModal} className={modal === "reject" ? "bg-red-600 hover:bg-red-700 text-white" : "bg-accent hover:bg-accent/90 text-accent-foreground"}>
-              {modal === "sendback" ? "Send Back" : "Reject"}
+            <Button onClick={submitModal} className={modal === "reject" || modal === "archive" ? "bg-red-600 hover:bg-red-700 text-white" : "bg-accent hover:bg-accent/90 text-accent-foreground"}>
+              {modal === "sendback" ? "Send Back" : modal === "reject" ? "Reject" : "Archive"}
             </Button>
           </DialogFooter>
         </DialogContent>

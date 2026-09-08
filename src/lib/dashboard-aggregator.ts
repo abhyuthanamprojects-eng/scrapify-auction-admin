@@ -39,41 +39,55 @@ export function generateDashboardData(auctions: any[], vendors: any[], finance: 
 
     categoryMix: generateCategoryMix(auctions),
 
-    settlementAging: [
-      { bucket: '0-7d', value: 12 },
-      { bucket: '8-14d', value: 8 },
-      { bucket: '15-30d', value: 5 },
-      { bucket: '30+d', value: 3 },
-    ],
+    settlementAging: Array.isArray(finance?.settlement_aging)
+      ? finance.settlement_aging.map((item: any) => ({ bucket: String(item.bucket ?? ''), value: Number(item.value ?? 0) }))
+      : [],
 
     liveEvents: live.slice(0, 4).map((a: any) => ({
       id: a.code,
       name: a.title,
-      customerName: a.customer?.company_name || 'Unknown',
-      direction: a.direction || 'Forward',
-      category: a.category || 'General',
+      customerName: a.customer?.company_name || '',
+      direction: a.direction || '',
+      category: a.category || '',
       currentPrice: a.current_price || a.reserve_price || 0,
       participants: a.participants?.length || 0,
-      hoursLeft: 24,
+      hoursLeft: a.end_at ? Math.max(0, (new Date(a.end_at).getTime() - Date.now()) / 3600000) : 0,
     })),
   };
 }
 
 function generateMonthlySeries(auctions: any[]) {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-  return months.map((month, i) => ({
-    month,
-    forward: Math.floor(auctions.length * 100_000 * (0.7 + Math.random() * 0.3)),
-    reverse: Math.floor(auctions.length * 50_000 * (0.6 + Math.random() * 0.4)),
-    successRate: 72 + Math.random() * 15,
-    avgParticipants: 8 + Math.random() * 5,
+  const byMonth = new Map<string, any>();
+  auctions.forEach((auction: any) => {
+    const sourceDate = auction.closed_at ?? auction.closedAt ?? auction.created_at ?? auction.createdAt;
+    if (!sourceDate) return;
+    const date = new Date(sourceDate);
+    if (Number.isNaN(date.getTime())) return;
+    const month = date.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+    const item = byMonth.get(month) ?? { month, forward: 0, reverse: 0, successRateTotal: 0, successRateCount: 0, avgParticipants: 0, count: 0 };
+    const value = Number(auction.final_price ?? auction.finalPriceInr ?? 0);
+    if (auction.direction === 'Reverse') item.reverse += value;
+    else item.forward += value;
+    item.avgParticipants += Array.isArray(auction.participants) ? auction.participants.length : Number(auction.participants_count ?? 0);
+    if (auction.success_rate != null || auction.successRate != null) {
+      item.successRateTotal += Number(auction.success_rate ?? auction.successRate);
+      item.successRateCount += 1;
+    }
+    item.count += 1;
+    byMonth.set(month, item);
+  });
+  return [...byMonth.values()].sort((a, b) => a.month.localeCompare(b.month)).map(({ count, successRateTotal, successRateCount, ...item }) => ({
+    ...item,
+    avgParticipants: count ? item.avgParticipants / count : 0,
+    successRate: successRateCount ? successRateTotal / successRateCount : 0,
   }));
 }
 
 function generateCategoryMix(auctions: any[]) {
-  const categories = ['Ferrous', 'Non-Ferrous', 'E-Waste', 'Paper', 'Plastic', 'Rubber'];
-  return categories.map(cat => ({
-    name: cat,
-    value: auctions.filter(a => a.category === cat).length,
-  }));
+  const counts = new Map<string, number>();
+  auctions.forEach((auction: any) => {
+    const category = auction.category;
+    if (category) counts.set(category, (counts.get(category) ?? 0) + 1);
+  });
+  return [...counts.entries()].map(([name, value]) => ({ name, value }));
 }

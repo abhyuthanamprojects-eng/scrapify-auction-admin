@@ -28,9 +28,12 @@ export class ApiUnauthorizedError extends Error {
 }
 
 export class ApiForbiddenError extends Error {
-  constructor(message = "Forbidden") {
+  code?: string;
+
+  constructor(message = "Forbidden", code?: string) {
     super(message);
     this.name = "ApiForbiddenError";
+    this.code = code;
   }
 }
 
@@ -89,7 +92,10 @@ class ScrapifyAdminApiClient {
 
     if (res.status === 403) {
       const json = await res.json().catch(() => ({}));
-      throw new ApiForbiddenError(json.message || "You don't have permission to perform this action.");
+      throw new ApiForbiddenError(
+        json.message || "You don't have permission to perform this action.",
+        json.error?.code,
+      );
     }
 
     let json: any;
@@ -129,7 +135,7 @@ class ScrapifyAdminApiClient {
 
   /* ---------------- Auth & Staff ---------------- */
   async login(identifier: string, password: string) {
-    const res = await this.request<any>('/auth/login', {
+    const res = await this.request<any>('/admin/auth/login', {
       method: 'POST',
       body: JSON.stringify({ identifier, password }),
     });
@@ -140,12 +146,12 @@ class ScrapifyAdminApiClient {
   }
 
   async me() {
-    return this.request<any>('/auth/me');
+    return this.request<any>('/admin/auth/me');
   }
 
   async logout() {
     try {
-      await this.request('/auth/logout', { method: 'POST' });
+      await this.request('/admin/auth/logout', { method: 'POST' });
     } finally {
       this.setToken(null);
     }
@@ -333,6 +339,13 @@ class ScrapifyAdminApiClient {
 
   async updateAuction(code: string, data: any) {
     return this.request<any>(`/auctions/${code}`, { method: 'PATCH', body: JSON.stringify(data) });
+  }
+
+  async archiveAuction(code: string, reason: string) {
+    return this.request<any>(`/admin/auctions/${encodeURIComponent(code)}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ reason }),
+    });
   }
 
   async submitAuction(code: string) {

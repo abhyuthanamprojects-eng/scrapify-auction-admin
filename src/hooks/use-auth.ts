@@ -21,20 +21,8 @@ export interface StaffUser {
 // Session-only storage keys — sessionStorage clears when the browser closes
 const USER_KEY = "scrapify_admin_user_session";
 const TOKEN_KEY = "scrapify_admin_token";
-const AUTH_EVENT = "scrapify:admin:auth";
 
 export type AuthStatus = "checking" | "authenticated" | "unauthenticated";
-
-function getStoredUser(): StaffUser | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.sessionStorage.getItem(USER_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {
-    /* corrupted data */
-  }
-  return null;
-}
 
 function getStoredToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -47,7 +35,6 @@ function setStoredSession(user: StaffUser, token: string) {
   window.sessionStorage.setItem(TOKEN_KEY, token);
   window.sessionStorage.setItem("admin.role.v2", user.role);
   adminApi.setToken(token);
-  window.dispatchEvent(new CustomEvent(AUTH_EVENT, { detail: { user, token } }));
 }
 
 function clearStoredSession() {
@@ -60,17 +47,34 @@ function clearStoredSession() {
   window.localStorage.removeItem(TOKEN_KEY);
   window.localStorage.removeItem("admin.role.v2");
   adminApi.setToken(null);
-  window.dispatchEvent(new CustomEvent(AUTH_EVENT, { detail: null }));
 }
 
-function mapApiUserToStaff(apiUser: any, token: string): StaffUser {
+const API_ROLE_TO_STAFF_ROLE: Record<string, AdminRole> = {
+  super_admin: "Super Admin",
+  admin: "Operations",
+  operations: "Operations",
+  procurement_manager: "Auction Manager",
+  compliance: "Compliance",
+  finance_manager: "Finance",
+  technical_evaluator: "Operations",
+  auditor: "Auditor",
+};
+
+function mapApiUserToStaff(apiUser: any): StaffUser {
+  const apiRole = String(apiUser?.role ?? "").toLowerCase();
+  const role = API_ROLE_TO_STAFF_ROLE[apiRole];
+
+  if (!role) {
+    throw new Error("This account is not authorized for the Admin Portal.");
+  }
+
   return {
     id: String(apiUser.id ?? apiUser.code ?? ""),
     name: apiUser.name ?? apiUser.full_name ?? "Admin User",
     email: apiUser.email ?? "",
     phone: apiUser.phone ?? undefined,
     employeeId: apiUser.employee_id ?? apiUser.code ?? `STF-${apiUser.id}`,
-    role: (apiUser.role ?? apiUser.roles?.[0] ?? "Super Admin") as AdminRole,
+    role,
     department: apiUser.department ?? "Administration",
     avatar: apiUser.avatar ?? undefined,
     status: apiUser.status === "active" ? "active" : "suspended",
@@ -89,7 +93,6 @@ export function useAuth() {
   // On mount: validate any stored session against the real API
   useEffect(() => {
     const storedToken = getStoredToken();
-    const storedUser = getStoredUser();
 
     if (!storedToken) {
       setAuthStatus("unauthenticated");
@@ -103,8 +106,11 @@ export function useAuth() {
 
     adminApi.me()
       .then((res: any) => {
-        const apiUser = res.user ?? res.data ?? res;
-        const validatedUser = storedUser ?? mapApiUserToStaff(apiUser, storedToken);
+        const apiUser = res.user ?? res.data?.user ?? res.data ?? res;
+        const validatedUser = mapApiUserToStaff(apiUser);
+        // Never trust a role persisted in sessionStorage. The API response is
+        // the authority for both identity and the staff role.
+        setStoredSession(validatedUser, storedToken);
         setUser(validatedUser);
         setToken(storedToken);
         setAuthStatus("authenticated");
@@ -121,19 +127,6 @@ export function useAuth() {
       });
   }, []);
 
-  // Listen for auth changes from other tabs/components
-  useEffect(() => {
-    const handleAuthChange = () => {
-      const newUser = getStoredUser();
-      const newToken = getStoredToken();
-      setUser(newUser);
-      setToken(newToken);
-      setAuthStatus(newToken ? "authenticated" : "unauthenticated");
-    };
-    window.addEventListener(AUTH_EVENT, handleAuthChange);
-    return () => window.removeEventListener(AUTH_EVENT, handleAuthChange);
-  }, []);
-
   const login = useCallback(async (identifier: string, password: string): Promise<StaffUser> => {
     // Call the REAL backend API
     const res = await adminApi.login(identifier, password);
@@ -144,7 +137,7 @@ export function useAuth() {
       throw new Error("Login failed: no token received from server.");
     }
 
-    const staffUser = mapApiUserToStaff(apiUser, apiToken);
+    const staffUser = mapApiUserToStaff(apiUser);
     setStoredSession(staffUser, apiToken);
     setUser(staffUser);
     setToken(apiToken);

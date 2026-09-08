@@ -144,7 +144,7 @@ function NewOrganization() {
       >
         <div className="grid gap-5 md:grid-cols-2">
           <Field label="Company Name" required>
-            <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="e.g. Meridian Metals Pvt Ltd" />
+            <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="e.g. Your company name" />
           </Field>
           <Field label="Total Units" required hint="Number of branches or operating units.">
             <Input
