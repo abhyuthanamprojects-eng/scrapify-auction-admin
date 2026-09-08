@@ -1,221 +1,89 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { Users, Clock, Gavel, Timer, StopCircle, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowRight, Gavel, Play, RefreshCw, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { formatInr, updateAuction, useAuctions, type Auction } from "@/lib/auctions-store";
+import { adminApi } from "@/lib/api-client";
 
-export const Route = createFileRoute("/auctions/live")({
-  component: LiveMonitor,
-});
+export const Route = createFileRoute("/auctions/live")({ component: LiveMonitor });
+
+type LiveState = {
+  code: string; status: string; direction: "forward" | "reverse";
+  current_highest_inr: number | null; bidders: number; server_time: string;
+  actual_started_at?: string | null; hard_end_at?: string | null;
+  active_slot?: { id: number; sequence: number; type: string; starts_at: string; ends_at: string; cutoff_at: string; status: string } | null;
+};
+type AuctionSummary = { code: string; title: string; company: string; status: string; direction: string };
+
+function countdown(iso?: string | null, offset = 0) {
+  if (!iso) return "—";
+  const total = Math.max(0, Math.floor((new Date(iso).getTime() - Date.now() - offset) / 1000));
+  return `${String(Math.floor(total / 3600)).padStart(2, "0")}:${String(Math.floor((total % 3600) / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
 
 function LiveMonitor() {
-  const auctions = useAuctions();
-  const live = useMemo(() => auctions.filter((a) => a.status === "Live"), [auctions]);
-  const [openId, setOpenId] = useState<string | null>(null);
-  const target = auctions.find((a) => a.id === openId);
-
-  if (live.length === 0) {
-    return (
-      <div className="card-premium p-12 text-center">
-        <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-          <Gavel className="h-5 w-5 text-primary" />
-        </div>
-        <p className="text-muted-foreground">No auctions are live right now.</p>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {live.map((a) => (
-          <LiveCard key={a.id} a={a} onOpen={() => setOpenId(a.id)} />
-        ))}
-      </div>
-
-      <Dialog open={openId !== null} onOpenChange={(o) => !o && setOpenId(null)}>
-        <DialogContent className="max-w-3xl">
-          {target && <LiveDetail a={target} onClose={() => setOpenId(null)} />}
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
-
-function useCountdown(iso: string) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
-  const ms = Math.max(0, new Date(iso).getTime() - now);
-  const h = Math.floor(ms / 3_600_000);
-  const m = Math.floor((ms % 3_600_000) / 60_000);
-  const s = Math.floor((ms % 60_000) / 1000);
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
-function LiveCard({ a, onOpen }: { a: Auction; onOpen: () => void }) {
-  const remaining = useCountdown(a.scheduleEnd);
-  const highest = a.currentHighestInr ?? a.startingPriceInr;
-  return (
-    <button onClick={onOpen} className="card-premium p-5 text-left hover:ring-primary/30 transition-all relative overflow-hidden group">
-      <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 ring-1 ring-primary/20">
-        <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" /> LIVE
-      </div>
-      <div className="text-xs font-mono text-muted-foreground">{a.id}</div>
-      <div className="font-display text-lg mt-1 leading-tight">{a.title}</div>
-      <div className="text-xs text-muted-foreground mt-0.5">{a.company} · {a.location}</div>
-
-      <div className="mt-4 grid grid-cols-3 gap-3">
-        <Metric label="Highest Bid" value={formatInr(highest)} accent />
-        <Metric label="Bidders" value={String(a.bidders ?? 0)} icon={<Users className="h-3.5 w-3.5" />} />
-        <Metric label="Ends In" value={remaining} icon={<Clock className="h-3.5 w-3.5" />} />
-      </div>
-
-      {a.lotType === "Lot-wise" && a.subLots.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-border/60 space-y-1.5">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Sub-lots</div>
-          {a.subLots.map((s) => (
-            <div key={s.id} className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">{s.id} · {s.name}</span>
-              <span className="font-semibold">{formatInr(s.currentBidInr ?? s.reservePriceInr)}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </button>
-  );
-}
-
-function Metric({ label, value, accent, icon }: { label: string; value: string; accent?: boolean; icon?: React.ReactNode }) {
-  return (
-    <div className={`rounded-lg p-2.5 ring-1 ${accent ? "bg-primary/5 ring-primary/20" : "bg-muted/40 ring-border"}`}>
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">{icon} {label}</div>
-      <div className={`text-sm font-semibold mt-0.5 ${accent ? "text-primary" : ""}`}>{value}</div>
-    </div>
-  );
-}
-
-function LiveDetail({ a, onClose }: { a: Auction; onClose: () => void }) {
-  const remaining = useCountdown(a.scheduleEnd);
-  const [modal, setModal] = useState<null | "extend" | "end">(null);
+  const [auctions, setAuctions] = useState<AuctionSummary[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [state, setState] = useState<LiveState | null>(null);
+  const [bids, setBids] = useState<any[]>([]);
+  const [readiness, setReadiness] = useState<any>(null);
+  const [offset, setOffset] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [reason, setReason] = useState("");
-  const [minutes, setMinutes] = useState(10);
 
-  function extend() {
-    if (!reason.trim()) return toast.error("Reason required.");
-    const newEnd = new Date(new Date(a.scheduleEnd).getTime() + minutes * 60_000).toISOString();
-    updateAuction(a.id, {
-      scheduleEnd: newEnd,
-      extensions: [...(a.extensions ?? []), { reason, minutes, at: new Date().toISOString() }],
-    });
-    toast.success(`Auction extended by ${minutes} min.`);
-    setModal(null); setReason("");
-  }
-  function endNow() {
-    updateAuction(a.id, {
-      status: "Closed",
-      closedAt: new Date().toISOString(),
-      finalPriceInr: a.currentHighestInr,
-      winner: a.bids[0]?.vendorName,
-    });
-    toast.success(`${a.id} closed manually.`);
-    setModal(null);
-    onClose();
-  }
+  const loadAuctions = useCallback(async () => {
+    const response = await adminApi.getAuctions({ status: "published,approved,live" });
+    const rows = Array.isArray(response?.data) ? response.data : [];
+    setAuctions(rows.map((a: any) => ({ code: a.code ?? a.id, title: a.title, company: a.company, status: a.status, direction: a.direction })));
+    if (!selected && rows[0]) setSelected(rows[0].code ?? rows[0].id);
+  }, [selected]);
 
-  return (
-    <>
-      <DialogHeader>
-        <DialogTitle>
-          <div className="text-xs font-mono text-muted-foreground">{a.id}</div>
-          <div>{a.title}</div>
-        </DialogTitle>
-      </DialogHeader>
-      <div className="grid grid-cols-3 gap-3">
-        <Metric label="Highest Bid" value={formatInr(a.currentHighestInr ?? a.startingPriceInr)} accent />
-        <Metric label="Bidders" value={String(a.bidders ?? 0)} icon={<Users className="h-3.5 w-3.5" />} />
-        <Metric label="Ends In" value={remaining} icon={<Clock className="h-3.5 w-3.5" />} />
-      </div>
+  const loadState = useCallback(async () => {
+    if (!selected) return;
+    const [liveResponse, readinessResponse, bidsResponse] = await Promise.all([adminApi.getLiveState(selected), adminApi.getAuctionReadiness(selected), adminApi.getBids(selected)]);
+    const next = liveResponse?.data ?? liveResponse;
+    setState(next);
+    setReadiness(readinessResponse?.data ?? readinessResponse);
+    setBids(Array.isArray(bidsResponse?.data) ? bidsResponse.data : []);
+    if (next?.server_time) setOffset(new Date(next.server_time).getTime() - Date.now());
+  }, [selected]);
 
-      <div className="rounded-lg ring-1 ring-border overflow-hidden">
-        <div className="px-4 py-2 bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">Bid History (unmasked)</div>
-        <div className="max-h-64 overflow-y-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[10px] uppercase text-muted-foreground border-b border-border/60">
-                <th className="px-3 py-2">Time</th>
-                <th className="px-3 py-2">Vendor</th>
-                <th className="px-3 py-2">Sub-Lot</th>
-                <th className="px-3 py-2 text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {a.bids.length === 0 && <tr><td colSpan={4} className="px-3 py-6 text-center text-muted-foreground text-xs">No bids yet.</td></tr>}
-              {a.bids.map((b) => (
-                <tr key={b.id} className="border-b border-border/40">
-                  <td className="px-3 py-2 text-xs text-muted-foreground">{new Date(b.at).toLocaleTimeString()}</td>
-                  <td className="px-3 py-2"><div className="font-medium">{b.vendorName}</div><div className="text-[10px] font-mono text-muted-foreground">{b.vendorId}</div></td>
-                  <td className="px-3 py-2 text-xs">{b.subLotId ?? "—"}</td>
-                  <td className="px-3 py-2 text-right font-semibold">{formatInr(b.amountInr)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+  useEffect(() => { loadAuctions().catch((e) => toast.error(e.message)); }, [loadAuctions]);
+  useEffect(() => {
+    if (!selected) return;
+    loadState().catch((e) => toast.error(e.message));
+    const timer = window.setInterval(() => loadState().catch(() => undefined), 5000);
+    return () => window.clearInterval(timer);
+  }, [selected, loadState]);
 
-      <DialogFooter className="!justify-between">
-        <Button variant="ghost" onClick={onClose}>Close</Button>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setModal("extend")} className="gap-1.5 border-accent text-accent hover:bg-accent/10">
-            <Timer className="h-4 w-4" /> Extend Auction
-          </Button>
-          <Button variant="outline" onClick={() => setModal("end")} className="gap-1.5 border-red-300 text-red-700 hover:bg-red-50">
-            <StopCircle className="h-4 w-4" /> End Auction Now
-          </Button>
-        </div>
-      </DialogFooter>
+  const selectedSummary = useMemo(() => auctions.find((a) => a.code === selected), [auctions, selected]);
+  const busy = async (work: () => Promise<unknown>, message: string) => {
+    setLoading(true);
+    try { await work(); await loadAuctions(); await loadState(); toast.success(message); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Server action failed"); }
+    finally { setLoading(false); }
+  };
 
-      <Dialog open={modal === "extend"} onOpenChange={(o) => !o && setModal(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Extend Auction</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium">Extend by (minutes)</label>
-              <Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(parseInt(e.target.value) || 0)} />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Reason (required)</label>
-              <Textarea rows={4} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Technical issue reported by 2 bidders…" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setModal(null)}>Cancel</Button>
-            <Button onClick={extend} className="gap-1.5"><Timer className="h-4 w-4" /> Extend</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+  if (!selected || !selectedSummary) return <div className="card-premium p-12 text-center text-muted-foreground">No published or live auctions are available from the API.</div>;
+  const active = state?.active_slot;
+  const live = state?.status === "live";
+  const ready = Boolean(readiness?.ready);
 
-      <Dialog open={modal === "end"} onOpenChange={(o) => !o && setModal(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>End Auction Now</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Are you sure? This closes the auction immediately and locks the current highest bid as the winning bid.
-          </p>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setModal(null)}>Cancel</Button>
-            <Button onClick={endNow} className="bg-red-600 hover:bg-red-700 text-white gap-1.5">
-              <X className="h-4 w-4" /> Confirm End
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
+  return <div className="space-y-5">
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="font-display text-2xl">Live Control</h1><p className="text-sm text-muted-foreground">Authoritative auction state from the backend.</p></div><Button variant="outline" disabled={loading} onClick={() => busy(loadState, "State refreshed")}><RefreshCw className="mr-2 h-4 w-4" /> Refresh</Button></div>
+    <div className="flex flex-wrap gap-2">{auctions.map((a) => <Button key={a.code} size="sm" variant={a.code === selected ? "default" : "outline"} onClick={() => setSelected(a.code)}>{a.code} · {a.status}</Button>)}</div>
+    <section className="card-premium space-y-5 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3"><div><div className="font-mono text-xs text-muted-foreground">{selectedSummary.code}</div><h2 className="font-display text-xl">{selectedSummary.title}</h2><p className="text-sm text-muted-foreground">{selectedSummary.company} · {selectedSummary.direction}</p></div><div className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold">{state?.status ?? selectedSummary.status}</div></div>
+      {!live && <div className={`rounded-lg p-3 text-sm ${ready ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"}`}><strong>{ready ? "READY" : "NOT READY"}</strong>{!ready && <span className="ml-2">{(readiness?.reasons ?? []).join(", ") || "Readiness details unavailable"}</span>}</div>}
+      <div className="grid gap-3 sm:grid-cols-4"><Metric label="Current value" value={state?.current_highest_inr == null ? "—" : `₹${Number(state.current_highest_inr).toLocaleString("en-IN")}`} /><Metric label="Participants" value={String(state?.bidders ?? readiness?.eligible_participants ?? 0)} /><Metric label="Slot remaining" value={countdown(active?.ends_at, offset)} /><Metric label="Server time" value={state?.server_time ? new Date(state.server_time).toLocaleTimeString() : "—"} /></div>
+      {active && <div className="grid gap-3 rounded-lg border p-3 text-sm sm:grid-cols-5"><Info label="Slot" value={`#${active.sequence} ${active.type}`} /><Info label="Slot ID" value={String(active.id)} /><Info label="Ends" value={new Date(active.ends_at).toLocaleString()} /><Info label="Cutoff" value={new Date(active.cutoff_at).toLocaleString()} /><Info label="Hard end" value={state?.hard_end_at ? new Date(state.hard_end_at).toLocaleString() : "—"} /></div>}
+      <div className="overflow-hidden rounded-lg border"><div className="border-b bg-muted/40 px-3 py-2 text-xs font-semibold uppercase tracking-wider">Accepted bids · server order</div><div className="max-h-64 overflow-auto"><table className="w-full text-sm"><thead><tr className="border-b text-left text-xs text-muted-foreground"><th className="px-3 py-2">Server time</th><th className="px-3 py-2">Slot</th><th className="px-3 py-2">Amount</th><th className="px-3 py-2">Reference</th></tr></thead><tbody>{bids.map((bid) => <tr key={bid.id} className="border-b"><td className="px-3 py-2 text-xs">{bid.at ? new Date(bid.at).toLocaleTimeString() : "—"}</td><td className="px-3 py-2">{bid.slot_id ?? "—"}</td><td className="px-3 py-2 font-semibold">₹{Number(bid.amount_inr ?? bid.amount ?? 0).toLocaleString("en-IN")}</td><td className="px-3 py-2 font-mono text-xs text-muted-foreground">{bid.id ?? "—"}</td></tr>)}{bids.length === 0 && <tr><td colSpan={4} className="px-3 py-5 text-center text-muted-foreground">No accepted bids.</td></tr>}</tbody></table></div></div>
+      <div className="flex flex-wrap gap-2">{!live && <Button disabled={loading || !ready} onClick={() => busy(() => adminApi.goLive(selected), "Auction started")}><Play className="mr-2 h-4 w-4" /> Start auction</Button>}{live && active && <Button variant="outline" disabled={loading} onClick={() => busy(() => adminApi.closeSlot(selected, active.id, reason || "ADMIN_FORCE_CLOSE"), "Current slot closed")}><Square className="mr-2 h-4 w-4" /> Close current slot</Button>}{live && !active && <Button variant="outline" disabled={loading} onClick={() => busy(() => adminApi.startNextSlot(selected), "Next slot started")}><ArrowRight className="mr-2 h-4 w-4" /> Start next slot</Button>}{live && <Button variant="destructive" disabled={loading} onClick={() => { if (window.confirm("Close this auction now?")) busy(() => adminApi.closeAuction(selected), "Auction closed"); }}><Gavel className="mr-2 h-4 w-4" /> Close auction</Button>}</div>
+      {live && active && <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Optional slot close reason" />}
+    </section>
+  </div>;
 }
+
+function Metric({ label, value }: { label: string; value: string }) { return <div className="rounded-lg bg-muted/40 p-3"><div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div><div className="mt-1 font-semibold">{value}</div></div>; }
+function Info({ label, value }: { label: string; value: string }) { return <div><div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div><div className="mt-1 font-medium">{value}</div></div>; }

@@ -9,6 +9,7 @@ import {
   Building2,
   Users,
   ShieldCheck,
+  FileCheck2,
   Wallet,
   BarChart3,
   ShieldAlert,
@@ -65,6 +66,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Vendor Master", to: "/vendors", icon: Users },
       { label: "Compliance & Ranking", to: "/compliance", icon: ShieldCheck },
+      { label: "Business Verification", to: "/kyb", icon: FileCheck2 },
     ],
   },
   {

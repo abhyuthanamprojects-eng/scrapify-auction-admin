@@ -19,6 +19,7 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiUnauthorizedError, ApiForbiddenError } from "@/lib/api-client";
+import { assessBrowser, initBrowserSecurity, SecurityGate, SecurityWatermark } from "@/lib/browser-security";
 
 function NotFoundComponent() {
   return (
@@ -185,6 +186,12 @@ function RootComponent() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const isMobile = useIsMobile();
 
+  useEffect(() => initBrowserSecurity(), []);
+
+  if (!assessBrowser().allowed) {
+    return <SecurityGate>{null}</SecurityGate>;
+  }
+
   useEffect(() => {
     try {
       window.localStorage.setItem("admin.sidebar.collapsed", collapsed ? "1" : "0");
@@ -258,6 +265,7 @@ function RootComponent() {
             {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
             <Outlet />
           </main>
+          <SecurityWatermark />
           <footer className="border-t border-border/60 bg-background/60 backdrop-blur px-6 py-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
               <p>© {new Date().getFullYear()} Scrapify Auctions Operations Console. All rights reserved.</p>

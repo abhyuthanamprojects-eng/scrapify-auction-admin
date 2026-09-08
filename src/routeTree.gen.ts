@@ -17,6 +17,7 @@ import { Route as SecurityRouteImport } from './routes/security'
 import { Route as RiskRouteImport } from './routes/risk'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as KybRouteImport } from './routes/kyb'
 import { Route as FulfilmentRouteImport } from './routes/fulfilment'
 import { Route as FinanceRouteImport } from './routes/finance'
 import { Route as ExceptionsRouteImport } from './routes/exceptions'
@@ -79,6 +80,11 @@ const ReportsRoute = ReportsRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KybRoute = KybRouteImport.update({
+  id: '/kyb',
+  path: '/kyb',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FulfilmentRoute = FulfilmentRouteImport.update({
@@ -208,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/exceptions': typeof ExceptionsRoute
   '/finance': typeof FinanceRoute
   '/fulfilment': typeof FulfilmentRoute
+  '/kyb': typeof KybRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/risk': typeof RiskRoute
@@ -240,6 +247,7 @@ export interface FileRoutesByTo {
   '/exceptions': typeof ExceptionsRoute
   '/finance': typeof FinanceRoute
   '/fulfilment': typeof FulfilmentRoute
+  '/kyb': typeof KybRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/risk': typeof RiskRoute
@@ -274,6 +282,7 @@ export interface FileRoutesById {
   '/exceptions': typeof ExceptionsRoute
   '/finance': typeof FinanceRoute
   '/fulfilment': typeof FulfilmentRoute
+  '/kyb': typeof KybRoute
   '/login': typeof LoginRoute
   '/reports': typeof ReportsRoute
   '/risk': typeof RiskRoute
@@ -309,6 +318,7 @@ export interface FileRouteTypes {
     | '/exceptions'
     | '/finance'
     | '/fulfilment'
+    | '/kyb'
     | '/login'
     | '/reports'
     | '/risk'
@@ -341,6 +351,7 @@ export interface FileRouteTypes {
     | '/exceptions'
     | '/finance'
     | '/fulfilment'
+    | '/kyb'
     | '/login'
     | '/reports'
     | '/risk'
@@ -374,6 +385,7 @@ export interface FileRouteTypes {
     | '/exceptions'
     | '/finance'
     | '/fulfilment'
+    | '/kyb'
     | '/login'
     | '/reports'
     | '/risk'
@@ -408,6 +420,7 @@ export interface RootRouteChildren {
   ExceptionsRoute: typeof ExceptionsRoute
   FinanceRoute: typeof FinanceRoute
   FulfilmentRoute: typeof FulfilmentRoute
+  KybRoute: typeof KybRoute
   LoginRoute: typeof LoginRoute
   ReportsRoute: typeof ReportsRoute
   RiskRoute: typeof RiskRoute
@@ -483,6 +496,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kyb': {
+      id: '/kyb'
+      path: '/kyb'
+      fullPath: '/kyb'
+      preLoaderRoute: typeof KybRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fulfilment': {
@@ -678,6 +698,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExceptionsRoute: ExceptionsRoute,
   FinanceRoute: FinanceRoute,
   FulfilmentRoute: FulfilmentRoute,
+  KybRoute: KybRoute,
   LoginRoute: LoginRoute,
   ReportsRoute: ReportsRoute,
   RiskRoute: RiskRoute,

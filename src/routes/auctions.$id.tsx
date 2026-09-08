@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Check, MessageSquare, X, MapPin, Calendar, Phone, Mail, User, FileText, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { auctionStatusTone, formatInr, getAuction, updateAuction, type Auction } from "@/lib/auctions-store";
+import { adminApi } from "@/lib/api-client";
 
 export const Route = createFileRoute("/auctions/$id")({
   component: AuctionReview,
@@ -17,6 +18,10 @@ function AuctionReview() {
   const a = getAuction(id);
   const [modal, setModal] = useState<null | "sendback" | "reject">(null);
   const [reason, setReason] = useState("");
+  const [result, setResult] = useState<any>(null);
+  const [settlement, setSettlement] = useState<any>(null);
+  const [awards, setAwards] = useState<any[]>([]);
+  const [config, setConfig] = useState({ rfq_mode: "DOCUMENT", emd_type: "PERCENTAGE", emd_percentage: 10, minimum_participants: 3, initial_slot_minutes: 30, continuation_slot_minutes: 2, bid_cutoff_ms: 500, maximum_auction_duration_minutes: 120, auction_edit_lock_hours: 3 });
 
   if (!a) {
     return (
@@ -28,6 +33,24 @@ function AuctionReview() {
   }
 
   const t = auctionStatusTone(a.status);
+
+  useEffect(() => {
+    if (!['Closed', 'Live', 'closed', 'live'].includes(a.status)) return;
+    Promise.allSettled([adminApi.getAuctionResult(a.id), adminApi.getAuctionSettlement(a.id), adminApi.getAwards(a.id)]).then(([resultResponse, settlementResponse, awardsResponse]) => {
+      if (resultResponse.status === 'fulfilled') setResult(resultResponse.value?.data ?? resultResponse.value);
+      if (settlementResponse.status === 'fulfilled') setSettlement(settlementResponse.value?.data ?? settlementResponse.value);
+      if (awardsResponse.status === 'fulfilled') setAwards(awardsResponse.value?.data ?? []);
+    });
+  }, [a.id, a.status]);
+
+  async function saveConfiguration() {
+    try {
+      await adminApi.updateAuctionConfiguration(a.id, config);
+      toast.success("Auction-specific configuration saved. It will freeze when published.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save auction configuration.");
+    }
+  }
 
   function approve() {
     updateAuction(a!.id, { status: "Approved" });
@@ -127,6 +150,54 @@ function AuctionReview() {
             <p className="text-sm text-muted-foreground whitespace-pre-line">{a.terms}</p>
           </Section>
 
+          {result && (
+            <Section title="Immutable Auction Result">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <Info label="Result status" value={result.status ?? "—"} />
+                <Info label="Terms version" value={String(result.terms_version_id ?? "—")} />
+                <Info label="Config snapshot" value={String(result.config_snapshot_id ?? "—")} />
+                <Info label="Final value" value={result.final_value == null ? "—" : formatInr(Number(result.final_value))} />
+                <Info label="H1/L1 vendor" value={String(result.winner_vendor_id ?? "—")} />
+                <Info label="H2/L2 vendor" value={String(result.second_rank_vendor_id ?? "—")} />
+              </div>
+              <div className="mt-4 overflow-x-auto rounded-md border">
+                <table className="w-full text-left text-xs"><thead><tr className="border-b bg-muted/40"><th className="p-2">Rank</th><th className="p-2">Vendor</th><th className="p-2">Bid</th><th className="p-2">Server received</th></tr></thead><tbody>
+              {(result.ranking_snapshot ?? []).map((row: any) => <tr key={`${row.rank}-${row.bid_id}`} className="border-b last:border-0"><td className="p-2 font-semibold">{row.rank}</td><td className="p-2">{row.vendor_id}</td><td className="p-2">{formatInr(Number(row.amount))}</td><td className="p-2 text-muted-foreground">{row.server_received_at ? new Date(row.server_received_at).toLocaleString() : "—"}</td></tr>)}
+                </tbody></table>
+              </div>
+              {settlement?.ledger && <>
+                <p className="mt-3 text-xs text-muted-foreground">Settlement ledger: {settlement.ledger.length} immutable entries; EMD status is tracked separately from the close result.</p>
+                <div className="mt-4 space-y-2">
+                  {settlement.ledger.map((entry: any) => <div key={entry.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-xs">
+                    <span><b>{entry.operation_type}</b> · ₹{Number(entry.amount).toLocaleString("en-IN")} · {entry.status}</span>
+                    {entry.operation_type === "EMD_REFUND_QUEUED" && entry.status !== "completed" && <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={async () => { const method = window.prompt("Refund method", "MANUAL"); const amount = window.prompt("Refund amount (INR)", String(entry.amount)); if (!method || !amount) return; try { await adminApi.startRefund(entry.id, { refund_method: method, amount: Number(amount) }); toast.success("Refund marked processing."); } catch (e) { toast.error(e instanceof Error ? e.message : "Refund could not be started."); } }}>Start refund</Button>
+                      <Button size="sm" onClick={async () => { const reference = window.prompt("Manual refund reference (required)"); if (!reference) return; try { await adminApi.completeRefund(entry.id, reference); toast.success("Refund completion recorded."); } catch (e) { toast.error(e instanceof Error ? e.message : "Refund could not be completed."); } }}>Confirm refund</Button>
+                    </div>}
+                    {entry.operation_type === "EMD_RETAIN_PRIMARY" && entry.status !== "completed" && <Button size="sm" variant="outline" onClick={async () => { const amount = window.prompt("Approved deduction amount (INR)", String(entry.amount)); const why = window.prompt("Reason for the deduction"); if (!amount || !why) return; try { await adminApi.applyLossAdjustment(entry.id, Number(amount), why, "ACTUAL_LOSS_ONLY"); toast.success("Loss adjustment approved and bounded by the locked EMD."); } catch (e) { toast.error(e instanceof Error ? e.message : "Loss adjustment could not be applied."); } }}>Approve loss adjustment</Button>}
+                  </div>)}
+                </div>
+              </>}
+            </Section>
+          )}
+
+          {!["Published", "Live", "Closed", "Cancelled"].includes(a.status) && (
+            <Section title="Auction Configuration">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <ConfigInput label="RFQ Mode" value={config.rfq_mode} onChange={(v) => setConfig({ ...config, rfq_mode: v })} />
+                <ConfigInput label="EMD Type" value={config.emd_type} onChange={(v) => setConfig({ ...config, emd_type: v })} />
+                <ConfigInput label="EMD %" type="number" value={config.emd_percentage} onChange={(v) => setConfig({ ...config, emd_percentage: Number(v) })} />
+                <ConfigInput label="Minimum Participants" type="number" value={config.minimum_participants} onChange={(v) => setConfig({ ...config, minimum_participants: Number(v) })} />
+                <ConfigInput label="Initial Slot (min)" type="number" value={config.initial_slot_minutes} onChange={(v) => setConfig({ ...config, initial_slot_minutes: Number(v) })} />
+                <ConfigInput label="Continuation Slot (min)" type="number" value={config.continuation_slot_minutes} onChange={(v) => setConfig({ ...config, continuation_slot_minutes: Number(v) })} />
+                <ConfigInput label="Bid Cutoff (ms)" type="number" value={config.bid_cutoff_ms} onChange={(v) => setConfig({ ...config, bid_cutoff_ms: Number(v) })} />
+                <ConfigInput label="Maximum Duration (min)" type="number" value={config.maximum_auction_duration_minutes} onChange={(v) => setConfig({ ...config, maximum_auction_duration_minutes: Number(v) })} />
+                <ConfigInput label="Seller Edit Lock (hours)" type="number" value={config.auction_edit_lock_hours} onChange={(v) => setConfig({ ...config, auction_edit_lock_hours: Number(v) })} />
+              </div>
+              <Button onClick={saveConfiguration} className="mt-4 bg-emerald-600 text-white hover:bg-emerald-700">Save Auction Configuration</Button>
+            </Section>
+          )}
+
           <Section title="Photo Gallery" icon={<ImageIcon className="h-4 w-4" />}>
             {a.photos.length === 0 ? (
               <p className="text-sm text-muted-foreground">No photos uploaded.</p>
@@ -176,8 +247,22 @@ function AuctionReview() {
               <p className="text-sm">This auction is <span className="font-medium">{a.status}</span> — no review actions available.</p>
             </div>
           )}
-        </div>
-      </div>
+                </div>
+                {awards.length > 0 && <div className="mt-4 rounded-md border p-3">
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Winner / fallback state controls</div>
+                  <div className="space-y-2">
+                    {awards.map((award: any) => <div key={award.id} className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <span><b>{award.rank}</b> · vendor {award.winner_vendor_id} · {award.status} · ₹{Number(award.award_amount).toLocaleString("en-IN")}</span>
+                      {award.status === "offered" && <Button size="sm" onClick={async () => { try { await adminApi.adminAcceptAward(award.id); toast.success("Winner acceptance recorded and order created."); } catch (e) { toast.error(e instanceof Error ? e.message : "Acceptance could not be recorded."); } }}>Mark accepted</Button>}
+                      {['offered', 'declined'].includes(award.status) && <Button size="sm" variant="outline" onClick={async () => { const why = window.prompt("Default reason (required)"); if (!why) return; const forfeit = window.confirm("Apply full EMD forfeiture if the frozen policy permits it?"); try { await adminApi.defaultWinner(award.id, why, forfeit); toast.success("Winner default recorded; fallback policy evaluated."); } catch (e) { toast.error(e instanceof Error ? e.message : "Winner default could not be recorded."); } }}>Mark default / start fallback</Button>}
+                    </div>)}
+                  </div>
+                </div>}
+                {settlement?.result && <div className="mt-4 flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={async () => { try { await adminApi.releaseFallbackEmd(a.id); toast.success("Second-rank EMD release recorded."); } catch (e) { toast.error(e instanceof Error ? e.message : "Fallback EMD could not be released."); } }}>Release second-rank EMD</Button>
+                  <Button size="sm" onClick={async () => { try { await adminApi.completeSettlement(a.id); toast.success("Settlement completed."); } catch (e) { toast.error(e instanceof Error ? e.message : "Settlement cannot be completed yet."); } }}>Complete settlement</Button>
+                </div>}
+              </div>
 
       <Dialog open={modal !== null} onOpenChange={(o) => !o && setModal(null)}>
         <DialogContent>
@@ -208,6 +293,9 @@ function Info({ label, value }: { label: string; value: string }) {
       <div className="text-sm font-medium">{value}</div>
     </div>
   );
+}
+function ConfigInput({ label, value, onChange, type = "text" }: { label: string; value: string | number; onChange: (value: string) => void; type?: string }) {
+  return <label className="space-y-1"><span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span><input className="h-9 w-full rounded-md border bg-background px-2 text-sm" type={type} value={value} onChange={(e) => onChange(e.target.value)} /></label>;
 }
 function Section({ title, children, icon }: { title: string; children: React.ReactNode; icon?: React.ReactNode }) {
   return (

@@ -178,6 +178,15 @@ class ScrapifyAdminApiClient {
     return this.request<any>(`/vendors/${code}`);
   }
 
+  async getKyb(params: Record<string, any> = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request<any>(`/admin/kyb${query ? `?${query}` : ''}`);
+  }
+  async getKybDetails(id: number | string) { return this.request<any>(`/admin/kyb/${id}`); }
+  async approveKyb(id: number | string, reason: string) { return this.request<any>(`/admin/kyb/${id}/approve`, { method: 'POST', body: JSON.stringify({ reason }) }); }
+  async rejectKyb(id: number | string, reason: string) { return this.request<any>(`/admin/kyb/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }); }
+  async requestKybReverification(id: number | string, reason: string) { return this.request<any>(`/admin/kyb/${id}/request-reverification`, { method: 'POST', body: JSON.stringify({ reason }) }); }
+
   async uploadVendorDocument(vendorCode: string, docKey: string, kind: string, file: File) {
     const formData = new FormData();
     formData.append('doc_key', docKey);
@@ -236,6 +245,20 @@ class ScrapifyAdminApiClient {
 
   async getLiveState(code: string) {
     return this.request<any>(`/auctions/${code}/live-state`);
+  }
+
+  async getAuctionReadiness(code: string) {
+    return this.request<any>(`/auctions/${code}/readiness`);
+  }
+
+  async startNextSlot(code: string) {
+    return this.request<any>(`/auctions/${code}/slots/next`, { method: 'POST' });
+  }
+
+  async closeSlot(code: string, slotId: number, reason: string) {
+    return this.request<any>(`/auctions/${code}/slots/${slotId}/close`, {
+      method: 'POST', body: JSON.stringify({ reason }),
+    });
   }
 
   async approveAuction(code: string) {
@@ -374,6 +397,26 @@ class ScrapifyAdminApiClient {
     return this.request<any>(`/auctions/${auctionCode}/awards`);
   }
 
+  async getAuctionResult(auctionCode: string) {
+    return this.request<any>(`/auctions/${auctionCode}/result`);
+  }
+
+  async getAuctionSettlement(auctionCode: string) {
+    return this.request<any>(`/auctions/${auctionCode}/settlement`);
+  }
+
+  async startRefund(ledgerId: number, data: { refund_method: string; amount?: number; notes?: string } = { refund_method: 'MANUAL' }) {
+    return this.request<any>(`/settlement/ledger/${ledgerId}/refund/start`, { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async completeRefund(ledgerId: number, reference: string) {
+    return this.request<any>(`/settlement/ledger/${ledgerId}/refund/complete`, { method: 'POST', body: JSON.stringify({ reference }) });
+  }
+
+  async applyLossAdjustment(ledgerId: number, amount: number, reason: string, policy: string) {
+    return this.request<any>(`/settlement/ledger/${ledgerId}/loss-adjustment`, { method: 'POST', body: JSON.stringify({ amount, reason, policy }) });
+  }
+
   async issueAward(auctionCode: string, data?: any) {
     return this.request<any>(`/auctions/${auctionCode}/awards`, {
       method: 'POST',
@@ -381,8 +424,28 @@ class ScrapifyAdminApiClient {
     });
   }
 
-  async defaultWinner(awardId: number) {
-    return this.request<any>(`/awards/${awardId}/default`, { method: 'POST' });
+  async defaultWinner(awardId: number, reason: string, forfeit_emd = false) {
+    return this.request<any>(`/awards/${awardId}/default`, { method: 'POST', body: JSON.stringify({ reason, forfeit_emd }) });
+  }
+
+  async adminAcceptAward(awardId: number) {
+    return this.request<any>(`/awards/${awardId}/admin-accept`, { method: 'POST' });
+  }
+
+  async releaseFallbackEmd(auctionCode: string) {
+    return this.request<any>(`/auctions/${auctionCode}/settlement/release-fallback`, { method: 'POST' });
+  }
+
+  async completeSettlement(auctionCode: string) {
+    return this.request<any>(`/auctions/${auctionCode}/settlement/complete`, { method: 'POST' });
+  }
+
+  async declineAward(awardId: number, reason: string) {
+    return this.request<any>(`/awards/${awardId}/decline`, { method: 'POST', body: JSON.stringify({ reason }) });
+  }
+
+  async acceptFallback(offerId: number) {
+    return this.request<any>(`/fallback-offers/${offerId}/accept`, { method: 'POST' });
   }
 
   /* ---------------- Orders & Fulfilment ---------------- */
@@ -501,6 +564,28 @@ class ScrapifyAdminApiClient {
 
   async getPlatformConfig() {
     return this.request<any>('/platform-config');
+  }
+
+  async updatePlatformConfig(data: {
+    auction_edit_lock_hours: number;
+    emd_percentage?: number;
+    minimum_participants?: number;
+    initial_slot_minutes?: number;
+    continuation_slot_minutes?: number;
+    bid_cutoff_ms?: number;
+    maximum_auction_duration_minutes?: number;
+    rfq_required?: boolean;
+    rfq_mode?: string;
+    rfq_benchmark_strategy?: string;
+    emd_required?: boolean;
+    emd_type?: string;
+    emd_fixed_amount?: number;
+  }) {
+    return this.request<any>('/platform-config', { method: 'PATCH', body: JSON.stringify(data) });
+  }
+
+  async updateAuctionConfiguration(code: string, data: Record<string, unknown>) {
+    return this.request<any>(`/auctions/${encodeURIComponent(code)}/configuration`, { method: 'PATCH', body: JSON.stringify(data) });
   }
 
   /* ---------------- Admin: Finance, Fulfilments, Users, Reports ---------------- */

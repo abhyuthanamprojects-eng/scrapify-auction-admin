@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { PageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,6 +25,18 @@ export const Route = createFileRoute("/control-room")({
 type Action = "Pause" | "Resume" | "Extend" | "End Now" | "Emergency Hold" | "Reverse Bid";
 
 function ControlRoom() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    // The former control-room screen rendered demo events. Route operators to
+    // the API-backed live controller so no sample auction state is shown.
+    navigate({ to: "/auctions/live", replace: true });
+  }, [navigate]);
+
+  return <div className="card-premium p-12 text-center text-muted-foreground">Opening authoritative Live Control…</div>;
+
+  /* Legacy demo controls retained below only as unreachable source during the
+     migration; they are not rendered in production. */
+  /* eslint-disable no-unreachable */
   const [selected, setSelected] = useState<AuctionEvent | null>(null);
   const [action, setAction] = useState<Action | null>(null);
   const [reason, setReason] = useState("");
@@ -203,4 +215,5 @@ function ControlRoom() {
       </DetailDrawer>
     </>
   );
+  /* eslint-enable no-unreachable */
 }

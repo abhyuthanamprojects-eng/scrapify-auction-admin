@@ -1,0 +1,14 @@
+import { useEffect, useState, type ReactNode } from "react";
+
+type Assessment = { allowed: boolean; browser: string; device: "desktop" | "tablet" | "mobile-phone" | "unknown" };
+export function assessBrowser(): Assessment {
+  if (typeof navigator === "undefined") return { allowed: true, browser: "server", device: "unknown" };
+  const ua = navigator.userAgent.toLowerCase(); const platform = (navigator.platform || "").toLowerCase(); const touch = navigator.maxTouchPoints || 0;
+  const ipad = ua.includes("ipad") || (platform.includes("mac") && touch > 1); const phone = ua.includes("iphone") || ua.includes("ipod") || (ua.includes("android") && ua.includes("mobile"));
+  const browser = ua.includes("edg/") ? "Microsoft Edge" : ua.includes("firefox/") ? "Mozilla Firefox" : ua.includes("crios/") || ua.includes("chrome/") ? "Google Chrome" : ua.includes("safari/") && !ua.includes("chrome/") ? "Apple Safari" : "Unsupported browser";
+  const device = phone ? "mobile-phone" : ipad || (ua.includes("android") && !ua.includes("mobile")) ? "tablet" : browser === "Unsupported browser" ? "unknown" : "desktop";
+  return { allowed: browser !== "Unsupported browser" && (device === "desktop" || device === "tablet"), browser, device };
+}
+export function SecurityGate({ children }: { children: ReactNode }) { const a = assessBrowser(); if (a.allowed) return <>{children}</>; return <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center"><div className="max-w-lg"><h1 className="text-2xl font-bold text-foreground">{a.device === "mobile-phone" || a.device === "tablet" ? "Mobile access blocked" : "Browser not supported"}</h1><p className="mt-3 text-muted-foreground">{a.device === "mobile-phone" || a.device === "tablet" ? "The admin console is available only on a desktop or laptop. Please use an approved workstation." : "For security and compatibility, use Google Chrome, Microsoft Edge, Mozilla Firefox, or Apple Safari."}</p></div></div>; }
+export function SecurityWatermark() { const [time, setTime] = useState(() => new Date().toLocaleString()); useEffect(() => { const t = window.setInterval(() => setTime(new Date().toLocaleString()), 30_000); return () => window.clearInterval(t); }, []); return <div aria-hidden="true" className="security-watermark">Scrapify Admin · {time}</div>; }
+export function initBrowserSecurity() { if (typeof window === "undefined") return () => {}; const style = document.createElement("style"); style.textContent = `@media print { body{display:none!important} } .security-watermark{position:fixed;inset:0;z-index:50;pointer-events:none;display:grid;place-items:center;opacity:.12;color:currentColor;font:600 12px/1.4 monospace;transform:rotate(-24deg);user-select:none}`; document.head.appendChild(style); return () => style.remove(); }

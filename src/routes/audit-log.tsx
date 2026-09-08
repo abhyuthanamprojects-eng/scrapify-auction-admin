@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Filter, Search, ScrollText } from "lucide-react";
-import { auditToCSV, seedAuditLog } from "@/lib/auctions-store";
+import { adminApi } from "@/lib/api-client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/audit-log")({
@@ -21,9 +21,18 @@ export const Route = createFileRoute("/audit-log")({
 });
 
 function AuditLog() {
-  const all = useMemo(() => seedAuditLog(), []);
+  const [all, setAll] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [role, setRole] = useState<"Admin" | "Super Admin" | "all">("all");
+
+  useEffect(() => {
+    setLoading(true);
+    adminApi.getAuditLogs({ per_page: 100, search: q.trim() || undefined, role: role === "all" ? undefined : role })
+      .then((response) => setAll(response?.data ?? []))
+      .catch((error) => toast.error(error instanceof Error ? error.message : "Could not load audit log."))
+      .finally(() => setLoading(false));
+  }, [q, role]);
 
   const rows = useMemo(() => {
     let list = all;
@@ -38,7 +47,7 @@ function AuditLog() {
   }, [all, q, role]);
 
   function exportCsv() {
-    const csv = auditToCSV(rows);
+    const csv = ["Timestamp,User,Role,Action,Entity,IP,Request ID", ...rows.map((r) => [r.at, r.user, r.role, r.action, `${r.entity_type ?? ""}:${r.entity_id ?? ""}`, r.ip, r.meta?.request_id ?? ""].map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -96,7 +105,8 @@ function AuditLog() {
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 && <tr><td colSpan={5} className="px-5 py-16 text-center text-muted-foreground">No entries match these filters.</td></tr>}
+              {loading && <tr><td colSpan={5} className="px-5 py-16 text-center text-muted-foreground">Loading audit events…</td></tr>}
+              {!loading && rows.length === 0 && <tr><td colSpan={5} className="px-5 py-16 text-center text-muted-foreground">No entries match these filters.</td></tr>}
               {rows.map((r) => (
                 <tr key={r.id} className="border-t border-border/60 hover:bg-muted/30">
                   <td className="px-5 py-4 text-xs text-muted-foreground">{new Date(r.at).toLocaleString()}</td>
@@ -119,7 +129,7 @@ function AuditLog() {
           </table>
         </div>
         <div className="px-5 py-3 border-t border-border/60 text-xs text-muted-foreground bg-muted/20">
-          Showing <span className="font-semibold text-foreground">{rows.length}</span> of {all.length} entries · read-only
+          Showing <span className="font-semibold text-foreground">{rows.length}</span> entries from the server · read-only
         </div>
       </div>
     </>
