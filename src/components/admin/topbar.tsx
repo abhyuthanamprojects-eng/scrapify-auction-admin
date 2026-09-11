@@ -75,7 +75,7 @@ export function AdminTopbar({
         <div className="relative flex-1 min-w-0 max-w-xl hidden sm:block">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search vendors, auctions, organizations…"
+            placeholder="Search vendors, auctions, customers…"
             className="pl-10 pr-16 h-10 rounded-full bg-muted/60 border-transparent focus-visible:border-accent/40 focus-visible:ring-accent/20"
           />
           <kbd className="hidden md:inline-flex absolute right-3 top-1/2 -translate-y-1/2 items-center gap-1 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
@@ -119,11 +119,16 @@ export function AdminTopbar({
                 )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 rounded-xl p-1.5 shadow-xl border-border">
+            <DropdownMenuContent
+              align="end"
+              className="w-80 rounded-xl p-1.5 shadow-xl border-border"
+            >
               <DropdownMenuLabel className="px-2.5 py-2">Notifications</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {notifications.length === 0 ? (
-                <div className="px-2.5 py-5 text-center text-xs text-muted-foreground">No notifications.</div>
+                <div className="px-2.5 py-5 text-center text-xs text-muted-foreground">
+                  No notifications.
+                </div>
               ) : (
                 notifications.map((notification) => (
                   <DropdownMenuItem
@@ -136,10 +141,16 @@ export function AdminTopbar({
                     }}
                     className="cursor-pointer items-start gap-2 rounded-lg px-2.5 py-2.5"
                   >
-                    <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${notification.read ? "bg-muted" : "bg-accent"}`} />
+                    <span
+                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${notification.read ? "bg-muted" : "bg-accent"}`}
+                    />
                     <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold">{notification.title ?? "Notification"}</span>
-                      <span className="mt-0.5 block line-clamp-2 text-xs text-muted-foreground">{notification.body ?? ""}</span>
+                      <span className="block truncate text-sm font-semibold">
+                        {notification.title ?? "Notification"}
+                      </span>
+                      <span className="mt-0.5 block line-clamp-2 text-xs text-muted-foreground">
+                        {notification.body ?? ""}
+                      </span>
                     </span>
                   </DropdownMenuItem>
                 ))
@@ -176,19 +187,29 @@ export function AdminTopbar({
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:block text-left leading-tight">
-                  <div className="text-sm font-semibold text-foreground">{user?.name ?? "Admin"}</div>
+                  <div className="text-sm font-semibold text-foreground">
+                    {user?.name ?? "Admin"}
+                  </div>
                   <div className="text-[10px] text-muted-foreground truncate max-w-[8rem]">
                     {user?.department || user?.role || "—"}
                   </div>
                 </div>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 rounded-xl p-1.5 shadow-xl border-border">
+            <DropdownMenuContent
+              align="end"
+              className="w-72 rounded-xl p-1.5 shadow-xl border-border"
+            >
               <DropdownMenuLabel className="px-2.5 py-2">
                 <div className="font-bold text-sm text-foreground">{user?.name ?? "Admin"}</div>
-                <div className="text-xs text-muted-foreground font-normal">{user?.email ?? "—"}</div>
-                <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">
-                  ID: {user?.employeeId ?? "—"} · {user?.role ?? "—"}
+                <div className="mt-0.5 truncate text-xs font-normal text-muted-foreground">
+                  {user?.email ?? "—"}
+                </div>
+                <div className="mt-2 space-y-1 text-[10px] text-emerald-600 dark:text-emerald-400">
+                  <div className="break-all font-mono">ID: {user?.employeeId ?? "—"}</div>
+                  <div className="font-semibold uppercase tracking-wider">
+                    Role: {user?.role ?? "—"}
+                  </div>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />

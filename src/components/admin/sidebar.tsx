@@ -16,7 +16,6 @@ import {
   Lock,
   SlidersHorizontal,
   Settings,
-  Activity,
   ScrollText,
   Coins,
   ChevronLeft,
@@ -55,16 +54,13 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Customers",
     permission: "view.customers",
-    items: [
-      { label: "Customers", to: "/customers", icon: Building2 },
-      { label: "Organizations", to: "/organizations", icon: Building2 },
-    ],
+    items: [{ label: "Customers", to: "/customers", icon: Building2 }],
   },
   {
-    title: "Vendors",
+    title: "Buyers & Sellers",
     permission: "view.vendors",
     items: [
-      { label: "Vendor Master", to: "/vendors", icon: Users },
+      { label: "Buyer & Seller Master", to: "/vendors", icon: Users },
       { label: "Compliance & Ranking", to: "/compliance", icon: ShieldCheck },
       { label: "Business Verification", to: "/kyb", icon: FileCheck2 },
     ],
@@ -98,7 +94,6 @@ export const NAV_GROUPS: NavGroup[] = [
     permission: "view.system",
     items: [
       { label: "Staff & RBAC", to: "/users", icon: Users },
-      { label: "System Health", to: "/system", icon: Activity },
       { label: "Audit Log", to: "/audit-log", icon: ScrollText },
       { label: "Access Tokens", to: "/tokens", icon: Coins },
     ],
@@ -106,6 +101,36 @@ export const NAV_GROUPS: NavGroup[] = [
 ];
 
 export const NAV: NavItem[] = NAV_GROUPS.flatMap((g) => g.items);
+
+function SidebarThreeDIcon({ index }: { index: number }) {
+  const column = index % 4;
+  const row = Math.floor(index / 4);
+  return (
+    <span
+      aria-hidden="true"
+      className="h-5 w-5 shrink-0 bg-contain bg-no-repeat"
+      style={{
+        backgroundImage: "url('/assets/sidebar-3d-icons.png')",
+        backgroundPosition: `${(column / 3) * 100}% ${(row / 4) * 100}%`,
+        backgroundSize: "400% 500%",
+      }}
+    />
+  );
+}
+
+function SidebarSystemThreeDIcon({ index }: { index: number }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="h-5 w-5 shrink-0 bg-contain bg-no-repeat"
+      style={{
+        backgroundImage: "url('/assets/sidebar-system-3d-icons.png')",
+        backgroundPosition: `${(index / 4) * 100}% 0%`,
+        backgroundSize: "500% 100%",
+      }}
+    />
+  );
+}
 
 export function AdminSidebar({
   collapsed,
@@ -126,7 +151,9 @@ export function AdminSidebar({
     <aside
       className={cn(
         "gradient-navy text-sidebar-foreground border-r border-sidebar-border transition-[width] duration-200 relative flex flex-col overflow-hidden",
-        isMobile ? "h-dvh w-full" : cn("sticky top-0 h-screen shrink-0", collapsed ? "w-16" : "w-64"),
+        isMobile
+          ? "h-dvh w-full"
+          : cn("sticky top-0 h-screen shrink-0", collapsed ? "w-16" : "w-64"),
       )}
       aria-label="Primary"
     >
@@ -135,16 +162,26 @@ export function AdminSidebar({
         {showLabels ? (
           <div className="flex items-center gap-2.5">
             <div className="h-8 w-8 overflow-hidden rounded-md bg-white flex items-center justify-center shadow-lg shadow-black/30 ring-1 ring-white/20">
-              <img src="/scrapify-auction-app-icon.png" alt="Scrapify Auctions" className="h-full w-full object-contain" />
+              <img
+                src="/scrapify-auction-app-icon.png"
+                alt="Scrapify Auctions"
+                className="h-full w-full object-contain"
+              />
             </div>
             <div className="leading-tight">
               <div className="font-display text-lg italic tracking-tight text-white">Scrapify</div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-sidebar-primary">Operations Console</div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-sidebar-primary">
+                Operations Console
+              </div>
             </div>
           </div>
         ) : (
           <div className="h-8 w-8 mx-auto overflow-hidden rounded-md bg-white flex items-center justify-center shadow-lg shadow-black/30 ring-1 ring-white/20">
-            <img src="/scrapify-auction-app-icon.png" alt="Scrapify Auctions" className="h-full w-full object-contain" />
+            <img
+              src="/scrapify-auction-app-icon.png"
+              alt="Scrapify Auctions"
+              className="h-full w-full object-contain"
+            />
           </div>
         )}
         {!isMobile && (
@@ -152,18 +189,25 @@ export function AdminSidebar({
             onClick={onToggle}
             className={cn(
               "p-1.5 rounded-md hover:bg-sidebar-accent text-sidebar-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-primary",
-              collapsed && "absolute -right-3 top-5 bg-sidebar border border-sidebar-border shadow-md",
+              collapsed &&
+                "absolute -right-3 top-5 bg-sidebar border border-sidebar-border shadow-md",
             )}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             aria-expanded={!collapsed}
             aria-controls="admin-sidebar-nav"
           >
-            <ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
+            <ChevronLeft
+              className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")}
+            />
           </button>
         )}
       </div>
 
-      <nav id="admin-sidebar-nav" className="flex-1 min-h-0 overflow-y-auto p-2 space-y-3" aria-label="Admin navigation">
+      <nav
+        id="admin-sidebar-nav"
+        className="flex-1 min-h-0 overflow-y-auto p-2 space-y-3"
+        aria-label="Admin navigation"
+      >
         {groups.map((group) => (
           <div key={group.title} className="space-y-0.5">
             {showLabels && (
@@ -177,6 +221,7 @@ export function AdminSidebar({
                 ? pathname === item.to
                 : pathname === item.to || pathname.startsWith(item.to + "/");
               const Icon = item.icon;
+              const navIndex = NAV.findIndex((navItem) => navItem.to === item.to);
               return (
                 <Link
                   key={item.to}
@@ -195,13 +240,21 @@ export function AdminSidebar({
                   {active && (
                     <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r-full gradient-gold shadow-[0_0_12px_rgba(201,163,77,0.6)]" />
                   )}
-                  <Icon
-                    className={cn(
-                      "h-4 w-4 shrink-0 transition-colors",
-                      active ? "text-sidebar-primary" : "text-sidebar-foreground/60 group-hover:text-sidebar-primary",
-                    )}
-                    aria-hidden="true"
-                  />
+                  {navIndex < 16 ? (
+                    <SidebarThreeDIcon index={navIndex} />
+                  ) : navIndex < 21 ? (
+                    <SidebarSystemThreeDIcon index={navIndex - 16} />
+                  ) : (
+                    <Icon
+                      className={cn(
+                        "h-4 w-4 shrink-0 transition-colors",
+                        active
+                          ? "text-sidebar-primary"
+                          : "text-sidebar-foreground/60 group-hover:text-sidebar-primary",
+                      )}
+                      aria-hidden="true"
+                    />
+                  )}
                   {showLabels && <span className="truncate">{item.label}</span>}
                 </Link>
               );
@@ -217,7 +270,9 @@ export function AdminSidebar({
               <div className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
               <p className="text-xs font-medium text-white">Signed in as {role}</p>
             </div>
-            <p className="mt-1 text-[10px] text-sidebar-foreground/60">Permissions applied to navigation</p>
+            <p className="mt-1 text-[10px] text-sidebar-foreground/60">
+              Permissions applied to navigation
+            </p>
           </div>
         </div>
       )}

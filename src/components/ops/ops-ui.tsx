@@ -2,7 +2,35 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Download, SlidersHorizontal, X, ArrowUpDown } from "lucide-react";
+import {
+  Search,
+  Download,
+  SlidersHorizontal,
+  X,
+  ArrowUpDown,
+  Activity,
+  AlertTriangle,
+  BadgeCheck,
+  Banknote,
+  CalendarCheck2,
+  ChartNoAxesCombined,
+  CircleAlert,
+  ClipboardCheck,
+  FileCheck2,
+  Gavel,
+  HeartPulse,
+  Landmark,
+  ListChecks,
+  PackageCheck,
+  ReceiptText,
+  Scale,
+  ShieldCheck,
+  Timer,
+  Trophy,
+  UserRound,
+  Users,
+  WalletCards,
+} from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -106,7 +134,13 @@ export function StatusPill({ value, tone }: { value: string; tone?: keyof typeof
 
 export function RiskDot({ level }: { level: string }) {
   const color =
-    level === "Critical" ? "bg-red-600" : level === "High" ? "bg-accent" : level === "Medium" ? "bg-amber-400" : "bg-emerald-500";
+    level === "Critical"
+      ? "bg-red-600"
+      : level === "High"
+        ? "bg-accent"
+        : level === "Medium"
+          ? "bg-amber-400"
+          : "bg-emerald-500";
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
       <span className={cn("h-2 w-2 rounded-full", color)} /> {level}
@@ -120,7 +154,6 @@ export function StatCard({
   value,
   hint,
   tone = "neutral",
-  icon: Icon,
 }: {
   label: string;
   value: React.ReactNode;
@@ -128,21 +161,88 @@ export function StatCard({
   tone?: "neutral" | "warn" | "danger" | "live" | "good";
   icon?: React.ComponentType<{ className?: string }>;
 }) {
+  const iconIndex = statIconForLabel(label);
   return (
     <div className="card-premium relative overflow-hidden p-4">
       <div
         className={cn(
           "absolute inset-x-0 top-0 h-0.5",
-          tone === "danger" ? "bg-red-500" : tone === "warn" ? "bg-accent" : tone === "live" ? "bg-emerald-500" : "gradient-gold",
+          tone === "danger"
+            ? "bg-red-500"
+            : tone === "warn"
+              ? "bg-accent"
+              : tone === "live"
+                ? "bg-emerald-500"
+                : "gradient-gold",
         )}
       />
       <div className="flex items-start justify-between gap-2">
         <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
-        {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground/70" />}
+        <ThreeDStatIcon index={iconIndex} />
       </div>
       <div className="mt-1.5 font-display text-2xl leading-none text-foreground">{value}</div>
       {hint && <p className="mt-1.5 text-[11px] text-muted-foreground">{hint}</p>}
     </div>
+  );
+}
+
+function statIconForLabel(label: string): number {
+  const key = label.toLowerCase();
+  if (key.includes("event") || key.includes("auction") || key.includes("scheduled")) return 4;
+  if (key.includes("award") || key.includes("winner")) return 6;
+  if (key.includes("kyb") || key.includes("verification") || key.includes("compliance")) return 1;
+  if (
+    key.includes("finance") ||
+    key.includes("payment") ||
+    key.includes("gmv") ||
+    key.includes("value")
+  )
+    return 0;
+  if (
+    key.includes("settlement") ||
+    key.includes("emd") ||
+    key.includes("refund") ||
+    key.includes("wallet")
+  )
+    return 8;
+  if (key.includes("customer") || key.includes("user") || key.includes("participant")) return 0;
+  if (key.includes("vendor") || key.includes("seller") || key.includes("buyer")) return 0;
+  if (
+    key.includes("dispute") ||
+    key.includes("exception") ||
+    key.includes("alert") ||
+    key.includes("critical")
+  )
+    return 9;
+  if (key.includes("risk") || key.includes("fraud") || key.includes("security")) return 10;
+  if (key.includes("health") || key.includes("active") || key.includes("progress")) return 12;
+  if (key.includes("overdue") || key.includes("expir") || key.includes("pending")) return 11;
+  if (key.includes("order") || key.includes("fulfil")) return 7;
+  if (key.includes("report") || key.includes("realisation") || key.includes("savings")) return 12;
+  if (key.includes("approval") || key.includes("decision")) return 2;
+  if (key.includes("open")) return 9;
+  if (key.includes("status")) return 1;
+  if (key.includes("integrity")) return 2;
+  if (key.includes("bid")) return 3;
+  if (key.includes("revenue") || key.includes("invoice")) return 8;
+  if (key.includes("bank")) return 2;
+  if (key.includes("ends") || key.includes("time")) return 11;
+  return 2;
+}
+
+function ThreeDStatIcon({ index }: { index: number }) {
+  const column = index % 4;
+  const row = Math.floor(index / 4);
+  return (
+    <span
+      aria-hidden="true"
+      className="h-9 w-9 shrink-0 rounded-lg bg-[#fff7ec] bg-contain bg-no-repeat shadow-sm ring-1 ring-orange-100"
+      style={{
+        backgroundImage: "url('/assets/dashboard-secondary-3d-icons.png')",
+        backgroundPosition: `${column * 33.3333}% ${row * 33.3333}%`,
+        backgroundSize: "400% 400%",
+      }}
+    />
   );
 }
 
@@ -202,7 +302,12 @@ export function ChipTabs<T extends string>({
         >
           {t}
           {counts?.[t] !== undefined && (
-            <span className={cn("ml-1.5 text-[10px]", value === t ? "text-primary-foreground/70" : "text-muted-foreground/70")}>
+            <span
+              className={cn(
+                "ml-1.5 text-[10px]",
+                value === t ? "text-primary-foreground/70" : "text-muted-foreground/70",
+              )}
+            >
               {counts[t]}
             </span>
           )}
@@ -256,7 +361,9 @@ export function DataTable<T extends { id: string }>({
 
   const filtered = React.useMemo(() => {
     const base = q
-      ? rows.filter((r) => (searchKeys ? searchKeys(r) : JSON.stringify(r)).toLowerCase().includes(q.toLowerCase()))
+      ? rows.filter((r) =>
+          (searchKeys ? searchKeys(r) : JSON.stringify(r)).toLowerCase().includes(q.toLowerCase()),
+        )
       : rows;
     if (!sort) return base;
     const col = columns.find((c) => c.key === sort.key);
@@ -310,7 +417,12 @@ export function DataTable<T extends { id: string }>({
           )}
           {toolbar}
           {exportName && (
-            <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-full" onClick={exportCsv}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 gap-1.5 rounded-full"
+              onClick={exportCsv}
+            >
               <Download className="h-3.5 w-3.5" /> Export
             </Button>
           )}
@@ -335,7 +447,11 @@ export function DataTable<T extends { id: string }>({
                       type="button"
                       className="inline-flex items-center gap-1 hover:text-foreground"
                       onClick={() =>
-                        setSort((s) => (s?.key === c.key ? { key: c.key, dir: s.dir === 1 ? -1 : 1 } : { key: c.key, dir: 1 }))
+                        setSort((s) =>
+                          s?.key === c.key
+                            ? { key: c.key, dir: s.dir === 1 ? -1 : 1 }
+                            : { key: c.key, dir: 1 },
+                        )
                       }
                     >
                       {c.header}
@@ -361,7 +477,12 @@ export function DataTable<T extends { id: string }>({
                 {columns.map((c) => (
                   <td
                     key={c.key}
-                    className={cn("px-3 align-middle", dense ? "py-2" : "py-3", c.align === "right" && "text-right", c.className)}
+                    className={cn(
+                      "px-3 align-middle",
+                      dense ? "py-2" : "py-3",
+                      c.align === "right" && "text-right",
+                      c.className,
+                    )}
                   >
                     {c.render(r)}
                   </td>
@@ -370,7 +491,10 @@ export function DataTable<T extends { id: string }>({
             ))}
             {view.length === 0 && (
               <tr>
-                <td colSpan={columns.length} className="px-3 py-10 text-center text-sm text-muted-foreground">
+                <td
+                  colSpan={columns.length}
+                  className="px-3 py-10 text-center text-sm text-muted-foreground"
+                >
                   {empty}
                 </td>
               </tr>
@@ -385,13 +509,25 @@ export function DataTable<T extends { id: string }>({
         </span>
         {pages > 1 && (
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-7" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7"
+              disabled={page === 0}
+              onClick={() => setPage((p) => p - 1)}
+            >
               Prev
             </Button>
             <span>
               {page + 1} / {pages}
             </span>
-            <Button variant="outline" size="sm" className="h-7" disabled={page >= pages - 1} onClick={() => setPage((p) => p + 1)}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7"
+              disabled={page >= pages - 1}
+              onClick={() => setPage((p) => p + 1)}
+            >
               Next
             </Button>
           </div>
@@ -442,7 +578,16 @@ export function Field({ label, value }: { label: string; value: React.ReactNode 
 }
 
 export function FieldGrid({ children, cols = 2 }: { children: React.ReactNode; cols?: number }) {
-  return <dl className={cn("grid gap-4", cols === 3 ? "sm:grid-cols-3" : cols === 4 ? "sm:grid-cols-4" : "sm:grid-cols-2")}>{children}</dl>;
+  return (
+    <dl
+      className={cn(
+        "grid gap-4",
+        cols === 3 ? "sm:grid-cols-3" : cols === 4 ? "sm:grid-cols-4" : "sm:grid-cols-2",
+      )}
+    >
+      {children}
+    </dl>
+  );
 }
 
 export function Timeline({ items }: { items: Array<{ at: string; who?: string; note: string }> }) {

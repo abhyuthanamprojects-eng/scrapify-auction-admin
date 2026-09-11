@@ -287,7 +287,13 @@ class ScrapifyAdminApiClient {
   }
 
   async startNextSlot(code: string) {
-    return this.request<any>(`/auctions/${code}/slots/next`, { method: 'POST' });
+    const idempotencyKey = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `next-slot-${code}-${Date.now()}`;
+    return this.request<any>(`/auctions/${code}/slots/next`, {
+      method: 'POST',
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
   }
 
   async closeSlot(code: string, slotId: number, reason: string) {

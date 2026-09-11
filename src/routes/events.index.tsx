@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PageHeader } from "@/components/admin/page-header";
 import { DataTable, FilterSelect, ChipTabs, StatCard, StatusPill, RiskDot, type Column } from "@/components/ops/ops-ui";
-import { CATEGORIES, EVENT_STATUSES, EVENT_TEMPLATES, ageLabel, countdown, fmtDay, fmtMoney } from "@/lib/ops/data";
+import { ageLabel, countdown, fmtDay, fmtMoney } from "@/lib/ops/data";
 import { useAuctionEvents, type AuctionEvent } from "@/lib/events-store";
 
 export const Route = createFileRoute("/events/")({
@@ -23,6 +23,8 @@ const TABS = ["All", "Needs Action", "Live", "Scheduled", "Draft", "Closed"] as 
 type Tab = (typeof TABS)[number];
 
 const NEEDS_ACTION: string[] = [
+  "Pending Approval",
+  "Sent Back",
   "Draft Review",
   "Awaiting Decision",
   "Below Reserve",
@@ -39,13 +41,33 @@ function EventsIndex() {
   const events = useAuctionEvents();
   const customers = Array.from(new Set(events.map(e => e.customerName)));
   const liveEvents = events.filter(e => e.status === "Live");
+  const statusOptions = Array.from(new Set(events.map((event) => event.status))).sort();
+  const categoryOptions = Array.from(new Set(events.map((event) => event.category).filter(Boolean))).sort();
+  const templateOptions = Array.from(new Set(events.map((event) => event.template).filter(Boolean))).sort();
 
-  const [tab, setTab] = useState<Tab>("All");
+  const [tab, setTab] = useState<Tab | "Custom">("All");
+  const [filterVersion, setFilterVersion] = useState(0);
   const [status, setStatus] = useState("All");
   const [category, setCategory] = useState("All");
   const [template, setTemplate] = useState("All");
   const [customer, setCustomer] = useState("All");
   const [direction, setDirection] = useState("All");
+
+  const hasDetailedFilters = [status, category, template, customer, direction].some((value) => value !== "All");
+  const selectQuickTab = (nextTab: Tab) => {
+    setTab(nextTab);
+    setStatus("All");
+    setCategory("All");
+    setTemplate("All");
+    setCustomer("All");
+    setDirection("All");
+    setFilterVersion((version) => version + 1);
+  };
+  const selectDetailedFilter = (setter: (value: string) => void) => (value: string) => {
+    setter(value);
+    setTab("Custom");
+  };
+  const clearFilters = () => selectQuickTab("All");
 
   const rows = useMemo(
     () =>
@@ -62,7 +84,7 @@ function EventsIndex() {
         if (direction !== "All" && e.direction !== direction) return false;
         return true;
       }),
-    [tab, status, category, template, customer, direction],
+    [events, tab, status, category, template, customer, direction],
   );
 
   const columns: Column<AuctionEvent>[] = [
@@ -117,9 +139,18 @@ function EventsIndex() {
 
       <div className="card-premium p-4 sm:p-5">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <ChipTabs tabs={TABS} value={tab} onChange={setTab} />
+          <div className="flex flex-wrap items-center gap-2">
+            <ChipTabs tabs={TABS} value={tab} onChange={selectQuickTab} />
+            {hasDetailedFilters && (
+              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-800">
+                Custom filters active
+                <button type="button" onClick={clearFilters} className="font-semibold underline underline-offset-2">Reset</button>
+              </span>
+            )}
+          </div>
         </div>
         <DataTable
+          key={filterVersion}
           rows={rows}
           columns={columns}
           exportName="events"
@@ -127,11 +158,11 @@ function EventsIndex() {
           onRowClick={(e) => navigate({ to: "/events/$id", params: { id: e.id } })}
           toolbar={
             <div className="flex flex-wrap gap-2">
-              <FilterSelect label="Status" value={status} options={EVENT_STATUSES} onChange={setStatus} />
-              <FilterSelect label="Category" value={category} options={CATEGORIES} onChange={setCategory} />
-              <FilterSelect label="Template" value={template} options={EVENT_TEMPLATES} onChange={setTemplate} />
-              <FilterSelect label="Customer" value={customer} options={customers} onChange={setCustomer} />
-              <FilterSelect label="Direction" value={direction} options={["Forward", "Reverse"]} onChange={setDirection} />
+              <FilterSelect label="Status" value={status} options={statusOptions} onChange={selectDetailedFilter(setStatus)} />
+              <FilterSelect label="Category" value={category} options={categoryOptions} onChange={selectDetailedFilter(setCategory)} />
+              <FilterSelect label="Template" value={template} options={templateOptions} onChange={selectDetailedFilter(setTemplate)} />
+              <FilterSelect label="Customer" value={customer} options={customers} onChange={selectDetailedFilter(setCustomer)} />
+              <FilterSelect label="Direction" value={direction} options={["Forward", "Reverse"]} onChange={selectDetailedFilter(setDirection)} />
             </div>
           }
         />

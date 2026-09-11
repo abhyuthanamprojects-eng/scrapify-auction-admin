@@ -3,7 +3,8 @@ import { adminApi } from "./api-client";
 
 export type VendorStatus = "Pending" | "Approved" | "Rejected" | "Suspended" | "Draft";
 
-export type MaterialCategory = "Ferrous" | "Non-Ferrous" | "E-Waste" | "Paper" | "Plastic" | "Rubber";
+export type MaterialCategory =
+  "Ferrous" | "Non-Ferrous" | "E-Waste" | "Paper" | "Plastic" | "Rubber";
 export const MATERIAL_CATEGORIES: MaterialCategory[] = [
   "Ferrous",
   "Non-Ferrous",
@@ -41,7 +42,7 @@ export type AuctionParticipation = {
 export type Vendor = {
   id: string;
   code: string;
-  userRole: "buyer" | "seller" | "admin";
+  userRole: "buyer" | "seller";
   companyName: string;
   tradeName?: string;
   businessType?: string;
@@ -101,7 +102,7 @@ function mapVendor(v: any): Vendor {
   return {
     id: v.code ?? v.id,
     code: v.code ?? v.id,
-    userRole: v.user_role ?? v.user?.role ?? (v.role === 'seller' ? 'seller' : 'buyer'),
+    userRole: (v.user_role ?? v.user?.role ?? v.role) === "seller" ? "seller" : "buyer",
     companyName: v.company_name ?? v.companyName ?? "",
     tradeName: v.trade_name ?? v.tradeName ?? "",
     businessType: v.business_type ?? v.businessType ?? "",
@@ -145,7 +146,7 @@ function mapVendor(v: any): Vendor {
       typeof m === "string" ? m : m.name,
     ),
     status,
-    canBid: typeof v.can_bid === 'boolean' ? v.can_bid : false,
+    canBid: typeof v.can_bid === "boolean" ? v.can_bid : false,
     createdAt: v.created_at ?? v.createdAt ?? "",
     submittedAt: v.submitted_at ?? v.submittedAt,
     approvedAt: v.approved_at ?? v.approvedAt,
@@ -184,7 +185,10 @@ function mapVendor(v: any): Vendor {
 
 export async function fetchVendors(params: Record<string, any> = {}): Promise<Vendor[]> {
   const res = await adminApi.getVendors(params);
-  const list = Array.isArray(res) ? res : (res as any).data ?? [];
+  const payload = Array.isArray(res) ? res : ((res as any).data ?? res);
+  const list = Array.isArray(payload)
+    ? payload
+    : (payload?.vendors ?? payload?.items ?? payload?.data ?? []);
   return list.map(mapVendor);
 }
 
@@ -211,7 +215,12 @@ export async function suspendVendorApi(id: string, reason: string): Promise<void
   await adminApi.suspendVendor(id, reason);
 }
 
-export async function reviewVendorDocumentApi(vendorCode: string, docId: string, status: "approved" | "rejected", reason?: string): Promise<void> {
+export async function reviewVendorDocumentApi(
+  vendorCode: string,
+  docId: string,
+  status: "approved" | "rejected",
+  reason?: string,
+): Promise<void> {
   await adminApi.reviewVendorDocument(vendorCode, docId, status, reason);
 }
 
@@ -284,7 +293,20 @@ export function vendorStatusTone(status: VendorStatus) {
 }
 
 export function vendorsToCSV(vendors: Vendor[]): string {
-  const headers = ["Vendor ID", "Company", "Role", "Location", "Contact", "Email", "Phone", "GSTIN", "Bank", "IFSC", "Status", "Registered"];
+  const headers = [
+    "Vendor ID",
+    "Company",
+    "Role",
+    "Location",
+    "Contact",
+    "Email",
+    "Phone",
+    "GSTIN",
+    "Bank",
+    "IFSC",
+    "Status",
+    "Registered",
+  ];
   const rows = vendors.map((v) => [
     v.id,
     `"${v.companyName.replace(/"/g, '""')}"`,
@@ -294,8 +316,8 @@ export function vendorsToCSV(vendors: Vendor[]): string {
     v.email,
     v.phone,
     v.gstNumber,
-    `"${(v.bankName || '').replace(/"/g, '""')}"`,
-    v.ifscCode || '',
+    `"${(v.bankName || "").replace(/"/g, '""')}"`,
+    v.ifscCode || "",
     v.status,
     v.createdAt,
   ]);

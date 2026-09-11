@@ -25,7 +25,6 @@ import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as RiskRouteImport } from './routes/risk'
 import { Route as SecurityRouteImport } from './routes/security'
 import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as SystemRouteImport } from './routes/system'
 import { Route as TokensRouteImport } from './routes/tokens'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as AuctionsIndexRouteImport } from './routes/auctions.index'
@@ -39,6 +38,7 @@ import { Route as EventsIdRouteImport } from './routes/events.$id'
 import { Route as OrganizationsIndexRouteImport } from './routes/organizations.index'
 import { Route as OrganizationsIdRouteImport } from './routes/organizations.$id'
 import { Route as OrganizationsNewRouteImport } from './routes/organizations.new'
+import { Route as UsersNewRouteImport } from './routes/users.new'
 import { Route as VendorsIndexRouteImport } from './routes/vendors.index'
 import { Route as VendorsIdRouteImport } from './routes/vendors.$id'
 
@@ -122,11 +122,6 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SystemRoute = SystemRouteImport.update({
-  id: '/system',
-  path: '/system',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TokensRoute = TokensRouteImport.update({
   id: '/tokens',
   path: '/tokens',
@@ -192,6 +187,11 @@ const OrganizationsNewRoute = OrganizationsNewRouteImport.update({
   path: '/organizations/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UsersNewRoute = UsersNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => UsersRoute,
+} as any)
 const VendorsIndexRoute = VendorsIndexRouteImport.update({
   id: '/vendors/',
   path: '/vendors/',
@@ -220,9 +220,8 @@ export interface FileRoutesByFullPath {
   '/risk': typeof RiskRoute
   '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
-  '/system': typeof SystemRoute
   '/tokens': typeof TokensRoute
-  '/users': typeof UsersRoute
+  '/users': typeof UsersRouteWithChildren
   '/auctions/$id': typeof AuctionsIdRoute
   '/auctions/live': typeof AuctionsLiveRoute
   '/auctions/publish': typeof AuctionsPublishRoute
@@ -230,6 +229,7 @@ export interface FileRoutesByFullPath {
   '/events/$id': typeof EventsIdRoute
   '/organizations/$id': typeof OrganizationsIdRoute
   '/organizations/new': typeof OrganizationsNewRoute
+  '/users/new': typeof UsersNewRoute
   '/vendors/$id': typeof VendorsIdRoute
   '/auctions/': typeof AuctionsIndexRoute
   '/customers/': typeof CustomersIndexRoute
@@ -253,9 +253,8 @@ export interface FileRoutesByTo {
   '/risk': typeof RiskRoute
   '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
-  '/system': typeof SystemRoute
   '/tokens': typeof TokensRoute
-  '/users': typeof UsersRoute
+  '/users': typeof UsersRouteWithChildren
   '/auctions/$id': typeof AuctionsIdRoute
   '/auctions/live': typeof AuctionsLiveRoute
   '/auctions/publish': typeof AuctionsPublishRoute
@@ -263,6 +262,7 @@ export interface FileRoutesByTo {
   '/events/$id': typeof EventsIdRoute
   '/organizations/$id': typeof OrganizationsIdRoute
   '/organizations/new': typeof OrganizationsNewRoute
+  '/users/new': typeof UsersNewRoute
   '/vendors/$id': typeof VendorsIdRoute
   '/auctions': typeof AuctionsIndexRoute
   '/customers': typeof CustomersIndexRoute
@@ -288,9 +288,8 @@ export interface FileRoutesById {
   '/risk': typeof RiskRoute
   '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
-  '/system': typeof SystemRoute
   '/tokens': typeof TokensRoute
-  '/users': typeof UsersRoute
+  '/users': typeof UsersRouteWithChildren
   '/auctions/$id': typeof AuctionsIdRoute
   '/auctions/live': typeof AuctionsLiveRoute
   '/auctions/publish': typeof AuctionsPublishRoute
@@ -298,6 +297,7 @@ export interface FileRoutesById {
   '/events/$id': typeof EventsIdRoute
   '/organizations/$id': typeof OrganizationsIdRoute
   '/organizations/new': typeof OrganizationsNewRoute
+  '/users/new': typeof UsersNewRoute
   '/vendors/$id': typeof VendorsIdRoute
   '/auctions/': typeof AuctionsIndexRoute
   '/customers/': typeof CustomersIndexRoute
@@ -324,7 +324,6 @@ export interface FileRouteTypes {
     | '/risk'
     | '/security'
     | '/settings'
-    | '/system'
     | '/tokens'
     | '/users'
     | '/auctions/$id'
@@ -334,6 +333,7 @@ export interface FileRouteTypes {
     | '/events/$id'
     | '/organizations/$id'
     | '/organizations/new'
+    | '/users/new'
     | '/vendors/$id'
     | '/auctions/'
     | '/customers/'
@@ -357,7 +357,6 @@ export interface FileRouteTypes {
     | '/risk'
     | '/security'
     | '/settings'
-    | '/system'
     | '/tokens'
     | '/users'
     | '/auctions/$id'
@@ -367,6 +366,7 @@ export interface FileRouteTypes {
     | '/events/$id'
     | '/organizations/$id'
     | '/organizations/new'
+    | '/users/new'
     | '/vendors/$id'
     | '/auctions'
     | '/customers'
@@ -391,7 +391,6 @@ export interface FileRouteTypes {
     | '/risk'
     | '/security'
     | '/settings'
-    | '/system'
     | '/tokens'
     | '/users'
     | '/auctions/$id'
@@ -401,6 +400,7 @@ export interface FileRouteTypes {
     | '/events/$id'
     | '/organizations/$id'
     | '/organizations/new'
+    | '/users/new'
     | '/vendors/$id'
     | '/auctions/'
     | '/customers/'
@@ -426,9 +426,8 @@ export interface RootRouteChildren {
   RiskRoute: typeof RiskRoute
   SecurityRoute: typeof SecurityRoute
   SettingsRoute: typeof SettingsRoute
-  SystemRoute: typeof SystemRoute
   TokensRoute: typeof TokensRoute
-  UsersRoute: typeof UsersRoute
+  UsersRoute: typeof UsersRouteWithChildren
   CustomersIdRoute: typeof CustomersIdRoute
   EventsIdRoute: typeof EventsIdRoute
   OrganizationsIdRoute: typeof OrganizationsIdRoute
@@ -554,13 +553,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/system': {
-      id: '/system'
-      path: '/system'
-      fullPath: '/system'
-      preLoaderRoute: typeof SystemRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/tokens': {
       id: '/tokens'
       path: '/tokens'
@@ -652,6 +644,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizationsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/users/new': {
+      id: '/users/new'
+      path: '/new'
+      fullPath: '/users/new'
+      preLoaderRoute: typeof UsersNewRouteImport
+      parentRoute: typeof UsersRoute
+    }
     '/vendors/': {
       id: '/vendors/'
       path: '/vendors'
@@ -687,6 +686,16 @@ const AuctionsRouteWithChildren = AuctionsRoute._addFileChildren(
   AuctionsRouteChildren,
 )
 
+interface UsersRouteChildren {
+  UsersNewRoute: typeof UsersNewRoute
+}
+
+const UsersRouteChildren: UsersRouteChildren = {
+  UsersNewRoute: UsersNewRoute,
+}
+
+const UsersRouteWithChildren = UsersRoute._addFileChildren(UsersRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApprovalsRoute: ApprovalsRoute,
@@ -704,9 +713,8 @@ const rootRouteChildren: RootRouteChildren = {
   RiskRoute: RiskRoute,
   SecurityRoute: SecurityRoute,
   SettingsRoute: SettingsRoute,
-  SystemRoute: SystemRoute,
   TokensRoute: TokensRoute,
-  UsersRoute: UsersRoute,
+  UsersRoute: UsersRouteWithChildren,
   CustomersIdRoute: CustomersIdRoute,
   EventsIdRoute: EventsIdRoute,
   OrganizationsIdRoute: OrganizationsIdRoute,

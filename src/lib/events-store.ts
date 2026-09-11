@@ -37,17 +37,17 @@ export function useAuctionEvents(): AuctionEvent[] {
           template: a.template ?? "",
           customerName: a.customer?.company_name ?? "",
           category: a.category ?? "",
-          direction: (a.direction ?? "") as "Forward" | "Reverse",
-          status: a.status ?? "",
-          currentPrice: a.current_price || a.reserve_price || 0,
-          participants: (a.participants || []).map((p: any) => ({ name: p.vendor_name })),
+          direction: normalizeDirection(a.direction),
+          status: normalizeStatus(a.status),
+          currentPrice: a.current_highest_inr || a.reserve_price_inr || 0,
+          participants: Array.from({ length: Number(a.bidders ?? a.bidders_count ?? 0) }, (_, index) => ({ name: `Bidder ${index + 1}` })),
           bidCount: a.bids_count || 0,
           risk: calculateRisk(a),
-          startAt: a.published_at ?? a.start_at ?? a.created_at ?? "",
-          endAt: a.closed_at ?? a.end_at ?? "",
+          startAt: a.published_at ?? a.schedule_start ?? a.created_at ?? "",
+          endAt: a.schedule_end ?? a.closed_at ?? "",
           createdAt: a.created_at ?? "",
           owner: a.owner?.name ?? a.owner_name ?? "",
-          value: a.final_price || a.current_price || a.reserve_price || 0,
+          value: a.final_price_inr || a.current_highest_inr || a.reserve_price_inr || 0,
         }));
         setEvents(mapped);
       } catch (error) {
@@ -61,6 +61,26 @@ export function useAuctionEvents(): AuctionEvent[] {
   }, []);
 
   return events;
+}
+
+function normalizeDirection(direction: unknown): "Forward" | "Reverse" {
+  return String(direction ?? "").toLowerCase() === "reverse" ? "Reverse" : "Forward";
+}
+
+function normalizeStatus(status: unknown): string {
+  const value = String(status ?? "").toLowerCase();
+  const labels: Record<string, string> = {
+    pending_approval: "Pending Approval",
+    sent_back: "Sent Back",
+    approved: "Approved",
+    published: "Scheduled",
+    scheduled: "Scheduled",
+    live: "Live",
+    closed: "Closed",
+    cancelled: "Cancelled",
+    draft: "Draft",
+  };
+  return labels[value] ?? value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function calculateRisk(auction: any): "low" | "medium" | "high" {

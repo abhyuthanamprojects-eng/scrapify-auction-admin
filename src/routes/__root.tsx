@@ -18,7 +18,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiUnauthorizedError, ApiForbiddenError } from "@/lib/api-client";
-import { assessBrowser, initBrowserSecurity, SecurityGate, SecurityWatermark } from "@/lib/browser-security";
+import { assessBrowser, initBrowserSecurity, SecurityGate } from "@/lib/browser-security";
 
 function NotFoundComponent() {
   return (
@@ -58,7 +58,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }
 
   const isForbidden = error instanceof ApiForbiddenError;
-  const isNetworkError = error.message?.includes("Network error") || error.message?.includes("Failed to fetch");
+  const isNetworkError =
+    error.message?.includes("Network error") || error.message?.includes("Failed to fetch");
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -67,19 +68,24 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           <>
             <h1 className="text-xl font-semibold tracking-tight text-foreground">Access denied</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              You don't have permission to access this page. Contact your administrator if you believe this is an error.
+              You don't have permission to access this page. Contact your administrator if you
+              believe this is an error.
             </p>
           </>
         ) : isNetworkError ? (
           <>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">Connection problem</h1>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+              Connection problem
+            </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               Unable to reach the server. Please check your internet connection and try again.
             </p>
           </>
         ) : (
           <>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">Something went wrong</h1>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+              Something went wrong
+            </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               An unexpected error occurred. You can try refreshing or head back home.
             </p>
@@ -120,13 +126,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Scrapify Auctions — Super Admin & Operations Console" },
       {
         name: "description",
-        content: "Enterprise Operations Console for Scrapify Auctions — Live Control Room, Multi-Category Auctions, RFx, Approvals, Finance & Audit.",
+        content:
+          "Enterprise Operations Console for Scrapify Auctions — Live Control Room, Multi-Category Auctions, RFx, Approvals, Finance & Audit.",
       },
       { name: "author", content: "Scrapify Auctions" },
       { property: "og:title", content: "Scrapify Auctions Operations Console" },
       {
         property: "og:description",
-        content: "Enterprise Operations Console for Scrapify Auctions — Live Control Room, Multi-Category Auctions, RFx, Approvals, Finance & Audit.",
+        content:
+          "Enterprise Operations Console for Scrapify Auctions — Live Control Room, Multi-Category Auctions, RFx, Approvals, Finance & Audit.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -172,6 +180,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const routerState = useRouterState();
   const isLoginPage = routerState.location.pathname === "/login";
+  const isLiveControlRoom = routerState.location.pathname === "/auctions/live";
   const { isAuthenticated, isChecking } = useAuth();
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -241,6 +250,16 @@ function RootComponent() {
     );
   }
 
+  if (isLiveControlRoom) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <div className="h-dvh w-full overflow-hidden bg-[#08111f]">
+          <Outlet />
+        </div>
+      </QueryClientProvider>
+    );
+  }
+
   // Authenticated — render the admin shell
   return (
     <QueryClientProvider client={queryClient}>
@@ -250,7 +269,10 @@ function RootComponent() {
         )}
         {isMobile && (
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetContent side="left" className="p-0 w-[260px] gradient-navy border-r border-sidebar-border">
+            <SheetContent
+              side="left"
+              className="p-0 w-[260px] gradient-navy border-r border-sidebar-border"
+            >
               <SheetTitle className="sr-only">Navigation</SheetTitle>
               <AdminSidebar collapsed={false} onToggle={() => {}} variant="mobile" />
             </SheetContent>
@@ -262,10 +284,12 @@ function RootComponent() {
             {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
             <Outlet />
           </main>
-          <SecurityWatermark />
           <footer className="border-t border-border/60 bg-background/60 backdrop-blur px-6 py-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-              <p>© {new Date().getFullYear()} Scrapify Auctions Operations Console. All rights reserved.</p>
+              <p>
+                © {new Date().getFullYear()} Scrapify Auctions Operations Console. All rights
+                reserved.
+              </p>
               <p>
                 Developed &amp; designed by{" "}
                 <a

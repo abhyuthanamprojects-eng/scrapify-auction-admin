@@ -10,7 +10,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, Download, Eye, FileText, Filter, Search, ShieldAlert, ShieldCheck } from "lucide-react";
+import {
+  CheckCircle2,
+  Download,
+  Eye,
+  FileText,
+  Filter,
+  Search,
+  ShieldAlert,
+  ShieldCheck,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   MATERIAL_CATEGORIES,
@@ -25,8 +34,12 @@ import {
 export const Route = createFileRoute("/vendors/")({
   head: () => ({
     meta: [
-      { title: "Vendors & KYC — Scrapify Admin Console" },
-      { name: "description", content: "Registered vendor database, KYC review, document verification, and approvals." },
+      { title: "Buyer & Seller Master — Scrapify Admin Console" },
+      {
+        name: "description",
+        content:
+          "Registered buyer and seller database, KYC review, document verification, and approvals.",
+      },
     ],
   }),
   component: VendorsList,
@@ -49,7 +62,10 @@ function VendorsList() {
   const [material, setMaterial] = useState<MaterialCategory | "all">("all");
   const [location, setLocation] = useState<string>("all");
 
-  const locations = useMemo(() => Array.from(new Set(vendors.map((v) => v.location).filter(Boolean))).sort(), [vendors]);
+  const locations = useMemo(
+    () => Array.from(new Set(vendors.map((v) => v.location).filter(Boolean))).sort(),
+    [vendors],
+  );
 
   const counts = useMemo(
     () => ({
@@ -64,7 +80,8 @@ function VendorsList() {
 
   const rows = useMemo(() => {
     let list = vendors;
-    if (tab === "pending") list = list.filter((v) => v.status === "Pending" || v.status === "Draft");
+    if (tab === "pending")
+      list = list.filter((v) => v.status === "Pending" || v.status === "Draft");
     else if (tab === "approved") list = list.filter((v) => v.status === "Approved");
     else if (tab === "rejected") list = list.filter((v) => v.status === "Rejected");
     else if (tab === "suspended") list = list.filter((v) => v.status === "Suspended");
@@ -79,7 +96,7 @@ function VendorsList() {
           v.companyName.toLowerCase().includes(t) ||
           v.email.toLowerCase().includes(t) ||
           v.gstNumber.toLowerCase().includes(t) ||
-          v.code.toLowerCase().includes(t)
+          v.code.toLowerCase().includes(t),
       );
     }
     return list;
@@ -101,7 +118,7 @@ function VendorsList() {
   return (
     <>
       <PageHeader
-        title="Vendors &amp; KYC Verification"
+        title="Buyer &amp; Seller KYC Verification"
         description="Comprehensive enterprise dossier verification, GSTIN cross-checks, penny-drop validation, and KYC decisions."
         actions={
           <Button onClick={exportCsv} variant="outline" className="gap-2">
@@ -124,7 +141,9 @@ function VendorsList() {
             {t.label}
             <span
               className={`ml-2 inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full text-[10px] font-bold ${
-                tab === t.id ? "bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900" : "bg-muted text-muted-foreground"
+                tab === t.id
+                  ? "bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900"
+                  : "bg-muted text-muted-foreground"
               }`}
             >
               {counts[t.id]}
@@ -225,8 +244,13 @@ function VendorsList() {
                 </tr>
               ) : (
                 rows.map((v) => (
-                  <tr key={v.id} className="border-t border-border/60 hover:bg-muted/20 transition-colors">
-                    <td className="px-4 py-3 font-mono font-bold text-xs text-foreground">{v.code}</td>
+                  <tr
+                    key={v.id}
+                    className="border-t border-border/60 hover:bg-muted/20 transition-colors"
+                  >
+                    <td className="px-4 py-3 font-mono font-bold text-xs text-foreground">
+                      {v.code}
+                    </td>
                     <td className="px-4 py-3">
                       <Link
                         to="/vendors/$id"
@@ -235,7 +259,9 @@ function VendorsList() {
                       >
                         {v.companyName}
                       </Link>
-                      <div className="text-xs text-muted-foreground">{v.location || v.businessType || "India"}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {v.location || v.businessType || "India"}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant="outline" className="text-[10px] uppercase font-bold">

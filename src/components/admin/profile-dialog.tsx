@@ -19,7 +19,6 @@ import {
   UserCheck,
   KeyRound,
   Lock,
-  Building,
   Mail,
   Phone,
   Clock,
@@ -35,12 +34,7 @@ interface AdminProfileDialogProps {
   onSave?: (updated: Partial<StaffUser>) => void;
 }
 
-export function AdminProfileDialog({
-  open,
-  onOpenChange,
-  user,
-  onSave,
-}: AdminProfileDialogProps) {
+export function AdminProfileDialog({ open, onOpenChange, user, onSave }: AdminProfileDialogProps) {
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [phone, setPhone] = useState(user.phone || "+91 98765 43210");
@@ -96,7 +90,10 @@ export function AdminProfileDialog({
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse" />
                     {user.role}
                   </Badge>
-                  <Badge variant="outline" className="text-primary-foreground/80 border-primary-foreground/20 text-[11px]">
+                  <Badge
+                    variant="outline"
+                    className="text-primary-foreground/80 border-primary-foreground/20 text-[11px]"
+                  >
                     2FA Verified
                   </Badge>
                 </div>
@@ -170,11 +167,7 @@ export function AdminProfileDialog({
                 </div>
               </div>
 
-              <div className="rounded-xl border border-border p-3.5 bg-muted/30 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Building className="h-4 w-4 text-accent" />
-                  <span>Assigned Organization: <strong className="text-foreground">Scrapify Enterprise HQ</strong></span>
-                </div>
+              <div className="rounded-xl border border-border p-3.5 bg-muted/30 flex items-center justify-end text-xs">
                 <Badge variant="secondary" className="text-[10px]">
                   Employee ID: {user.employeeId}
                 </Badge>
@@ -207,7 +200,10 @@ export function AdminProfileDialog({
                     <Laptop className="h-4 w-4 text-accent" />
                     <span>Current Session (macOS · Chrome 128)</span>
                   </div>
-                  <Badge variant="outline" className="text-[10px] text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40">
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40"
+                  >
                     Active Now
                   </Badge>
                 </div>
@@ -216,7 +212,9 @@ export function AdminProfileDialog({
                     <Clock className="h-3.5 w-3.5" />
                     Last Logged In:
                   </span>
-                  <span className="font-mono text-foreground">{user.lastLogin || "Today, 10:30 AM (IP: 103.21.144.8)"}</span>
+                  <span className="font-mono text-foreground">
+                    {user.lastLogin || "Today, 10:30 AM (IP: 103.21.144.8)"}
+                  </span>
                 </div>
               </div>
             </TabsContent>
@@ -228,7 +226,8 @@ export function AdminProfileDialog({
                   Enforced RBAC Governance
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Role <strong>{user.role}</strong> grants immutable permission bounds enforced server-side.
+                  Role <strong>{user.role}</strong> grants immutable permission bounds enforced
+                  server-side.
                 </p>
               </div>
 
@@ -243,9 +242,14 @@ export function AdminProfileDialog({
                   "Staff User Provisioning & Roles",
                   "Platform Security & API Gateways",
                 ].map((perm, idx) => (
-                  <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-card border border-border/60">
+                  <div
+                    key={idx}
+                    className="flex items-center gap-2 p-2 rounded-lg bg-card border border-border/60"
+                  >
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    <span className="text-foreground text-[11px] font-medium leading-tight">{perm}</span>
+                    <span className="text-foreground text-[11px] font-medium leading-tight">
+                      {perm}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -258,7 +262,11 @@ export function AdminProfileDialog({
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             Close
           </Button>
-          <Button size="sm" onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
+          <Button
+            size="sm"
+            onClick={handleSave}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+          >
             {saving ? "Saving…" : "Save Profile Details"}
           </Button>
         </DialogFooter>

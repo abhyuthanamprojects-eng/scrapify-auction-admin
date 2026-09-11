@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 type Assessment = { allowed: boolean; browser: string; device: "desktop" | "tablet" | "mobile-phone" | "unknown" };
 export function assessBrowser(): Assessment {
@@ -10,5 +10,4 @@ export function assessBrowser(): Assessment {
   return { allowed: browser !== "Unsupported browser" && (device === "desktop" || device === "tablet"), browser, device };
 }
 export function SecurityGate({ children }: { children: ReactNode }) { const a = assessBrowser(); if (a.allowed) return <>{children}</>; return <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center"><div className="max-w-lg"><h1 className="text-2xl font-bold text-foreground">{a.device === "mobile-phone" || a.device === "tablet" ? "Mobile access blocked" : "Browser not supported"}</h1><p className="mt-3 text-muted-foreground">{a.device === "mobile-phone" || a.device === "tablet" ? "The admin console is available only on a desktop or laptop. Please use an approved workstation." : "For security and compatibility, use Google Chrome, Microsoft Edge, Mozilla Firefox, or Apple Safari."}</p></div></div>; }
-export function SecurityWatermark() { const [time, setTime] = useState(() => new Date().toLocaleString()); useEffect(() => { const t = window.setInterval(() => setTime(new Date().toLocaleString()), 30_000); return () => window.clearInterval(t); }, []); return <div aria-hidden="true" className="security-watermark">Scrapify Admin · {time}</div>; }
-export function initBrowserSecurity() { if (typeof window === "undefined") return () => {}; const style = document.createElement("style"); style.textContent = `@media print { body{display:none!important} } .security-watermark{position:fixed;inset:0;z-index:50;pointer-events:none;display:grid;place-items:center;opacity:.12;color:currentColor;font:600 12px/1.4 monospace;transform:rotate(-24deg);user-select:none}`; document.head.appendChild(style); return () => style.remove(); }
+export function initBrowserSecurity() { if (typeof window === "undefined") return () => {}; const style = document.createElement("style"); style.textContent = `@media print { body{display:none!important} }`; document.head.appendChild(style); return () => style.remove(); }
