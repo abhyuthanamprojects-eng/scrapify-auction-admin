@@ -9,122 +9,42 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as UsersRouteImport } from './routes/users'
-import { Route as TokensRouteImport } from './routes/tokens'
-import { Route as SystemRouteImport } from './routes/system'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as SecurityRouteImport } from './routes/security'
-import { Route as RiskRouteImport } from './routes/risk'
-import { Route as ReportsRouteImport } from './routes/reports'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as KybRouteImport } from './routes/kyb'
-import { Route as FulfilmentRouteImport } from './routes/fulfilment'
-import { Route as FinanceRouteImport } from './routes/finance'
-import { Route as ExceptionsRouteImport } from './routes/exceptions'
-import { Route as ControlRoomRouteImport } from './routes/control-room'
-import { Route as ConfigurationRouteImport } from './routes/configuration'
-import { Route as ComplianceRouteImport } from './routes/compliance'
-import { Route as AuditLogRouteImport } from './routes/audit-log'
-import { Route as AuctionsRouteImport } from './routes/auctions'
-import { Route as ApprovalsRouteImport } from './routes/approvals'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as VendorsIndexRouteImport } from './routes/vendors.index'
-import { Route as OrganizationsIndexRouteImport } from './routes/organizations.index'
-import { Route as EventsIndexRouteImport } from './routes/events.index'
-import { Route as CustomersIndexRouteImport } from './routes/customers.index'
+import { Route as ApprovalsRouteImport } from './routes/approvals'
+import { Route as AuctionsRouteImport } from './routes/auctions'
+import { Route as AuditLogRouteImport } from './routes/audit-log'
+import { Route as ComplianceRouteImport } from './routes/compliance'
+import { Route as ConfigurationRouteImport } from './routes/configuration'
+import { Route as ControlRoomRouteImport } from './routes/control-room'
+import { Route as ExceptionsRouteImport } from './routes/exceptions'
+import { Route as FinanceRouteImport } from './routes/finance'
+import { Route as FulfilmentRouteImport } from './routes/fulfilment'
+import { Route as KybRouteImport } from './routes/kyb'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as RiskRouteImport } from './routes/risk'
+import { Route as SecurityRouteImport } from './routes/security'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SystemRouteImport } from './routes/system'
+import { Route as TokensRouteImport } from './routes/tokens'
+import { Route as UsersRouteImport } from './routes/users'
 import { Route as AuctionsIndexRouteImport } from './routes/auctions.index'
-import { Route as VendorsIdRouteImport } from './routes/vendors.$id'
-import { Route as OrganizationsNewRouteImport } from './routes/organizations.new'
-import { Route as OrganizationsIdRouteImport } from './routes/organizations.$id'
-import { Route as EventsIdRouteImport } from './routes/events.$id'
-import { Route as CustomersIdRouteImport } from './routes/customers.$id'
-import { Route as AuctionsPublishRouteImport } from './routes/auctions.publish'
-import { Route as AuctionsLiveRouteImport } from './routes/auctions.live'
 import { Route as AuctionsIdRouteImport } from './routes/auctions.$id'
+import { Route as AuctionsLiveRouteImport } from './routes/auctions.live'
+import { Route as AuctionsPublishRouteImport } from './routes/auctions.publish'
+import { Route as CustomersIndexRouteImport } from './routes/customers.index'
+import { Route as CustomersIdRouteImport } from './routes/customers.$id'
+import { Route as EventsIndexRouteImport } from './routes/events.index'
+import { Route as EventsIdRouteImport } from './routes/events.$id'
+import { Route as OrganizationsIndexRouteImport } from './routes/organizations.index'
+import { Route as OrganizationsIdRouteImport } from './routes/organizations.$id'
+import { Route as OrganizationsNewRouteImport } from './routes/organizations.new'
+import { Route as VendorsIndexRouteImport } from './routes/vendors.index'
+import { Route as VendorsIdRouteImport } from './routes/vendors.$id'
 
-const UsersRoute = UsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TokensRoute = TokensRouteImport.update({
-  id: '/tokens',
-  path: '/tokens',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SystemRoute = SystemRouteImport.update({
-  id: '/system',
-  path: '/system',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SecurityRoute = SecurityRouteImport.update({
-  id: '/security',
-  path: '/security',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RiskRoute = RiskRouteImport.update({
-  id: '/risk',
-  path: '/risk',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReportsRoute = ReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const KybRoute = KybRouteImport.update({
-  id: '/kyb',
-  path: '/kyb',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FulfilmentRoute = FulfilmentRouteImport.update({
-  id: '/fulfilment',
-  path: '/fulfilment',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FinanceRoute = FinanceRouteImport.update({
-  id: '/finance',
-  path: '/finance',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ExceptionsRoute = ExceptionsRouteImport.update({
-  id: '/exceptions',
-  path: '/exceptions',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ControlRoomRoute = ControlRoomRouteImport.update({
-  id: '/control-room',
-  path: '/control-room',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConfigurationRoute = ConfigurationRouteImport.update({
-  id: '/configuration',
-  path: '/configuration',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ComplianceRoute = ComplianceRouteImport.update({
-  id: '/compliance',
-  path: '/compliance',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuditLogRoute = AuditLogRouteImport.update({
-  id: '/audit-log',
-  path: '/audit-log',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuctionsRoute = AuctionsRouteImport.update({
-  id: '/auctions',
-  path: '/auctions',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApprovalsRoute = ApprovalsRouteImport.update({
@@ -132,29 +52,89 @@ const ApprovalsRoute = ApprovalsRouteImport.update({
   path: '/approvals',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuctionsRoute = AuctionsRouteImport.update({
+  id: '/auctions',
+  path: '/auctions',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VendorsIndexRoute = VendorsIndexRouteImport.update({
-  id: '/vendors/',
-  path: '/vendors/',
+const AuditLogRoute = AuditLogRouteImport.update({
+  id: '/audit-log',
+  path: '/audit-log',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OrganizationsIndexRoute = OrganizationsIndexRouteImport.update({
-  id: '/organizations/',
-  path: '/organizations/',
+const ComplianceRoute = ComplianceRouteImport.update({
+  id: '/compliance',
+  path: '/compliance',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EventsIndexRoute = EventsIndexRouteImport.update({
-  id: '/events/',
-  path: '/events/',
+const ConfigurationRoute = ConfigurationRouteImport.update({
+  id: '/configuration',
+  path: '/configuration',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CustomersIndexRoute = CustomersIndexRouteImport.update({
-  id: '/customers/',
-  path: '/customers/',
+const ControlRoomRoute = ControlRoomRouteImport.update({
+  id: '/control-room',
+  path: '/control-room',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExceptionsRoute = ExceptionsRouteImport.update({
+  id: '/exceptions',
+  path: '/exceptions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FinanceRoute = FinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FulfilmentRoute = FulfilmentRouteImport.update({
+  id: '/fulfilment',
+  path: '/fulfilment',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KybRoute = KybRouteImport.update({
+  id: '/kyb',
+  path: '/kyb',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RiskRoute = RiskRouteImport.update({
+  id: '/risk',
+  path: '/risk',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SecurityRoute = SecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SystemRoute = SystemRouteImport.update({
+  id: '/system',
+  path: '/system',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TokensRoute = TokensRouteImport.update({
+  id: '/tokens',
+  path: '/tokens',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuctionsIndexRoute = AuctionsIndexRouteImport.update({
@@ -162,34 +142,9 @@ const AuctionsIndexRoute = AuctionsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuctionsRoute,
 } as any)
-const VendorsIdRoute = VendorsIdRouteImport.update({
-  id: '/vendors/$id',
-  path: '/vendors/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrganizationsNewRoute = OrganizationsNewRouteImport.update({
-  id: '/organizations/new',
-  path: '/organizations/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrganizationsIdRoute = OrganizationsIdRouteImport.update({
-  id: '/organizations/$id',
-  path: '/organizations/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EventsIdRoute = EventsIdRouteImport.update({
-  id: '/events/$id',
-  path: '/events/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CustomersIdRoute = CustomersIdRouteImport.update({
-  id: '/customers/$id',
-  path: '/customers/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuctionsPublishRoute = AuctionsPublishRouteImport.update({
-  id: '/publish',
-  path: '/publish',
+const AuctionsIdRoute = AuctionsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
   getParentRoute: () => AuctionsRoute,
 } as any)
 const AuctionsLiveRoute = AuctionsLiveRouteImport.update({
@@ -197,10 +152,55 @@ const AuctionsLiveRoute = AuctionsLiveRouteImport.update({
   path: '/live',
   getParentRoute: () => AuctionsRoute,
 } as any)
-const AuctionsIdRoute = AuctionsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
+const AuctionsPublishRoute = AuctionsPublishRouteImport.update({
+  id: '/publish',
+  path: '/publish',
   getParentRoute: () => AuctionsRoute,
+} as any)
+const CustomersIndexRoute = CustomersIndexRouteImport.update({
+  id: '/customers/',
+  path: '/customers/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomersIdRoute = CustomersIdRouteImport.update({
+  id: '/customers/$id',
+  path: '/customers/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsIndexRoute = EventsIndexRouteImport.update({
+  id: '/events/',
+  path: '/events/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsIdRoute = EventsIdRouteImport.update({
+  id: '/events/$id',
+  path: '/events/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrganizationsIndexRoute = OrganizationsIndexRouteImport.update({
+  id: '/organizations/',
+  path: '/organizations/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrganizationsIdRoute = OrganizationsIdRouteImport.update({
+  id: '/organizations/$id',
+  path: '/organizations/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrganizationsNewRoute = OrganizationsNewRouteImport.update({
+  id: '/organizations/new',
+  path: '/organizations/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorsIndexRoute = VendorsIndexRouteImport.update({
+  id: '/vendors/',
+  path: '/vendors/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorsIdRoute = VendorsIdRouteImport.update({
+  id: '/vendors/$id',
+  path: '/vendors/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -442,123 +442,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/users': {
-      id: '/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof UsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tokens': {
-      id: '/tokens'
-      path: '/tokens'
-      fullPath: '/tokens'
-      preLoaderRoute: typeof TokensRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/system': {
-      id: '/system'
-      path: '/system'
-      fullPath: '/system'
-      preLoaderRoute: typeof SystemRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/security': {
-      id: '/security'
-      path: '/security'
-      fullPath: '/security'
-      preLoaderRoute: typeof SecurityRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/risk': {
-      id: '/risk'
-      path: '/risk'
-      fullPath: '/risk'
-      preLoaderRoute: typeof RiskRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reports': {
-      id: '/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof ReportsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/kyb': {
-      id: '/kyb'
-      path: '/kyb'
-      fullPath: '/kyb'
-      preLoaderRoute: typeof KybRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/fulfilment': {
-      id: '/fulfilment'
-      path: '/fulfilment'
-      fullPath: '/fulfilment'
-      preLoaderRoute: typeof FulfilmentRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/finance': {
-      id: '/finance'
-      path: '/finance'
-      fullPath: '/finance'
-      preLoaderRoute: typeof FinanceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/exceptions': {
-      id: '/exceptions'
-      path: '/exceptions'
-      fullPath: '/exceptions'
-      preLoaderRoute: typeof ExceptionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/control-room': {
-      id: '/control-room'
-      path: '/control-room'
-      fullPath: '/control-room'
-      preLoaderRoute: typeof ControlRoomRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/configuration': {
-      id: '/configuration'
-      path: '/configuration'
-      fullPath: '/configuration'
-      preLoaderRoute: typeof ConfigurationRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/compliance': {
-      id: '/compliance'
-      path: '/compliance'
-      fullPath: '/compliance'
-      preLoaderRoute: typeof ComplianceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/audit-log': {
-      id: '/audit-log'
-      path: '/audit-log'
-      fullPath: '/audit-log'
-      preLoaderRoute: typeof AuditLogRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auctions': {
-      id: '/auctions'
-      path: '/auctions'
-      fullPath: '/auctions'
-      preLoaderRoute: typeof AuctionsRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/approvals': {
@@ -568,39 +456,123 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApprovalsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auctions': {
+      id: '/auctions'
+      path: '/auctions'
+      fullPath: '/auctions'
+      preLoaderRoute: typeof AuctionsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/vendors/': {
-      id: '/vendors/'
-      path: '/vendors'
-      fullPath: '/vendors/'
-      preLoaderRoute: typeof VendorsIndexRouteImport
+    '/audit-log': {
+      id: '/audit-log'
+      path: '/audit-log'
+      fullPath: '/audit-log'
+      preLoaderRoute: typeof AuditLogRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/organizations/': {
-      id: '/organizations/'
-      path: '/organizations'
-      fullPath: '/organizations/'
-      preLoaderRoute: typeof OrganizationsIndexRouteImport
+    '/compliance': {
+      id: '/compliance'
+      path: '/compliance'
+      fullPath: '/compliance'
+      preLoaderRoute: typeof ComplianceRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/events/': {
-      id: '/events/'
-      path: '/events'
-      fullPath: '/events/'
-      preLoaderRoute: typeof EventsIndexRouteImport
+    '/configuration': {
+      id: '/configuration'
+      path: '/configuration'
+      fullPath: '/configuration'
+      preLoaderRoute: typeof ConfigurationRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/customers/': {
-      id: '/customers/'
-      path: '/customers'
-      fullPath: '/customers/'
-      preLoaderRoute: typeof CustomersIndexRouteImport
+    '/control-room': {
+      id: '/control-room'
+      path: '/control-room'
+      fullPath: '/control-room'
+      preLoaderRoute: typeof ControlRoomRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exceptions': {
+      id: '/exceptions'
+      path: '/exceptions'
+      fullPath: '/exceptions'
+      preLoaderRoute: typeof ExceptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/finance': {
+      id: '/finance'
+      path: '/finance'
+      fullPath: '/finance'
+      preLoaderRoute: typeof FinanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fulfilment': {
+      id: '/fulfilment'
+      path: '/fulfilment'
+      fullPath: '/fulfilment'
+      preLoaderRoute: typeof FulfilmentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kyb': {
+      id: '/kyb'
+      path: '/kyb'
+      fullPath: '/kyb'
+      preLoaderRoute: typeof KybRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/risk': {
+      id: '/risk'
+      path: '/risk'
+      fullPath: '/risk'
+      preLoaderRoute: typeof RiskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/security': {
+      id: '/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof SecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/system': {
+      id: '/system'
+      path: '/system'
+      fullPath: '/system'
+      preLoaderRoute: typeof SystemRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tokens': {
+      id: '/tokens'
+      path: '/tokens'
+      fullPath: '/tokens'
+      preLoaderRoute: typeof TokensRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auctions/': {
@@ -610,46 +582,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuctionsIndexRouteImport
       parentRoute: typeof AuctionsRoute
     }
-    '/vendors/$id': {
-      id: '/vendors/$id'
-      path: '/vendors/$id'
-      fullPath: '/vendors/$id'
-      preLoaderRoute: typeof VendorsIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/organizations/new': {
-      id: '/organizations/new'
-      path: '/organizations/new'
-      fullPath: '/organizations/new'
-      preLoaderRoute: typeof OrganizationsNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/organizations/$id': {
-      id: '/organizations/$id'
-      path: '/organizations/$id'
-      fullPath: '/organizations/$id'
-      preLoaderRoute: typeof OrganizationsIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/events/$id': {
-      id: '/events/$id'
-      path: '/events/$id'
-      fullPath: '/events/$id'
-      preLoaderRoute: typeof EventsIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/customers/$id': {
-      id: '/customers/$id'
-      path: '/customers/$id'
-      fullPath: '/customers/$id'
-      preLoaderRoute: typeof CustomersIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auctions/publish': {
-      id: '/auctions/publish'
-      path: '/publish'
-      fullPath: '/auctions/publish'
-      preLoaderRoute: typeof AuctionsPublishRouteImport
+    '/auctions/$id': {
+      id: '/auctions/$id'
+      path: '/$id'
+      fullPath: '/auctions/$id'
+      preLoaderRoute: typeof AuctionsIdRouteImport
       parentRoute: typeof AuctionsRoute
     }
     '/auctions/live': {
@@ -659,12 +596,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuctionsLiveRouteImport
       parentRoute: typeof AuctionsRoute
     }
-    '/auctions/$id': {
-      id: '/auctions/$id'
-      path: '/$id'
-      fullPath: '/auctions/$id'
-      preLoaderRoute: typeof AuctionsIdRouteImport
+    '/auctions/publish': {
+      id: '/auctions/publish'
+      path: '/publish'
+      fullPath: '/auctions/publish'
+      preLoaderRoute: typeof AuctionsPublishRouteImport
       parentRoute: typeof AuctionsRoute
+    }
+    '/customers/': {
+      id: '/customers/'
+      path: '/customers'
+      fullPath: '/customers/'
+      preLoaderRoute: typeof CustomersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customers/$id': {
+      id: '/customers/$id'
+      path: '/customers/$id'
+      fullPath: '/customers/$id'
+      preLoaderRoute: typeof CustomersIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/': {
+      id: '/events/'
+      path: '/events'
+      fullPath: '/events/'
+      preLoaderRoute: typeof EventsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/$id': {
+      id: '/events/$id'
+      path: '/events/$id'
+      fullPath: '/events/$id'
+      preLoaderRoute: typeof EventsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/organizations/': {
+      id: '/organizations/'
+      path: '/organizations'
+      fullPath: '/organizations/'
+      preLoaderRoute: typeof OrganizationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/organizations/$id': {
+      id: '/organizations/$id'
+      path: '/organizations/$id'
+      fullPath: '/organizations/$id'
+      preLoaderRoute: typeof OrganizationsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/organizations/new': {
+      id: '/organizations/new'
+      path: '/organizations/new'
+      fullPath: '/organizations/new'
+      preLoaderRoute: typeof OrganizationsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendors/': {
+      id: '/vendors/'
+      path: '/vendors'
+      fullPath: '/vendors/'
+      preLoaderRoute: typeof VendorsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendors/$id': {
+      id: '/vendors/$id'
+      path: '/vendors/$id'
+      fullPath: '/vendors/$id'
+      preLoaderRoute: typeof VendorsIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }

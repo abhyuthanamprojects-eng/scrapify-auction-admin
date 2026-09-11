@@ -157,6 +157,35 @@ class ScrapifyAdminApiClient {
     }
   }
 
+  async getOtpSettings() {
+    return this.request<any>('/admin/otp-settings');
+  }
+
+  async updateOtpSettings(data: Record<string, unknown>) {
+    return this.request<any>('/admin/otp-settings', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async sendOtpTest(phone: string) {
+    return this.request<any>('/admin/otp-settings/test', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    });
+  }
+
+  async getIntegrationSettings() {
+    return this.request<any>('/admin/integration-settings');
+  }
+
+  async updateIntegrationSettings(data: Record<string, unknown>) {
+    return this.request<any>('/admin/integration-settings', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
   /* ---------------- Organizations & Customers ---------------- */
   async getOrganizations(params: Record<string, any> = {}) {
     const query = new URLSearchParams(params).toString();
@@ -683,15 +712,15 @@ class ScrapifyAdminApiClient {
   /* ---------------- Notifications ---------------- */
   async getNotifications(params: Record<string, any> = {}) {
     const query = new URLSearchParams(params).toString();
-    return this.request<any>(`/notifications${query ? `?${query}` : ''}`);
+    return this.request<any>(`/admin/notifications${query ? `?${query}` : ''}`);
   }
 
   async markNotificationRead(id: number) {
-    return this.request<any>(`/notifications/${id}/read`, { method: 'POST' });
+    return this.request<any>(`/admin/notifications/${id}/read`, { method: 'POST' });
   }
 
   async markAllNotificationsRead() {
-    return this.request<any>('/notifications/read-all', { method: 'POST' });
+    return this.request<any>('/admin/notifications/read-all', { method: 'POST' });
   }
 
   /* ---------------- Reports & SOC2 Audit Trail ---------------- */

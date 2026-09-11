@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bell, Search, LogOut, User as UserIcon, Menu, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,6 +13,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { AdminProfileDialog } from "@/components/admin/profile-dialog";
+import { adminApi } from "@/lib/api-client";
+
+type AdminNotification = {
+  id: number;
+  title?: string;
+  body?: string;
+  read?: boolean;
+};
 
 export function AdminTopbar({
   onOpenMobileNav,
@@ -23,6 +31,23 @@ export function AdminTopbar({
 } = {}) {
   const { user, role, logout, updateProfile } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const loadNotifications = async () => {
+    try {
+      const response = await adminApi.getNotifications({ per_page: "5" });
+      setNotifications(Array.isArray(response?.data) ? response.data : []);
+      setUnreadCount(Number(response?.unread_count ?? 0));
+    } catch {
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  };
+
+  useEffect(() => {
+    void loadNotifications();
+  }, []);
 
   const initials = user?.name
     ? user.name
@@ -80,15 +105,61 @@ export function AdminTopbar({
             </span>
           </div>
 
-          <button
-            className="relative h-9 sm:h-10 w-9 sm:w-10 shrink-0 rounded-full hover:bg-muted inline-flex items-center justify-center transition-colors"
-            aria-label="Notifications"
-          >
-            <Bell className="h-4 w-4 text-foreground/80" />
-            <Badge className="absolute top-1.5 right-1.5 h-4 min-w-4 px-1 text-[10px] bg-accent text-accent-foreground border-0 shadow-md">
-              4
-            </Badge>
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="relative h-9 sm:h-10 w-9 sm:w-10 shrink-0 rounded-full hover:bg-muted inline-flex items-center justify-center transition-colors"
+                aria-label="Notifications"
+              >
+                <Bell className="h-4 w-4 text-foreground/80" />
+                {unreadCount > 0 && (
+                  <Badge className="absolute top-1.5 right-1.5 h-4 min-w-4 px-1 text-[10px] bg-accent text-accent-foreground border-0 shadow-md">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </Badge>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80 rounded-xl p-1.5 shadow-xl border-border">
+              <DropdownMenuLabel className="px-2.5 py-2">Notifications</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {notifications.length === 0 ? (
+                <div className="px-2.5 py-5 text-center text-xs text-muted-foreground">No notifications.</div>
+              ) : (
+                notifications.map((notification) => (
+                  <DropdownMenuItem
+                    key={notification.id}
+                    onClick={async () => {
+                      if (!notification.read) {
+                        await adminApi.markNotificationRead(notification.id);
+                        await loadNotifications();
+                      }
+                    }}
+                    className="cursor-pointer items-start gap-2 rounded-lg px-2.5 py-2.5"
+                  >
+                    <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${notification.read ? "bg-muted" : "bg-accent"}`} />
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold">{notification.title ?? "Notification"}</span>
+                      <span className="mt-0.5 block line-clamp-2 text-xs text-muted-foreground">{notification.body ?? ""}</span>
+                    </span>
+                  </DropdownMenuItem>
+                ))
+              )}
+              {unreadCount > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      await adminApi.markAllNotificationsRead();
+                      await loadNotifications();
+                    }}
+                    className="cursor-pointer justify-center text-xs font-semibold"
+                  >
+                    Mark all as read
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <div className="hidden sm:block h-7 w-px bg-border mx-0.5" />
 

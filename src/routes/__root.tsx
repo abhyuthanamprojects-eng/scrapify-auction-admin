@@ -15,7 +15,6 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { AdminTopbar } from "@/components/admin/topbar";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiUnauthorizedError, ApiForbiddenError } from "@/lib/api-client";
@@ -252,9 +251,7 @@ function RootComponent() {
         {isMobile && (
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetContent side="left" className="p-0 w-[260px] gradient-navy border-r border-sidebar-border">
-              <VisuallyHidden>
-                <SheetTitle>Navigation</SheetTitle>
-              </VisuallyHidden>
+              <SheetTitle className="sr-only">Navigation</SheetTitle>
               <AdminSidebar collapsed={false} onToggle={() => {}} variant="mobile" />
             </SheetContent>
           </Sheet>
