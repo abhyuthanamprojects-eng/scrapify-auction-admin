@@ -317,8 +317,11 @@ class ScrapifyAdminApiClient {
     });
   }
 
-  async closeAuction(code: string) {
-    return this.request<any>(`/auctions/${code}/close`, { method: 'POST' });
+  async closeAuction(code: string, reason: string) {
+    return this.request<any>(`/auctions/${code}/close`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
   }
 
   async cancelAuction(code: string, reason: string) {

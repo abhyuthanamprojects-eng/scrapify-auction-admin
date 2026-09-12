@@ -35,6 +35,15 @@ export const Route = createFileRoute("/users/new")({
 type AccountType = "buyer" | "seller" | "staff";
 type FormState = Record<string, string | boolean>;
 
+const isIndianMobile = (value: string) => /^(?:\+91[\s-]?)?[6-9]\d{9}$/.test(value.trim());
+const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+const isIndianPincode = (value: string) => /^[1-9]\d{5}$/.test(value.trim());
+const isGstin = (value: string) => /^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(value.trim().toUpperCase());
+const isPan = (value: string) => /^[A-Z]{5}\d{4}[A-Z]$/.test(value.trim().toUpperCase());
+const isIfsc = (value: string) => /^[A-Z]{4}0[A-Z0-9]{6}$/.test(value.trim().toUpperCase());
+const isStrongPassword = (value: string) =>
+  value.length >= 8 && /[A-Z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value);
+
 const initialForm: FormState = {
   accountType: "seller",
   name: "",
@@ -84,8 +93,31 @@ function NewAdminAccount() {
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (!String(form.name).trim() || !String(form.email).trim() || String(form.password).length < 8)
-      return toast.error("Name, email, and an 8-character password are required.");
+    if (!String(form.name).trim()) return toast.error("Enter the full name.");
+    if (!isEmail(String(form.email))) return toast.error("Enter a valid email address.");
+    if (!isStrongPassword(String(form.password))) {
+      return toast.error("Password must be 8+ characters with uppercase, number, and symbol.");
+    }
+    if (String(form.phone).trim() && !isIndianMobile(String(form.phone))) {
+      return toast.error("Enter a valid Indian mobile number.");
+    }
+    if (!isStaff) {
+      if (String(form.gstNumber).trim() && !isGstin(String(form.gstNumber))) {
+        return toast.error("Enter a valid 15-character GSTIN.");
+      }
+      if (String(form.panNumber).trim() && !isPan(String(form.panNumber))) {
+        return toast.error("Enter a valid 10-character PAN.");
+      }
+      if (String(form.pincode).trim() && !isIndianPincode(String(form.pincode))) {
+        return toast.error("PIN code must be a valid 6-digit Indian PIN.");
+      }
+      if (String(form.accountNumber).trim() && !/^\d{6,30}$/.test(String(form.accountNumber).trim())) {
+        return toast.error("Enter a valid bank account number.");
+      }
+      if (String(form.ifscCode).trim() && !isIfsc(String(form.ifscCode))) {
+        return toast.error("Enter a valid IFSC code.");
+      }
+    }
     setSaving(true);
     try {
       const response = await adminApi.createOrgUser({

@@ -25,9 +25,16 @@ import { roleCan } from "@/lib/ops/roles";
 export const Route = createFileRoute("/auctions/live")({ component: LiveMonitor });
 
 type LiveState = {
+  auction_id?: number;
   code: string;
+  auction_code?: string;
+  title?: string;
+  company?: string;
+  category?: string | null;
+  location?: string | null;
   status: string;
   direction: "forward" | "reverse";
+  starting_price_inr?: number | null;
   current_highest_inr: number | null;
   current_lowest_inr?: number | null;
   bidders: number;
@@ -35,7 +42,7 @@ type LiveState = {
   total_bids?: number;
   participant_count?: number;
   eligible_participants?: number;
-  connected_participants?: number;
+  connected_participants?: number | null;
   last_bid_at?: string | null;
   starting_price_inr?: number | null;
   bid_increment_inr?: number | null;
@@ -47,7 +54,29 @@ type LiveState = {
     initial_slot_minutes?: number;
     continuation_slot_minutes?: number;
     maximum_auction_duration_minutes?: number;
+    bid_cutoff_ms?: number;
   };
+  slots?: Array<{
+    id: number;
+    sequence: number;
+    type: string;
+    started_at?: string | null;
+    starts_at?: string | null;
+    ends_at?: string | null;
+    cutoff_at?: string | null;
+    status: string;
+    close_reason?: string | null;
+    bid_count?: number;
+    closing_price_inr?: number | null;
+  }>;
+  audit_events?: Array<{
+    id?: string;
+    at?: string | null;
+    action: string;
+    entity_type?: string | null;
+    user?: string | null;
+    role?: string | null;
+  }>;
   active_slot?: { id: number; sequence: number; type: string; ends_at: string } | null;
   participants?: Array<{
     id?: string | number;
@@ -56,6 +85,8 @@ type LiveState = {
     status?: string;
     connection_state?: string;
     last_seen_at?: string | null;
+    bid_count?: number;
+    current_rank?: number | null;
   }>;
 };
 
@@ -95,6 +126,7 @@ function LiveMonitor() {
   const [clock, setClock] = useState(Date.now());
   const [loading, setLoading] = useState(false);
   const [reason, setReason] = useState("");
+  const [stale, setStale] = useState(false);
   const canControl = roleCan(role, "act.auctionControl");
 
   const loadAuctions = useCallback(async () => {
@@ -121,16 +153,22 @@ function LiveMonitor() {
 
   const loadState = useCallback(async () => {
     if (!selected) return;
-    const [liveResponse, readinessResponse, bidsResponse] = await Promise.all([
-      adminApi.getLiveState(selected),
-      adminApi.getAuctionReadiness(selected),
-      adminApi.getBids(selected),
-    ]);
-    const next = liveResponse?.data ?? liveResponse;
-    setState(next);
-    setReadiness(readinessResponse?.data ?? readinessResponse);
-    setBids(Array.isArray(bidsResponse?.data) ? bidsResponse.data : []);
-    if (next?.server_time) setOffset(new Date(next.server_time).getTime() - Date.now());
+    try {
+      const [liveResponse, readinessResponse, bidsResponse] = await Promise.all([
+        adminApi.getLiveState(selected),
+        adminApi.getAuctionReadiness(selected),
+        adminApi.getBids(selected),
+      ]);
+      const next = liveResponse?.data ?? liveResponse;
+      setState(next);
+      setReadiness(readinessResponse?.data ?? readinessResponse);
+      setBids(Array.isArray(bidsResponse?.data) ? bidsResponse.data : []);
+      if (next?.server_time) setOffset(new Date(next.server_time).getTime() - Date.now());
+      setStale(false);
+    } catch (error) {
+      setStale(true);
+      throw error;
+    }
   }, [selected]);
 
   useEffect(() => {
@@ -184,27 +222,32 @@ function LiveMonitor() {
   const currentPrice =
     state?.direction === "reverse" ? state.current_lowest_inr : state?.current_highest_inr;
   const bidCount = state?.total_bids ?? bids.length;
-  const participantCount = state?.participant_count ?? state?.bidders ?? 0;
-  const eligibleCount = state?.eligible_participants ?? readiness?.eligible_participants ?? 0;
-  const connectedCount = state?.connected_participants ?? 0;
+  const participantCount = state?.participant_count ?? state?.bidders ?? null;
+  const eligibleCount = state?.eligible_participants ?? readiness?.eligible_participants ?? null;
+  const connectedCount = state?.connected_participants ?? null;
   const auctionTimeLeft = countdown(state?.hard_end_at, offset, clock);
   const slotTimeLeft = countdown(active?.ends_at, offset, clock);
   const hardEndPassed = Boolean(
     state?.hard_end_at && new Date(state.hard_end_at).getTime() <= clock + offset,
   );
   const initialSlotMinutes =
-    state?.initial_slot_minutes ?? state?.configuration?.initial_slot_minutes ?? 30;
+    state?.initial_slot_minutes ?? state?.configuration?.initial_slot_minutes;
   const continuationSlotMinutes =
-    state?.continuation_slot_minutes ?? state?.configuration?.continuation_slot_minutes ?? 2;
+    state?.continuation_slot_minutes ?? state?.configuration?.continuation_slot_minutes;
   const maximumDurationMinutes =
     state?.maximum_auction_duration_minutes ??
-    state?.configuration?.maximum_auction_duration_minutes ??
-    120;
+    state?.configuration?.maximum_auction_duration_minutes;
   const canStartNextSlot = live && !active && !hardEndPassed;
   const participants = state?.participants ?? [];
 
   return (
-    <div className="h-dvh overflow-hidden bg-[#08111f] text-slate-100">
+    <div className="relative h-dvh overflow-hidden bg-[#08111f] text-slate-100">
+      {stale && (
+        <div className="absolute inset-x-0 top-0 z-30 border-b border-amber-300/30 bg-amber-950/90 px-4 py-2 text-center text-xs font-semibold text-amber-100">
+          Live state is stale. Retrying the server connection; displayed values are the last
+          confirmed snapshot.
+        </div>
+      )}
       <div className="grid h-dvh min-h-0 lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="border-b border-white/10 bg-[#0d1b30] p-4 lg:h-dvh lg:border-b-0 lg:border-r">
           <div className="mb-3 flex items-center justify-between">
@@ -320,8 +363,8 @@ function LiveMonitor() {
                   </div>
                 </div>
                 <div className="relative grid grid-cols-2 gap-px border-t border-white/10 bg-white/10 sm:grid-cols-4">
-                  <DarkMetric icon={<Users />} label="Eligible" value={String(eligibleCount)} />
-                  <DarkMetric icon={<Wifi />} label="Connected" value={String(connectedCount)} />
+                  <DarkMetric icon={<Users />} label="Eligible" value={eligibleCount == null ? "—" : String(eligibleCount)} />
+                  <DarkMetric icon={<Wifi />} label="Connected" value={connectedCount == null ? "Unavailable" : String(connectedCount)} />
                   <DarkMetric
                     icon={<Clock3 />}
                     label="Last bid"
@@ -396,10 +439,10 @@ function LiveMonitor() {
                     <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-300">
                       Participant monitor
                     </div>
-                    <h3 className="mt-1 text-lg font-semibold text-white">Connected bidders</h3>
+                    <h3 className="mt-1 text-lg font-semibold text-white">Participant monitor</h3>
                   </div>
                   <div className="rounded-full border border-violet-300/20 bg-violet-300/10 px-2 py-1 text-xs font-semibold text-violet-200">
-                    {participantCount} total
+                    {participantCount == null ? "—" : String(participantCount) + " total"}
                   </div>
                 </div>
                 <div className="max-h-64 overflow-y-auto rounded-2xl border border-white/10">
@@ -439,11 +482,65 @@ function LiveMonitor() {
                     </div>
                   ) : (
                     <div className="px-4 py-7 text-center text-sm text-slate-500">
-                      {participantCount > 0
+                      {participantCount != null && participantCount > 0
                         ? "Participant roster is not included in the live-state response."
-                        : "No participants connected."}
+                        : "Presence data is not available in the current API snapshot."}
                     </div>
                   )}
+                </div>
+              </section>
+
+              <section className="grid gap-5 rounded-3xl border border-white/10 bg-[#0e1b2f]/90 p-4 shadow-2xl shadow-black/20 sm:p-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">
+                    Frozen configuration
+                  </div>
+                  <h3 className="mt-1 text-lg font-semibold text-white">Rules used by this auction</h3>
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                    <DarkInfo label="Initial slot" value={initialSlotMinutes == null ? "—" : `${initialSlotMinutes} min`} />
+                    <DarkInfo label="Continuation" value={continuationSlotMinutes == null ? "—" : `${continuationSlotMinutes} min`} />
+                    <DarkInfo label="Hard maximum" value={maximumDurationMinutes == null ? "—" : `${maximumDurationMinutes} min`} />
+                    <DarkInfo label="Bid cutoff" value={state?.configuration?.bid_cutoff_ms == null ? "—" : `${state.configuration.bid_cutoff_ms} ms`} />
+                    <DarkInfo label="Starting price" value={money(state?.starting_price_inr)} />
+                    <DarkInfo label="Bid increment" value={money(state?.bid_increment_inr)} />
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-300">
+                    Slot history
+                  </div>
+                  <h3 className="mt-1 text-lg font-semibold text-white">Persisted transitions</h3>
+                  <div className="mt-4 max-h-48 space-y-2 overflow-y-auto pr-1">
+                    {(state?.slots ?? []).map((slot) => (
+                      <div key={slot.id} className="rounded-xl border border-white/10 bg-black/15 px-3 py-2 text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-semibold text-white">Slot {slot.sequence} · {slot.type}</span>
+                          <span className="uppercase tracking-wider text-slate-400">{slot.status}</span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-slate-500">
+                          <span>{slot.bid_count ?? 0} bids</span>
+                          <span>closing {money(slot.closing_price_inr)}</span>
+                          {slot.close_reason && <span>{slot.close_reason}</span>}
+                        </div>
+                      </div>
+                    ))}
+                    {(state?.slots ?? []).length === 0 && <div className="text-sm text-slate-500">Slot history unavailable.</div>}
+                  </div>
+                </div>
+                <div className="xl:col-span-2">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">
+                    Immutable audit timeline
+                  </div>
+                  <div className="mt-3 max-h-44 overflow-y-auto rounded-2xl border border-white/10">
+                    {(state?.audit_events ?? []).map((event) => (
+                      <div key={event.id ?? `${event.action}-${event.at}`} className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-3 py-2 text-xs last:border-b-0">
+                        <span className="font-semibold text-white">{event.action}</span>
+                        <span className="text-slate-500">{event.user ?? "System"} · {event.role ?? "—"}</span>
+                        <span className="font-mono text-slate-500">{event.at ? new Date(event.at).toLocaleString() : "—"}</span>
+                      </div>
+                    ))}
+                    {(state?.audit_events ?? []).length === 0 && <div className="px-3 py-5 text-center text-sm text-slate-500">No audit events returned for this auction.</div>}
+                  </div>
                 </div>
               </section>
             </div>
@@ -529,7 +626,7 @@ function LiveMonitor() {
                           Initial slot
                         </div>
                         <div className="mt-1 font-semibold text-white">
-                          {initialSlotMinutes} min
+                          {initialSlotMinutes == null ? "—" : String(initialSlotMinutes) + " min"}
                         </div>
                       </div>
                       <div>
@@ -537,7 +634,7 @@ function LiveMonitor() {
                           Continuation
                         </div>
                         <div className="mt-1 font-semibold text-white">
-                          {continuationSlotMinutes} min
+                          {continuationSlotMinutes == null ? "—" : String(continuationSlotMinutes) + " min"}
                         </div>
                       </div>
                       <div>
@@ -545,7 +642,7 @@ function LiveMonitor() {
                           Hard maximum
                         </div>
                         <div className="mt-1 font-semibold text-white">
-                          {maximumDurationMinutes / 60} hr
+                          {maximumDurationMinutes == null ? "—" : String(maximumDurationMinutes / 60) + " hr"}
                         </div>
                       </div>
                     </div>
@@ -563,17 +660,13 @@ function LiveMonitor() {
                     {live && active && (
                       <Button
                         variant="outline"
-                        disabled={loading}
+                        disabled={loading || !reason.trim()}
                         onClick={() =>
-                          busy(
-                            () =>
-                              adminApi.closeSlot(
-                                selected,
-                                active.id,
-                                reason || "ADMIN_FORCE_CLOSE",
-                              ),
-                            "Current slot closed",
-                          )
+                          window.confirm("Close slot " + active.sequence + "? Reason: " + reason.trim())
+                            && busy(
+                              () => adminApi.closeSlot(selected, active.id, reason.trim()),
+                              "Current slot closed",
+                            )
                         }
                         className="h-11 justify-start border-white/15 bg-white/5 text-white hover:bg-white/10"
                       >
@@ -608,8 +701,12 @@ function LiveMonitor() {
                         variant="destructive"
                         disabled={loading}
                         onClick={() => {
-                          if (window.confirm("Close this auction now?"))
-                            busy(() => adminApi.closeAuction(selected), "Auction closed");
+                          if (!reason.trim()) {
+                            toast.error("Enter a reason before closing the auction.");
+                            return;
+                          }
+                          if (window.confirm("Close this auction now? Reason: " + reason.trim()))
+                            busy(() => adminApi.closeAuction(selected, reason.trim()), "Auction closed");
                         }}
                         className="h-11 justify-start"
                       >
@@ -617,12 +714,12 @@ function LiveMonitor() {
                       </Button>
                     )}
                   </div>
-                  {live && active && (
+                  {live && (
                     <Input
                       className="mt-3 border-white/15 bg-black/20 text-white placeholder:text-slate-500"
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
-                      placeholder="Reason for slot intervention"
+                      placeholder="Required reason for slot or auction closure"
                     />
                   )}
                 </section>

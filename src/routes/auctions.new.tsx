@@ -118,6 +118,7 @@ function NewAuction() {
       !form.title.trim() ||
       !form.category.trim() ||
       !form.quantity ||
+      !form.company.trim() ||
       !form.scheduleStart
     ) {
       toast.error(
@@ -125,12 +126,29 @@ function NewAuction() {
       );
       return;
     }
-    if (Number(form.maximumDurationMinutes) > 120) {
+    const maximumDurationMinutes = Number(form.maximumDurationMinutes);
+    const initialSlotMinutes = Number(form.initialSlotMinutes);
+    const continuationSlotMinutes = Number(form.continuationSlotMinutes);
+    const scheduleStart = new Date(form.scheduleStart);
+    const scheduleEnd = form.scheduleEnd ? new Date(form.scheduleEnd) : undefined;
+    if (!Number.isInteger(maximumDurationMinutes) || maximumDurationMinutes < 1 || maximumDurationMinutes > 120) {
       toast.error("Maximum auction duration cannot exceed 120 minutes.");
       return;
     }
-    if (Number(form.initialSlotMinutes) <= 0 || Number(form.continuationSlotMinutes) <= 0) {
+    if (!Number.isInteger(initialSlotMinutes) || !Number.isInteger(continuationSlotMinutes) || initialSlotMinutes <= 0 || continuationSlotMinutes <= 0) {
       toast.error("Slot durations must be greater than zero.");
+      return;
+    }
+    if (Number.isNaN(scheduleStart.getTime()) || (scheduleEnd && Number.isNaN(scheduleEnd.getTime()))) {
+      toast.error("Please choose valid auction schedule dates.");
+      return;
+    }
+    if (scheduleEnd && scheduleEnd <= scheduleStart) {
+      toast.error("Auction end must be after the start time.");
+      return;
+    }
+    if (scheduleEnd && scheduleEnd.getTime() - scheduleStart.getTime() > maximumDurationMinutes * 60_000) {
+      toast.error("The selected auction window cannot exceed the maximum duration.");
       return;
     }
 
@@ -142,36 +160,43 @@ function NewAuction() {
         created_for_self: isSelfOwned,
         owner_type: isSelfOwned ? "admin" : undefined,
         title: form.title.trim(),
-        direction: form.direction,
-        category: form.category.trim(),
-        material_category: form.category.trim(),
-        quantity: Number(form.quantity),
-        quantity_unit: form.unit,
-        location: form.location.trim() || undefined,
-        company: form.company.trim() || undefined,
+        company: form.company.trim(),
         plant: form.plant.trim() || undefined,
         warehouse: form.warehouseName.trim() || undefined,
-        warehouse_name: form.warehouseName.trim() || undefined,
-        warehouse_address: form.warehouseAddress.trim() || undefined,
-        warehouse_city: form.warehouseCity.trim() || undefined,
-        warehouse_state: form.warehouseState.trim() || undefined,
-        warehouse_pincode: form.warehousePincode.trim() || undefined,
-        warehouse_contact: form.warehouseContact.trim() || undefined,
+        warehouse_details: {
+          address: form.warehouseAddress.trim() || undefined,
+          city: form.warehouseCity.trim() || undefined,
+          state: form.warehouseState.trim() || undefined,
+          pincode: form.warehousePincode.trim() || undefined,
+          contact: form.warehouseContact.trim() || undefined,
+        },
+        location: form.location.trim() || undefined,
+        direction: form.direction,
+        category: form.category.trim(),
+        material_type: form.category.trim(),
+        quantity: String(form.quantity),
+        uom: form.unit,
+        reserve_price: Number(form.reservePrice) || 0,
+        starting_price: Number(form.startingPrice) || Number(form.reservePrice) || 0,
+        bid_increment: Number(form.bidIncrement) || 0,
         description: form.description.trim() || undefined,
-        reserve_price_inr: Number(form.reservePrice) || 0,
-        starting_price_inr: Number(form.startingPrice) || Number(form.reservePrice) || 0,
-        bid_increment_inr: Number(form.bidIncrement) || 0,
-        template: form.template,
-        schedule_start: new Date(form.scheduleStart).toISOString(),
-        schedule_end: form.scheduleEnd ? new Date(form.scheduleEnd).toISOString() : undefined,
-        initial_slot_minutes: Number(form.initialSlotMinutes),
-        continuation_slot_minutes: Number(form.continuationSlotMinutes),
-        maximum_auction_duration_minutes: Number(form.maximumDurationMinutes),
-        created_by_admin: true,
+        status: "draft",
+        lot_type: "single",
+        schedule_start: scheduleStart.toISOString(),
+        schedule_end: scheduleEnd?.toISOString(),
         on_behalf_of: isSelfOwned ? undefined : form.clientCode,
       });
       const created = response?.data ?? response;
       const code = String(created?.code ?? created?.auction?.code ?? created?.id ?? "");
+      if (code) {
+        await adminApi.updateAuctionConfiguration(code, {
+          initial_slot_minutes: initialSlotMinutes,
+          continuation_slot_minutes: continuationSlotMinutes,
+          maximum_auction_duration_minutes: maximumDurationMinutes,
+          bid_cutoff_ms: 500,
+          continuation_mode: "MANUAL_ADMIN",
+        });
+      }
       toast.success(
         code
           ? isSelfOwned
@@ -340,10 +365,11 @@ function NewAuction() {
               </div>
               <div className="grid gap-5 md:grid-cols-2">
                 <Field
-                  label="Company / facility"
+                  label="Company / facility *"
                   value={form.company}
                   onChange={(value) => set("company", value)}
                   placeholder="Meridian Steelworks Ltd."
+                  required
                 />
                 <Field
                   label="Plant / unit"
