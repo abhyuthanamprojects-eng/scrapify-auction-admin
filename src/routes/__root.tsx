@@ -183,18 +183,22 @@ function RootComponent() {
   const isLiveControlRoom = routerState.location.pathname === "/auctions/live";
   const { isAuthenticated, isChecking } = useAuth();
 
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      return window.localStorage.getItem("admin.sidebar.collapsed") === "1";
-    } catch {
-      return false;
-    }
-  });
+  // Keep the server render and the first browser render identical. Reading
+  // localStorage in the state initializer can make the sidebar markup differ
+  // during hydration, so restore the preference after the first client paint.
+  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const isMobile = useIsMobile();
 
   useEffect(() => initBrowserSecurity(), []);
+
+  useEffect(() => {
+    try {
+      setCollapsed(window.localStorage.getItem("admin.sidebar.collapsed") === "1");
+    } catch {
+      /* ignore unavailable storage */
+    }
+  }, []);
 
   useEffect(() => {
     try {

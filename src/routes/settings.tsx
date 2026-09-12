@@ -187,8 +187,18 @@ function SettingsPage() {
     }
     setOtpTesting(true);
     try {
-      await adminApi.sendOtpTest(otpTestPhone);
-      toast.success("Test OTP request sent. The OTP value is never shown here.");
+      const response = await adminApi.sendOtpTest(otpTestPhone);
+      const providerMessage = response?.provider_message;
+      const requestId = response?.provider_request_id;
+      toast.success(
+        [
+          response?.message || "Test OTP request accepted by MSG91.",
+          providerMessage,
+          requestId ? `Request ID: ${requestId}` : null,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      );
       setOtpTestPhone("");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not send test OTP.");
