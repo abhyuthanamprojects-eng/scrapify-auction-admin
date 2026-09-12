@@ -137,7 +137,11 @@ class ScrapifyAdminApiClient {
   async login(identifier: string, password: string) {
     const res = await this.request<any>('/admin/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ identifier, password }),
+      // Login does not need an Authorization header. Form-encoded data keeps
+      // this cross-origin request "simple", avoiding a separate OPTIONS
+      // preflight that can be rate-limited by the production edge proxy.
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ identifier, password }).toString(),
     });
     if (res.token) {
       this.setToken(res.token);
