@@ -18,7 +18,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiUnauthorizedError, ApiForbiddenError } from "@/lib/api-client";
-import { assessBrowser, initBrowserSecurity, SecurityGate } from "@/lib/browser-security";
+import { initBrowserSecurity } from "@/lib/browser-security";
 
 function NotFoundComponent() {
   return (
@@ -196,10 +196,6 @@ function RootComponent() {
 
   useEffect(() => initBrowserSecurity(), []);
 
-  if (!assessBrowser().allowed) {
-    return <SecurityGate>{null}</SecurityGate>;
-  }
-
   useEffect(() => {
     try {
       window.localStorage.setItem("admin.sidebar.collapsed", collapsed ? "1" : "0");
@@ -263,7 +259,7 @@ function RootComponent() {
   // Authenticated — render the admin shell
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex h-dvh w-full overflow-hidden bg-background">
+    <div className="flex h-dvh w-full overflow-hidden bg-white">
         {!isMobile && (
           <AdminSidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
         )}
@@ -280,11 +276,11 @@ function RootComponent() {
         )}
         <div className="flex-1 flex flex-col min-w-0 h-dvh overflow-y-auto">
           <AdminTopbar onOpenMobileNav={() => setMobileOpen(true)} showMobileTrigger={isMobile} />
-          <main className="flex-1 p-6">
+          <main className="flex-1 bg-white p-6">
             {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
             <Outlet />
           </main>
-          <footer className="border-t border-border/60 bg-background/60 backdrop-blur px-6 py-4">
+          <footer className="border-t border-border/60 bg-white px-6 py-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
               <p>
                 © {new Date().getFullYear()} Scrapify Auctions Operations Console. All rights

@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Building2, CheckCircle2, MapPin, ShieldCheck, UserRound } from "lucide-react";
+import {
+  ArrowLeft,
+  Building2,
+  CheckCircle2,
+  FileText,
+  MapPin,
+  ShieldCheck,
+  Upload,
+  UserRound,
+} from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,6 +59,10 @@ const initialForm: FormState = {
   country: "India",
   category: "",
   yearsInBusiness: "",
+  bankName: "",
+  accountHolderName: "",
+  accountNumber: "",
+  ifscCode: "",
 };
 
 function NewAdminAccount() {
@@ -58,6 +71,12 @@ function NewAdminAccount() {
   const customerMode = new URLSearchParams(location.search).get("mode") === "customer";
   const [form, setForm] = useState<FormState>(initialForm);
   const [saving, setSaving] = useState(false);
+  const [documents, setDocuments] = useState<Record<string, File | null>>({
+    gst_certificate: null,
+    pan_card: null,
+    bank_proof: null,
+    address_proof: null,
+  });
   const set = (key: string, value: string | boolean) =>
     setForm((current) => ({ ...current, [key]: value }));
   const accountType = form.accountType as AccountType;
@@ -69,7 +88,7 @@ function NewAdminAccount() {
       return toast.error("Name, email, and an 8-character password are required.");
     setSaving(true);
     try {
-      await adminApi.createOrgUser({
+      const response = await adminApi.createOrgUser({
         name: form.name,
         email: form.email,
         phone: form.phone || undefined,
@@ -96,8 +115,28 @@ function NewAdminAccount() {
         state: form.state || undefined,
         pincode: form.pincode || undefined,
         country: form.country || undefined,
+        bank_name: form.bankName || undefined,
+        account_holder_name: form.accountHolderName || undefined,
+        account_number: form.accountNumber || undefined,
+        ifsc_code: form.ifscCode || undefined,
         created_by_admin: true,
       });
+      const created = response?.data ?? response;
+      const vendorCode = String(
+        created?.vendor_code ?? created?.vendor?.code ?? created?.code ?? "",
+      );
+      const files = Object.entries(documents).filter((entry): entry is [string, File] =>
+        Boolean(entry[1]),
+      );
+      if (vendorCode && files.length > 0) {
+        await Promise.all(
+          files.map(([key, file]) => adminApi.uploadVendorDocument(vendorCode, key, key, file)),
+        );
+      } else if (!isStaff && files.length > 0) {
+        toast.warning(
+          "Account created, but documents could not be linked because the API did not return a vendor code.",
+        );
+      }
       toast.success(`${isStaff ? "Staff user" : "Account"} created without OTP verification.`);
       navigate({ to: "/users" });
     } catch (error) {
@@ -342,6 +381,78 @@ function NewAdminAccount() {
             </div>
           </CardContent>
         </Card>
+        {!isStaff && (
+          <>
+            <Card className="border-border shadow-sm">
+              <CardHeader className="border-b border-border/70 bg-[#fff7f0]">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <FileText className="h-5 w-5 text-orange-600" /> Banking and settlement details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-5 p-5 md:grid-cols-2">
+                <Field
+                  label="Bank name"
+                  value={form.bankName}
+                  onChange={(value) => set("bankName", value)}
+                  placeholder="HDFC Bank"
+                />
+                <Field
+                  label="Account holder name"
+                  value={form.accountHolderName}
+                  onChange={(value) => set("accountHolderName", value)}
+                  placeholder="Registered business name"
+                />
+                <Field
+                  label="Account number"
+                  value={form.accountNumber}
+                  onChange={(value) => set("accountNumber", value)}
+                  placeholder="Account number"
+                />
+                <Field
+                  label="IFSC code"
+                  value={form.ifscCode}
+                  onChange={(value) => set("ifscCode", value)}
+                  placeholder="HDFC0000001"
+                />
+              </CardContent>
+            </Card>
+            <Card className="border-border shadow-sm">
+              <CardHeader className="border-b border-border/70 bg-[#f7f3ff]">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Upload className="h-5 w-5 text-violet-600" /> Registration documents
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-5 p-5 md:grid-cols-2">
+                {[
+                  ["gst_certificate", "GST certificate"],
+                  ["pan_card", "PAN card"],
+                  ["bank_proof", "Bank proof / cancelled cheque"],
+                  ["address_proof", "Registered address proof"],
+                ].map(([key, label]) => (
+                  <div
+                    key={key}
+                    className="space-y-2 rounded-xl border border-dashed border-border p-4"
+                  >
+                    <Label>{label}</Label>
+                    <Input
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      onChange={(event) =>
+                        setDocuments((current) => ({
+                          ...current,
+                          [key]: event.target.files?.[0] ?? null,
+                        }))
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {documents[key]?.name ?? "PDF, PNG or JPG"}
+                    </p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </>
+        )}
         <div className="flex justify-end gap-3">
           <Link to="/users">
             <Button type="button" variant="outline">

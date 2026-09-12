@@ -78,7 +78,7 @@
   --success: #2E7D32;
   --warning: #E65100;
 
-  --background: #F4F1EA;
+  --background: #FFFFFF;
   --foreground: #1F3251;
   --card: oklch(1 0 0);
   --card-foreground: #1F3251;
@@ -153,7 +153,7 @@
   }
 
   body {
-    background-color: var(--color-background);
+    background-color: #ffffff;
     color: var(--color-foreground);
     font-family: var(--font-sans);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
@@ -177,13 +177,15 @@
 @utility card-soft {
   background-color: var(--card);
   border-radius: 1rem;
+  overflow: hidden;
   box-shadow: 0 6px 20px -10px rgba(11, 31, 58, 0.25);
 }
 
 @utility card-premium {
-  background: linear-gradient(180deg, #ffffff 0%, #fbf8f1 100%);
+  background: #ffffff;
   border-radius: 1rem;
   border: 1px solid rgba(230, 81, 0, 0.12);
+  overflow: hidden;
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.9) inset,
     0 20px 40px -24px rgba(15, 27, 46, 0.18),
@@ -191,7 +193,7 @@
 }
 
 @utility kpi-3d {
-  background: linear-gradient(180deg, #ffffff 0%, #fbf8f1 100%);
+  background: #ffffff;
   border: 1px solid rgba(15, 27, 46, 0.08);
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 1) inset,

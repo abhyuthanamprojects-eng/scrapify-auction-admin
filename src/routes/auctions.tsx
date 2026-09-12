@@ -1,7 +1,8 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { PageHeader } from "@/components/admin/page-header";
 import { cn } from "@/lib/utils";
-import { X } from "lucide-react";
+import { Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/auctions")({
   head: () => ({
@@ -34,6 +35,11 @@ function AuctionsLayout() {
     pathname !== "/auctions/publish" &&
     pathname !== "/auctions/live";
 
+  // The create screen owns its full-page header and form layout.
+  if (pathname === "/auctions/new") {
+    return <Outlet />;
+  }
+
   if (isLiveMonitor) {
     return (
       <div className="relative min-h-dvh">
@@ -55,6 +61,13 @@ function AuctionsLayout() {
       <PageHeader
         title="Auctions"
         description="Review submitted auctions, publish approved ones and monitor live rooms."
+        actions={
+          <Button asChild className="gap-2">
+            <Link to="/auctions/new">
+              <Plus className="h-4 w-4" /> Create auction
+            </Link>
+          </Button>
+        }
       />
       {!isDetail && (
         <div className="mb-6 flex items-center gap-1 p-1 rounded-xl bg-muted/40 ring-1 ring-border w-fit">

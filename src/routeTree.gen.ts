@@ -30,6 +30,7 @@ import { Route as UsersRouteImport } from './routes/users'
 import { Route as AuctionsIndexRouteImport } from './routes/auctions.index'
 import { Route as AuctionsIdRouteImport } from './routes/auctions.$id'
 import { Route as AuctionsLiveRouteImport } from './routes/auctions.live'
+import { Route as AuctionsNewRouteImport } from './routes/auctions.new'
 import { Route as AuctionsPublishRouteImport } from './routes/auctions.publish'
 import { Route as CustomersIndexRouteImport } from './routes/customers.index'
 import { Route as CustomersIdRouteImport } from './routes/customers.$id'
@@ -147,6 +148,11 @@ const AuctionsLiveRoute = AuctionsLiveRouteImport.update({
   path: '/live',
   getParentRoute: () => AuctionsRoute,
 } as any)
+const AuctionsNewRoute = AuctionsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AuctionsRoute,
+} as any)
 const AuctionsPublishRoute = AuctionsPublishRouteImport.update({
   id: '/publish',
   path: '/publish',
@@ -224,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRouteWithChildren
   '/auctions/$id': typeof AuctionsIdRoute
   '/auctions/live': typeof AuctionsLiveRoute
+  '/auctions/new': typeof AuctionsNewRoute
   '/auctions/publish': typeof AuctionsPublishRoute
   '/customers/$id': typeof CustomersIdRoute
   '/events/$id': typeof EventsIdRoute
@@ -257,6 +264,7 @@ export interface FileRoutesByTo {
   '/users': typeof UsersRouteWithChildren
   '/auctions/$id': typeof AuctionsIdRoute
   '/auctions/live': typeof AuctionsLiveRoute
+  '/auctions/new': typeof AuctionsNewRoute
   '/auctions/publish': typeof AuctionsPublishRoute
   '/customers/$id': typeof CustomersIdRoute
   '/events/$id': typeof EventsIdRoute
@@ -292,6 +300,7 @@ export interface FileRoutesById {
   '/users': typeof UsersRouteWithChildren
   '/auctions/$id': typeof AuctionsIdRoute
   '/auctions/live': typeof AuctionsLiveRoute
+  '/auctions/new': typeof AuctionsNewRoute
   '/auctions/publish': typeof AuctionsPublishRoute
   '/customers/$id': typeof CustomersIdRoute
   '/events/$id': typeof EventsIdRoute
@@ -328,6 +337,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/auctions/$id'
     | '/auctions/live'
+    | '/auctions/new'
     | '/auctions/publish'
     | '/customers/$id'
     | '/events/$id'
@@ -361,6 +371,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/auctions/$id'
     | '/auctions/live'
+    | '/auctions/new'
     | '/auctions/publish'
     | '/customers/$id'
     | '/events/$id'
@@ -395,6 +406,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/auctions/$id'
     | '/auctions/live'
+    | '/auctions/new'
     | '/auctions/publish'
     | '/customers/$id'
     | '/events/$id'
@@ -588,6 +600,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuctionsLiveRouteImport
       parentRoute: typeof AuctionsRoute
     }
+    '/auctions/new': {
+      id: '/auctions/new'
+      path: '/new'
+      fullPath: '/auctions/new'
+      preLoaderRoute: typeof AuctionsNewRouteImport
+      parentRoute: typeof AuctionsRoute
+    }
     '/auctions/publish': {
       id: '/auctions/publish'
       path: '/publish'
@@ -671,6 +690,7 @@ declare module '@tanstack/react-router' {
 interface AuctionsRouteChildren {
   AuctionsIdRoute: typeof AuctionsIdRoute
   AuctionsLiveRoute: typeof AuctionsLiveRoute
+  AuctionsNewRoute: typeof AuctionsNewRoute
   AuctionsPublishRoute: typeof AuctionsPublishRoute
   AuctionsIndexRoute: typeof AuctionsIndexRoute
 }
@@ -678,6 +698,7 @@ interface AuctionsRouteChildren {
 const AuctionsRouteChildren: AuctionsRouteChildren = {
   AuctionsIdRoute: AuctionsIdRoute,
   AuctionsLiveRoute: AuctionsLiveRoute,
+  AuctionsNewRoute: AuctionsNewRoute,
   AuctionsPublishRoute: AuctionsPublishRoute,
   AuctionsIndexRoute: AuctionsIndexRoute,
 }
