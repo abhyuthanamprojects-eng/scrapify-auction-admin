@@ -811,6 +811,33 @@ function SettingsPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
+                    <Label>SMS OTP Length</Label>
+                    <Input
+                      type="number"
+                      min={4}
+                      max={8}
+                      value={otpSettings.msg91_otp_length ?? 4}
+                      onChange={(e) =>
+                        setOtpSettings({ ...otpSettings, msg91_otp_length: e.target.value })
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Must match the digits configured in the MSG91 OTP template.
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Email OTP Length</Label>
+                    <Input
+                      type="number"
+                      min={4}
+                      max={8}
+                      value={otpSettings.email_otp_length ?? 6}
+                      onChange={(e) =>
+                        setOtpSettings({ ...otpSettings, email_otp_length: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1.5">
                     <Label>OTP Expiry (minutes)</Label>
                     <Input
                       type="number"
