@@ -68,10 +68,14 @@ class ScrapifyAdminApiClient {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
     const headers: Record<string, string> = {
-      "Content-Type": "application/json",
       Accept: "application/json",
       ...((options.headers as Record<string, string>) || {}),
     };
+
+    // Avoid an unnecessary CORS preflight for requests that have no body.
+    if (options.body !== undefined && options.body !== null) {
+      headers["Content-Type"] ??= "application/json";
+    }
 
     if (this.token) {
       headers["Authorization"] = `Bearer ${this.token}`;
