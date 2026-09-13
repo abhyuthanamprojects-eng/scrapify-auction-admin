@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { adminApi } from "./api-client";
 
 export type VendorStatus = "Pending" | "Approved" | "Rejected" | "Suspended" | "Draft";
@@ -255,14 +255,16 @@ export function useVendor(id: string) {
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const hasLoaded = useRef(false);
 
   const load = useCallback(async () => {
     if (!id) return;
-    setLoading(true);
+    if (!hasLoaded.current) setLoading(true);
     setError(null);
     try {
       const v = await fetchVendorById(id);
       setVendor(v);
+      hasLoaded.current = true;
     } catch (err: any) {
       setError(err);
     } finally {

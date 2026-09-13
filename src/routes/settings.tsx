@@ -487,9 +487,29 @@ function SettingsPage() {
         </Button>
       </div>
 
+      <nav aria-label="Settings sections" className="flex flex-wrap gap-2 rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
+        {[
+          ["backend", "Platform & API"],
+          ["otp", "OTP & Email"],
+          ["integrations", "Integrations"],
+          ["kyb", "Business Verification"],
+          ["auction", "Auctions & EMD"],
+          ["security", "Security"],
+          ["notifications", "Notifications"],
+        ].map(([id, label]) => (
+          <a
+            key={id}
+            href={`#settings-${id}`}
+            className="rounded-lg border border-border/70 px-3 py-2 text-xs font-semibold text-muted-foreground transition hover:border-[color:var(--auction)] hover:bg-orange-50 hover:text-[color:var(--auction)]"
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* Backend & API Connectivity */}
-        <Card className="overflow-hidden rounded-2xl border-2 border-t-4 border-t-[color:var(--navy)] border-border/70 bg-card shadow-[0_4px_14px_rgba(15,23,42,0.08)] transition-shadow duration-200 hover:shadow-[0_8px_22px_rgba(15,23,42,0.12)] md:col-span-2">
+        <Card id="settings-backend" className="scroll-mt-6 overflow-hidden rounded-2xl border-2 border-t-4 border-t-[color:var(--navy)] border-border/70 bg-card shadow-[0_4px_14px_rgba(15,23,42,0.08)] transition-shadow duration-200 hover:shadow-[0_8px_22px_rgba(15,23,42,0.12)] md:col-span-2">
           <CardHeader
             className="relative cursor-pointer bg-[color:var(--navy)] pb-3 pr-12 text-white"
             onClick={() => toggleSection("backend")}
@@ -698,7 +718,7 @@ function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden rounded-2xl border-2 border-t-4 border-t-[color:var(--auction)] border-border/70 bg-card shadow-[0_4px_14px_rgba(15,23,42,0.08)] transition-shadow duration-200 hover:shadow-[0_8px_22px_rgba(15,23,42,0.12)] md:col-span-2">
+        <Card id="settings-otp" className="scroll-mt-6 overflow-hidden rounded-2xl border-2 border-t-4 border-t-[color:var(--auction)] border-border/70 bg-card shadow-[0_4px_14px_rgba(15,23,42,0.08)] transition-shadow duration-200 hover:shadow-[0_8px_22px_rgba(15,23,42,0.12)] md:col-span-2">
           <CardHeader
             className="relative cursor-pointer bg-orange-50/80 pb-3 pr-12"
             onClick={() => toggleSection("otp")}
@@ -1039,7 +1059,7 @@ function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden rounded-2xl border-2 border-t-4 border-t-violet-500 border-border/70 bg-card shadow-[0_4px_14px_rgba(15,23,42,0.08)] transition-shadow duration-200 hover:shadow-[0_8px_22px_rgba(15,23,42,0.12)] md:col-span-2">
+        <Card id="settings-integrations" className="scroll-mt-6 overflow-hidden rounded-2xl border-2 border-t-4 border-t-violet-500 border-border/70 bg-card shadow-[0_4px_14px_rgba(15,23,42,0.08)] transition-shadow duration-200 hover:shadow-[0_8px_22px_rgba(15,23,42,0.12)] md:col-span-2">
           <CardHeader
             className="relative cursor-pointer bg-violet-50/80 pb-3 pr-12"
             onClick={() => toggleSection("integrations")}
@@ -1528,7 +1548,7 @@ function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden rounded-2xl border-2 border-t-4 border-t-sky-500 border-border/70 bg-card shadow-[0_4px_14px_rgba(15,23,42,0.08)] transition-shadow duration-200 hover:shadow-[0_8px_22px_rgba(15,23,42,0.12)]">
+        <Card id="settings-kyb" className="scroll-mt-6 overflow-hidden rounded-2xl border-2 border-t-4 border-t-sky-500 border-border/70 bg-card shadow-[0_4px_14px_rgba(15,23,42,0.08)] transition-shadow duration-200 hover:shadow-[0_8px_22px_rgba(15,23,42,0.12)]">
           <CardHeader
             className="relative cursor-pointer bg-sky-50/80 pb-3 pr-12"
             onClick={() => toggleSection("kyb")}
@@ -1590,7 +1610,7 @@ function SettingsPage() {
         </Card>
 
         {/* Live Auction Engine Rules */}
-        <Card className="overflow-hidden rounded-2xl border-2 border-t-4 border-t-amber-500 border-border/70 bg-card shadow-[0_4px_14px_rgba(15,23,42,0.08)] transition-shadow duration-200 hover:shadow-[0_8px_22px_rgba(15,23,42,0.12)]">
+        <Card id="settings-auction" className="scroll-mt-6 overflow-hidden rounded-2xl border-2 border-t-4 border-t-amber-500 border-border/70 bg-card shadow-[0_4px_14px_rgba(15,23,42,0.08)] transition-shadow duration-200 hover:shadow-[0_8px_22px_rgba(15,23,42,0.12)]">
           <CardHeader
             className="relative cursor-pointer bg-amber-50/80 pb-3 pr-12"
             onClick={() => toggleSection("auction")}
@@ -1675,7 +1695,7 @@ function SettingsPage() {
         </Card>
 
         {/* Security & Access Policies */}
-        <Card className="overflow-hidden rounded-2xl border-2 border-t-4 border-t-rose-500 border-border/70 bg-card shadow-[0_4px_14px_rgba(15,23,42,0.08)] transition-shadow duration-200 hover:shadow-[0_8px_22px_rgba(15,23,42,0.12)]">
+        <Card id="settings-security" className="scroll-mt-6 overflow-hidden rounded-2xl border-2 border-t-4 border-t-rose-500 border-border/70 bg-card shadow-[0_4px_14px_rgba(15,23,42,0.08)] transition-shadow duration-200 hover:shadow-[0_8px_22px_rgba(15,23,42,0.12)]">
           <CardHeader
             className="relative cursor-pointer bg-rose-50/80 pb-3 pr-12"
             onClick={() => toggleSection("security")}
@@ -1716,7 +1736,7 @@ function SettingsPage() {
         </Card>
 
         {/* Notification Gateways */}
-        <Card className="overflow-hidden rounded-2xl border-2 border-t-4 border-t-cyan-500 border-border/70 bg-card shadow-[0_4px_14px_rgba(15,23,42,0.08)] transition-shadow duration-200 hover:shadow-[0_8px_22px_rgba(15,23,42,0.12)]">
+        <Card id="settings-notifications" className="scroll-mt-6 overflow-hidden rounded-2xl border-2 border-t-4 border-t-cyan-500 border-border/70 bg-card shadow-[0_4px_14px_rgba(15,23,42,0.08)] transition-shadow duration-200 hover:shadow-[0_8px_22px_rgba(15,23,42,0.12)]">
           <CardHeader
             className="relative cursor-pointer bg-cyan-50/80 pb-3 pr-12"
             onClick={() => toggleSection("notifications")}

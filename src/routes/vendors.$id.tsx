@@ -30,6 +30,7 @@ import {
   History,
   Info,
   Landmark,
+  Loader2,
   Mail,
   MapPin,
   Pencil,
@@ -87,6 +88,7 @@ function VendorDetail() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewMime, setPreviewMime] = useState<string | null>(null);
   const [documentBusy, setDocumentBusy] = useState<string | null>(null);
+  const [documentBusyAction, setDocumentBusyAction] = useState<"view" | "download" | "upload" | null>(null);
   const [docAction, setDocAction] = useState<"approved" | "rejected">("approved");
   const [docRemark, setDocRemark] = useState("");
 
@@ -179,6 +181,7 @@ function VendorDetail() {
   async function openDocument(doc: VendorDocument) {
     if (!vendor) return;
     setDocumentBusy(doc.id);
+    setDocumentBusyAction("view");
     try {
       const blob = await adminApi.fetchVendorDocument(vendor.code, doc.id);
       setPreviewMime(blob.type);
@@ -187,12 +190,14 @@ function VendorDetail() {
       toast.error(error instanceof Error ? error.message : "Document could not be opened");
     } finally {
       setDocumentBusy(null);
+      setDocumentBusyAction(null);
     }
   }
 
   async function downloadDocument(doc: VendorDocument) {
     if (!vendor) return;
     setDocumentBusy(doc.id);
+    setDocumentBusyAction("download");
     try {
       const blob = await adminApi.fetchVendorDocument(vendor.code, doc.id);
       const url = URL.createObjectURL(blob);
@@ -205,12 +210,14 @@ function VendorDetail() {
       toast.error(error instanceof Error ? error.message : "Document could not be downloaded");
     } finally {
       setDocumentBusy(null);
+      setDocumentBusyAction(null);
     }
   }
 
   async function replaceMissingDocument(doc: VendorDocument, file: File) {
     try {
       setDocumentBusy(doc.id);
+      setDocumentBusyAction("upload");
       await adminApi.uploadVendorDocument(vendor!.code, doc.key || doc.kind, doc.kind, file);
       await refetch();
       toast.success(`${doc.name} uploaded successfully.`);
@@ -218,6 +225,7 @@ function VendorDetail() {
       toast.error(error instanceof Error ? error.message : "Unable to upload document.");
     } finally {
       setDocumentBusy(null);
+      setDocumentBusyAction(null);
     }
   }
 
@@ -495,24 +503,27 @@ function VendorDetail() {
                           {d.available !== false && <Button
                             size="sm"
                             variant="outline"
-                            disabled={documentBusy === d.id}
+                            disabled={documentBusy !== null}
                             onClick={() => openDocument(d)}
-                            className="h-7 px-2 text-xs"
+                            className="h-8 cursor-pointer px-3 text-xs font-semibold text-[color:var(--navy)] shadow-sm transition hover:border-[color:var(--navy)] hover:bg-slate-50 hover:text-[color:var(--navy)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            <Eye className="h-3.5 w-3.5 mr-1" /> View
+                            {documentBusy === d.id && documentBusyAction === "view" ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Eye className="mr-1 h-3.5 w-3.5" />}
+                            {documentBusy === d.id && documentBusyAction === "view" ? "Opening…" : "View"}
                           </Button>}
                           {d.available !== false && <Button
                             size="sm"
                             variant="outline"
-                            disabled={documentBusy === d.id}
+                            disabled={documentBusy !== null}
                             onClick={() => downloadDocument(d)}
-                            className="h-7 px-2 text-xs"
+                            className="h-8 cursor-pointer px-3 text-xs font-semibold text-[color:var(--navy)] shadow-sm transition hover:border-[color:var(--navy)] hover:bg-slate-50 hover:text-[color:var(--navy)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            <Download className="h-3.5 w-3.5 mr-1" /> Download
+                            {documentBusy === d.id && documentBusyAction === "download" ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1 h-3.5 w-3.5" />}
+                            {documentBusy === d.id && documentBusyAction === "download" ? "Downloading…" : "Download"}
                           </Button>}
                           {d.available === false && (
-                            <label className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-amber-500/40 px-2.5 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-50">
-                              <Upload className="h-3.5 w-3.5" /> Upload replacement
+                            <label className={`inline-flex items-center gap-1 rounded-lg border border-amber-500/40 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-50 ${documentBusy !== null ? "pointer-events-none cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
+                              {documentBusy === d.id && documentBusyAction === "upload" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                              {documentBusy === d.id && documentBusyAction === "upload" ? "Uploading…" : "Upload replacement"}
                               <input
                                 type="file"
                                 accept=".pdf,.jpg,.jpeg,.png,.webp"
@@ -530,6 +541,7 @@ function VendorDetail() {
                           <Button
                             size="sm"
                             variant="ghost"
+                            disabled={documentBusy !== null}
                             onClick={() => openDocReview(d, "approved")}
                             className="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                           >
@@ -538,6 +550,7 @@ function VendorDetail() {
                           <Button
                             size="sm"
                             variant="ghost"
+                            disabled={documentBusy !== null}
                             onClick={() => openDocReview(d, "rejected")}
                             className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
