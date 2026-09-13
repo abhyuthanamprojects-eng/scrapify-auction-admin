@@ -21,6 +21,7 @@ import { Route as FinanceRouteImport } from './routes/finance'
 import { Route as FulfilmentRouteImport } from './routes/fulfilment'
 import { Route as KybRouteImport } from './routes/kyb'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as OtpLookupRouteImport } from './routes/otp-lookup'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as RiskRouteImport } from './routes/risk'
 import { Route as SecurityRouteImport } from './routes/security'
@@ -101,6 +102,11 @@ const KybRoute = KybRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OtpLookupRoute = OtpLookupRouteImport.update({
+  id: '/otp-lookup',
+  path: '/otp-lookup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsRoute = ReportsRouteImport.update({
@@ -222,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/fulfilment': typeof FulfilmentRoute
   '/kyb': typeof KybRoute
   '/login': typeof LoginRoute
+  '/otp-lookup': typeof OtpLookupRoute
   '/reports': typeof ReportsRoute
   '/risk': typeof RiskRoute
   '/security': typeof SecurityRoute
@@ -256,6 +263,7 @@ export interface FileRoutesByTo {
   '/fulfilment': typeof FulfilmentRoute
   '/kyb': typeof KybRoute
   '/login': typeof LoginRoute
+  '/otp-lookup': typeof OtpLookupRoute
   '/reports': typeof ReportsRoute
   '/risk': typeof RiskRoute
   '/security': typeof SecurityRoute
@@ -292,6 +300,7 @@ export interface FileRoutesById {
   '/fulfilment': typeof FulfilmentRoute
   '/kyb': typeof KybRoute
   '/login': typeof LoginRoute
+  '/otp-lookup': typeof OtpLookupRoute
   '/reports': typeof ReportsRoute
   '/risk': typeof RiskRoute
   '/security': typeof SecurityRoute
@@ -329,6 +338,7 @@ export interface FileRouteTypes {
     | '/fulfilment'
     | '/kyb'
     | '/login'
+    | '/otp-lookup'
     | '/reports'
     | '/risk'
     | '/security'
@@ -363,6 +373,7 @@ export interface FileRouteTypes {
     | '/fulfilment'
     | '/kyb'
     | '/login'
+    | '/otp-lookup'
     | '/reports'
     | '/risk'
     | '/security'
@@ -398,6 +409,7 @@ export interface FileRouteTypes {
     | '/fulfilment'
     | '/kyb'
     | '/login'
+    | '/otp-lookup'
     | '/reports'
     | '/risk'
     | '/security'
@@ -434,6 +446,7 @@ export interface RootRouteChildren {
   FulfilmentRoute: typeof FulfilmentRoute
   KybRoute: typeof KybRoute
   LoginRoute: typeof LoginRoute
+  OtpLookupRoute: typeof OtpLookupRoute
   ReportsRoute: typeof ReportsRoute
   RiskRoute: typeof RiskRoute
   SecurityRoute: typeof SecurityRoute
@@ -535,6 +548,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/otp-lookup': {
+      id: '/otp-lookup'
+      path: '/otp-lookup'
+      fullPath: '/otp-lookup'
+      preLoaderRoute: typeof OtpLookupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports': {
@@ -730,6 +750,7 @@ const rootRouteChildren: RootRouteChildren = {
   FulfilmentRoute: FulfilmentRoute,
   KybRoute: KybRoute,
   LoginRoute: LoginRoute,
+  OtpLookupRoute: OtpLookupRoute,
   ReportsRoute: ReportsRoute,
   RiskRoute: RiskRoute,
   SecurityRoute: SecurityRoute,

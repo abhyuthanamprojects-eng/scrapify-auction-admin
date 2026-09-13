@@ -95,6 +95,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Staff & RBAC", to: "/users", icon: Users },
       { label: "Audit Log", to: "/audit-log", icon: ScrollText },
+      { label: "OTP Lookup", to: "/otp-lookup", icon: ShieldCheck },
       { label: "Access Tokens", to: "/tokens", icon: Coins },
     ],
   },

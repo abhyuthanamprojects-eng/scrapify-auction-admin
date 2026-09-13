@@ -167,6 +167,11 @@ class ScrapifyAdminApiClient {
     return this.request<any>("/admin/otp-settings");
   }
 
+  async getOtpHistory(params: Record<string, any> = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request<any>(`/admin/otp-history${query ? `?${query}` : ""}`);
+  }
+
   async updateOtpSettings(data: Record<string, unknown>) {
     return this.request<any>("/admin/otp-settings", {
       method: "PUT",
