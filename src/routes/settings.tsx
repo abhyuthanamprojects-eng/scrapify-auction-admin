@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -43,7 +44,7 @@ export const Route = createFileRoute("/settings")({
 });
 
 function SettingsPage() {
-  const [expandedSection, setExpandedSection] = useState("backend");
+  const [expandedSection, setExpandedSection] = useState("otp");
   const [saved, setSaved] = useState(false);
   const [apiUrl, setApiUrl] = useState("https://api.scrapifyauctions.com/api/v1");
   const [wsUrl, setWsUrl] = useState("wss://api.scrapifyauctions.com/app");
@@ -76,8 +77,10 @@ function SettingsPage() {
   const [otpSettings, setOtpSettings] = useState<any>(null);
   const [otpAuthKey, setOtpAuthKey] = useState("");
   const [otpTestPhone, setOtpTestPhone] = useState("");
+  const [otpTestEmail, setOtpTestEmail] = useState("");
   const [otpSaving, setOtpSaving] = useState(false);
   const [otpTesting, setOtpTesting] = useState(false);
+  const [otpEmailTesting, setOtpEmailTesting] = useState(false);
   const [integrationSettings, setIntegrationSettings] = useState<any>(null);
   const [integrationSecrets, setIntegrationSecrets] = useState<Record<string, string>>({});
   const [integrationSaving, setIntegrationSaving] = useState(false);
@@ -204,6 +207,59 @@ function SettingsPage() {
       toast.error(error instanceof Error ? error.message : "Could not send test OTP.");
     } finally {
       setOtpTesting(false);
+    }
+  };
+
+  const sendEmailOtpTest = async () => {
+    const email = otpTestEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Enter a valid email address.");
+      return;
+    }
+    setOtpEmailTesting(true);
+    try {
+      const response = await adminApi.sendEmailOtpTest(email);
+      toast.success(response?.message || "Test email OTP sent successfully.");
+      setOtpTestEmail("");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not send test email OTP.");
+    } finally {
+      setOtpEmailTesting(false);
+    }
+  };
+
+  const saveMailSettings = async () => {
+    if (!integrationSettings) return;
+    setIntegrationSaving(true);
+    try {
+      const mailSecrets = Object.fromEntries(
+        Object.entries(integrationSecrets).filter(
+          ([key, value]) => ["mail_username", "mail_password"].includes(key) && value.trim(),
+        ),
+      );
+      const response = await adminApi.updateIntegrationSettings({
+        mail_mailer: integrationSettings.mail_mailer ?? "smtp",
+        mail_host: integrationSettings.mail_host ?? "smtp-relay.brevo.com",
+        mail_port: Number(integrationSettings.mail_port ?? 587),
+        mail_encryption: integrationSettings.mail_encryption ?? "tls",
+        mail_from_address:
+          otpSettings?.email_from_address || integrationSettings.mail_from_address || "",
+        mail_from_name:
+          otpSettings?.email_from_name || integrationSettings.mail_from_name || "Scrapify Auctions",
+        ...mailSecrets,
+      });
+      setIntegrationSettings(response?.data ?? response);
+      setIntegrationSecrets((current) => {
+        const next = { ...current };
+        delete next.mail_username;
+        delete next.mail_password;
+        return next;
+      });
+      toast.success("Brevo SMTP settings saved securely.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save SMTP settings.");
+    } finally {
+      setIntegrationSaving(false);
     }
   };
 
@@ -600,16 +656,111 @@ function SettingsPage() {
                   </div>
                   <div className="space-y-1.5 md:col-span-2">
                     <Label>Email OTP Template</Label>
-                    <Input
+                    <Textarea
+                      rows={4}
+                      placeholder="Your Scrapify Auctions verification code is :code. It expires in :minutes minutes."
                       value={otpSettings.email_otp_template ?? ""}
                       onChange={(e) =>
                         setOtpSettings({ ...otpSettings, email_otp_template: e.target.value })
                       }
                     />
                     <p className="text-xs text-muted-foreground">
-                      Use :code and :minutes placeholders. SMTP/provider credentials remain server
-                      secrets.
+                      Use only <code>:code</code> and <code>:minutes</code>. Laravel replaces these
+                      placeholders before sending.
                     </p>
+                    <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+                      <p className="text-xs font-medium text-muted-foreground">Email preview</p>
+                      <p className="whitespace-pre-line text-sm text-foreground">
+                        {(
+                          otpSettings.email_otp_template ||
+                          "Your Scrapify Auctions verification code is :code. It expires in :minutes minutes."
+                        )
+                          .replace(/:code/g, "123456")
+                          .replace(/:minutes/g, String(otpSettings.otp_expiry_minutes || 5))}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-3 rounded-xl border border-violet-200 bg-violet-50/60 p-4 md:col-span-2">
+                    <div className="flex items-start gap-3">
+                      <Mail className="mt-0.5 h-5 w-5 text-violet-600" />
+                      <div>
+                        <h3 className="text-sm font-semibold text-violet-950">
+                          Brevo SMTP delivery
+                        </h3>
+                        <p className="text-xs text-violet-900/70">
+                          Add the SMTP login and key here. Laravel encrypts the credentials and
+                          returns only masked values.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label>Mailer</Label>
+                        <select
+                          value={integrationSettings?.mail_mailer ?? "smtp"}
+                          onChange={(e) => updateIntegration("mail_mailer", e.target.value)}
+                          className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                        >
+                          <option value="smtp">SMTP</option>
+                          <option value="sendmail">Sendmail</option>
+                          <option value="log">Log</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>SMTP Host</Label>
+                        <Input
+                          value={integrationSettings?.mail_host ?? "smtp-relay.brevo.com"}
+                          onChange={(e) => updateIntegration("mail_host", e.target.value)}
+                          placeholder="smtp-relay.brevo.com"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>SMTP Port</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={65535}
+                          value={integrationSettings?.mail_port ?? 587}
+                          onChange={(e) => updateIntegration("mail_port", e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Encryption</Label>
+                        <select
+                          value={integrationSettings?.mail_encryption ?? "tls"}
+                          onChange={(e) => updateIntegration("mail_encryption", e.target.value)}
+                          className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                        >
+                          <option value="tls">TLS</option>
+                          <option value="ssl">SSL</option>
+                          <option value="null">None</option>
+                        </select>
+                      </div>
+                      {secretInput(
+                        "mail_username",
+                        "SMTP Username",
+                        "Copy the SMTP login from Brevo SMTP & API.",
+                      )}
+                      {secretInput(
+                        "mail_password",
+                        "SMTP Key",
+                        "Use the Brevo SMTP key, not the Brevo API key.",
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-violet-200 pt-3">
+                      <p className="text-xs text-violet-900/70">
+                        The email sender is configured in the Email From Name and Email From Address
+                        fields above.
+                      </p>
+                      <Button
+                        onClick={saveMailSettings}
+                        disabled={integrationSaving || !integrationSettings}
+                        variant="outline"
+                        className="border-violet-300 bg-white text-violet-800 hover:bg-violet-100"
+                      >
+                        {integrationSaving ? "Saving…" : "Save SMTP Settings"}
+                      </Button>
+                    </div>
                   </div>
                   <div className="space-y-1.5">
                     <Label>Auth Key</Label>
@@ -743,6 +894,18 @@ function SettingsPage() {
                     />
                     <Button variant="outline" onClick={sendOtpTest} disabled={otpTesting}>
                       {otpTesting ? "Sending…" : "Send Test OTP"}
+                    </Button>
+                  </div>
+                  <div className="flex min-w-[280px] flex-1 gap-2">
+                    <Input
+                      aria-label="Test OTP email address"
+                      type="email"
+                      placeholder="Test email address"
+                      value={otpTestEmail}
+                      onChange={(e) => setOtpTestEmail(e.target.value)}
+                    />
+                    <Button variant="outline" onClick={sendEmailOtpTest} disabled={otpEmailTesting}>
+                      {otpEmailTesting ? "Sending…" : "Send Test Email OTP"}
                     </Button>
                   </div>
                 </div>
@@ -882,69 +1045,6 @@ function SettingsPage() {
                         onChange={(e) =>
                           updateIntegration("cashfree_secure_id_timeout", e.target.value)
                         }
-                      />
-                    </div>
-                  </div>
-                </section>
-                <section className="space-y-3 border-t pt-5">
-                  <h3 className="text-sm font-semibold">Email / SMTP</h3>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label>Mailer</Label>
-                      <select
-                        value={integrationSettings.mail_mailer ?? "smtp"}
-                        onChange={(e) => updateIntegration("mail_mailer", e.target.value)}
-                        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                      >
-                        <option value="smtp">SMTP</option>
-                        <option value="sendmail">Sendmail</option>
-                        <option value="log">Log</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>SMTP Host</Label>
-                      <Input
-                        value={integrationSettings.mail_host ?? ""}
-                        onChange={(e) => updateIntegration("mail_host", e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>SMTP Port</Label>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={65535}
-                        value={integrationSettings.mail_port ?? 587}
-                        onChange={(e) => updateIntegration("mail_port", e.target.value)}
-                      />
-                    </div>
-                    {secretInput("mail_username", "SMTP Username")}
-                    {secretInput("mail_password", "SMTP Password")}
-                    <div className="space-y-1.5">
-                      <Label>Encryption</Label>
-                      <select
-                        value={integrationSettings.mail_encryption ?? "tls"}
-                        onChange={(e) => updateIntegration("mail_encryption", e.target.value)}
-                        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                      >
-                        <option value="tls">TLS</option>
-                        <option value="ssl">SSL</option>
-                        <option value="null">None</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>From Address</Label>
-                      <Input
-                        type="email"
-                        value={integrationSettings.mail_from_address ?? ""}
-                        onChange={(e) => updateIntegration("mail_from_address", e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>From Name</Label>
-                      <Input
-                        value={integrationSettings.mail_from_name ?? ""}
-                        onChange={(e) => updateIntegration("mail_from_name", e.target.value)}
                       />
                     </div>
                   </div>
