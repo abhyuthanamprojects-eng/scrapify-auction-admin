@@ -20,6 +20,7 @@ import {
   Search,
   ShieldAlert,
   UserPlus,
+  Trash2,
 } from "lucide-react";
 import { ADMIN_ROLES, type AdminRole } from "@/lib/ops/roles";
 import { toast } from "sonner";
@@ -91,6 +92,23 @@ function StaffUsersContent() {
       toast.info(`${staff.name} is now ${nextStatus.toUpperCase()}.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to update staff user.");
+    }
+  };
+
+  const deleteUser = async (staff: StaffUser) => {
+    if (staff.email === currentUser?.email) return toast.error("You cannot delete your own account.");
+    if (!/^\d+$/.test(staff.id)) return toast.error("This user has no API identifier.");
+    const expected = `DELETE ${staff.email}`;
+    const confirmation = window.prompt(
+      `This permanently deletes ${staff.name} and all owned data. Type exactly:\n\n${expected}`,
+    );
+    if (confirmation !== expected) return;
+    try {
+      await adminApi.deleteOrgUser(Number(staff.id), staff.email);
+      setStaffList((current) => current.filter((item) => item.id !== staff.id));
+      toast.success("User and all owned data permanently deleted.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to delete user.");
     }
   };
 
@@ -266,6 +284,17 @@ function StaffUsersContent() {
                         >
                           {staff.status === "active" ? "Suspend" : "Activate"}
                         </Button>
+                        {!isSelf && staff.role !== "Super Admin" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => deleteUser(staff)}
+                            className="h-8 px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            title="Permanently delete user and all owned data"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"

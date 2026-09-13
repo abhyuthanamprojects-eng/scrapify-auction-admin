@@ -795,6 +795,15 @@ class ScrapifyAdminApiClient {
     });
   }
 
+  async deleteOrgUser(id: number, email: string) {
+    return this.request<any>(`/admin/organisation/users/${id}`, {
+      method: "DELETE",
+      body: JSON.stringify({
+        confirmation: `DELETE ${email}`,
+      }),
+    });
+  }
+
   async getReportsSummary() {
     return this.request<any>("/admin/reports/summary");
   }
