@@ -20,6 +20,7 @@ export type VendorDocument = {
   kind: string;
   key?: string;
   fileName: string;
+  available?: boolean;
   sizeKb: number;
   uploadedAt: string;
   status: "approved" | "rejected" | "pending";
@@ -159,6 +160,7 @@ function mapVendor(v: any): Vendor {
       name: d.name ?? d.kind ?? "",
       kind: d.kind ?? "KYC Document",
       fileName: d.file_name ?? d.fileName ?? "",
+      available: d.available !== false,
       sizeKb: d.size_kb ?? d.sizeKb ?? 0,
       uploadedAt: d.uploaded_at ?? d.uploadedAt ?? "",
       status: d.status ?? "approved",

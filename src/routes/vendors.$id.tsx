@@ -38,6 +38,7 @@ import {
   ShieldCheck,
   Sparkles,
   Trophy,
+  Upload,
   UserCheck,
   Wallet,
   X,
@@ -85,7 +86,7 @@ function VendorDetail() {
   const [selectedDoc, setSelectedDoc] = useState<VendorDocument | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewMime, setPreviewMime] = useState<string | null>(null);
-  const [documentBusy, setDocumentBusy] = useState<number | null>(null);
+  const [documentBusy, setDocumentBusy] = useState<string | null>(null);
   const [docAction, setDocAction] = useState<"approved" | "rejected">("approved");
   const [docRemark, setDocRemark] = useState("");
 
@@ -202,6 +203,19 @@ function VendorDetail() {
       URL.revokeObjectURL(url);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Document could not be downloaded");
+    } finally {
+      setDocumentBusy(null);
+    }
+  }
+
+  async function replaceMissingDocument(doc: VendorDocument, file: File) {
+    try {
+      setDocumentBusy(doc.id);
+      await adminApi.uploadVendorDocument(vendor!.code, doc.key || doc.kind, doc.kind, file);
+      await refetch();
+      toast.success(`${doc.name} uploaded successfully.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to upload document.");
     } finally {
       setDocumentBusy(null);
     }
@@ -478,7 +492,7 @@ function VendorDetail() {
 
                         {/* Document Actions */}
                         <div className="flex items-center gap-2 shrink-0">
-                          <Button
+                          {d.available !== false && <Button
                             size="sm"
                             variant="outline"
                             disabled={documentBusy === d.id}
@@ -486,8 +500,8 @@ function VendorDetail() {
                             className="h-7 px-2 text-xs"
                           >
                             <Eye className="h-3.5 w-3.5 mr-1" /> View
-                          </Button>
-                          <Button
+                          </Button>}
+                          {d.available !== false && <Button
                             size="sm"
                             variant="outline"
                             disabled={documentBusy === d.id}
@@ -495,7 +509,23 @@ function VendorDetail() {
                             className="h-7 px-2 text-xs"
                           >
                             <Download className="h-3.5 w-3.5 mr-1" /> Download
-                          </Button>
+                          </Button>}
+                          {d.available === false && (
+                            <label className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-amber-500/40 px-2.5 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-50">
+                              <Upload className="h-3.5 w-3.5" /> Upload replacement
+                              <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                className="hidden"
+                                disabled={documentBusy === d.id}
+                                onChange={(event) => {
+                                  const file = event.target.files?.[0];
+                                  if (file) void replaceMissingDocument(d, file);
+                                  event.currentTarget.value = "";
+                                }}
+                              />
+                            </label>
+                          )}
 
                           <Button
                             size="sm"
