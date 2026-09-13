@@ -204,6 +204,13 @@ class ScrapifyAdminApiClient {
     });
   }
 
+  async testVerificationProvider(data: Record<string, unknown>) {
+    return this.request<any>("/admin/integration-settings/test-verification", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
   /* ---------------- Organizations & Customers ---------------- */
   async getOrganizations(params: Record<string, any> = {}) {
     const query = new URLSearchParams(params).toString();

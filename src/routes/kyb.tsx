@@ -17,6 +17,7 @@ function KybPage() {
   const [search, setSearch] = useState("");
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -51,6 +52,20 @@ function KybPage() {
       await load();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Action failed");
+    }
+  };
+
+  const selectRecord = async (row: any) => {
+    setSelected(row);
+    setReason("");
+    setLoadingDetail(true);
+    try {
+      const response = await adminApi.getKybDetails(row.id);
+      setSelected(response?.data ?? response);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to load verification history");
+    } finally {
+      setLoadingDetail(false);
     }
   };
 
@@ -127,10 +142,7 @@ function KybPage() {
                     return (
                       <tr
                         key={row.id}
-                        onClick={() => {
-                          setSelected(row);
-                          setReason("");
-                        }}
+                        onClick={() => void selectRecord(row)}
                         className={`cursor-pointer border-b last:border-b-0 transition-colors hover:bg-primary/5 ${isSelected ? "bg-primary/5" : ""}`}
                       >
                         <td className="px-4 py-4 sm:px-5">
@@ -199,14 +211,33 @@ function KybPage() {
             </div>
 
             <div className="mt-5 grid gap-3 rounded-xl bg-muted/30 p-4 text-sm">
+              {loadingDetail && (
+                <p className="text-xs text-muted-foreground">Loading provider history…</p>
+              )}
               <Detail
                 label="GSTIN"
                 value={`${selected.gstin ?? "—"} · ${selected.gstin_status ?? "—"}`}
+              />
+              <Detail
+                label="GST provider"
+                value={`${selected.gstin_provider ?? "—"} · ${selected.gstin_verified_at ?? "Not verified"}`}
+              />
+              <Detail
+                label="PAN/KYC"
+                value={`${selected.pan_masked ?? "—"} · ${selected.pan_status ?? "—"}`}
+              />
+              <Detail
+                label="KYC provider"
+                value={`${selected.pan_provider ?? selected.kyc_provider ?? "—"} · ${selected.pan_verified_at ?? "Not verified"}`}
               />
               <Detail label="Legal name" value={selected.legal_business_name ?? "—"} />
               <Detail
                 label="Bank"
                 value={`${selected.bank_name ?? "—"} · ${selected.bank_account_masked ?? "—"}`}
+              />
+              <Detail
+                label="Bank provider"
+                value={`${selected.bank_provider ?? selected.kyc_provider ?? "—"} · ${selected.bank_verification_status ?? "—"}`}
               />
               <Detail
                 label="Name match"
@@ -217,6 +248,27 @@ function KybPage() {
                 <Badge>{selected.overall_kyb_status ?? "pending"}</Badge>
               </div>
             </div>
+
+            {Array.isArray(selected.history) && selected.history.length > 0 && (
+              <div className="mt-4 rounded-xl border p-4 text-sm">
+                <p className="font-semibold">Verification history</p>
+                <div className="mt-3 space-y-2">
+                  {selected.history.map((entry: any) => (
+                    <div
+                      key={entry.id}
+                      className="flex items-center justify-between gap-3 border-b pb-2 last:border-b-0 last:pb-0"
+                    >
+                      <span className="text-xs text-muted-foreground">
+                        {entry.verification_type} · {entry.provider}
+                      </span>
+                      <span className="text-xs font-medium">
+                        {entry.status} · {entry.completed_at ?? entry.created_at ?? "—"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <Textarea
               className="mt-4 min-h-24"

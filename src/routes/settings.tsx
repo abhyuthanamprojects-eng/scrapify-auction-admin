@@ -84,6 +84,13 @@ function SettingsPage() {
   const [integrationSettings, setIntegrationSettings] = useState<any>(null);
   const [integrationSecrets, setIntegrationSecrets] = useState<Record<string, string>>({});
   const [integrationSaving, setIntegrationSaving] = useState(false);
+  const [verificationTestGstin, setVerificationTestGstin] = useState("");
+  const [verificationTestPan, setVerificationTestPan] = useState("");
+  const [verificationTestName, setVerificationTestName] = useState("");
+  const [verificationTestDob, setVerificationTestDob] = useState("");
+  const [verificationTestBankAccount, setVerificationTestBankAccount] = useState("");
+  const [verificationTestIfsc, setVerificationTestIfsc] = useState("");
+  const [verificationTesting, setVerificationTesting] = useState<string | null>(null);
 
   const toggleSection = (section: string) => {
     setExpandedSection((current) => (current === section ? "" : section));
@@ -272,6 +279,8 @@ function SettingsPage() {
       const secretKeys = new Set([
         "cashfree_secure_id_client_id",
         "cashfree_secure_id_client_secret",
+        "sandbox_verification_api_key",
+        "sandbox_verification_api_secret",
         "mail_username",
         "mail_password",
         "pusher_app_key",
@@ -320,6 +329,62 @@ function SettingsPage() {
       {description && <p className="text-xs text-muted-foreground">{description}</p>}
     </div>
   );
+
+  const testVerification = async (type: "GSTIN" | "KYC" | "BANK") => {
+    if (
+      type === "GSTIN" &&
+      !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(
+        verificationTestGstin.trim().toUpperCase(),
+      )
+    ) {
+      toast.error("Enter a valid 15-character GSTIN for the provider test.");
+      return;
+    }
+    if (
+      type === "KYC" &&
+      (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(verificationTestPan.trim().toUpperCase()) ||
+        !verificationTestName.trim() ||
+        !verificationTestDob)
+    ) {
+      toast.error("Enter PAN, name, and date of birth for the provider test.");
+      return;
+    }
+    if (
+      type === "BANK" &&
+      (!/^\d{6,40}$/.test(verificationTestBankAccount.trim()) ||
+        !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(verificationTestIfsc.trim()))
+    ) {
+      toast.error("Enter a valid bank account number and IFSC for the provider test.");
+      return;
+    }
+    setVerificationTesting(type);
+    try {
+      const response = await adminApi.testVerificationProvider(
+        type === "GSTIN"
+          ? { verification_type: type, gstin: verificationTestGstin.trim().toUpperCase() }
+          : type === "KYC"
+            ? {
+                verification_type: type,
+                pan: verificationTestPan.trim().toUpperCase(),
+                name: verificationTestName.trim(),
+                date_of_birth: verificationTestDob,
+              }
+            : {
+                verification_type: type,
+                bank_account: verificationTestBankAccount.trim(),
+                ifsc: verificationTestIfsc.trim().toUpperCase(),
+                name: verificationTestName.trim() || undefined,
+              },
+      );
+      toast.success(
+        `${type === "GSTIN" ? "GST" : type === "KYC" ? "KYC" : "Bank"} provider test completed: ${response?.data?.status ?? "received"}.`,
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Provider test failed.");
+    } finally {
+      setVerificationTesting(null);
+    }
+  };
 
   const handleSave = async () => {
     const hours = Number(auctionEditLockHours);
@@ -814,22 +879,14 @@ function SettingsPage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label>SMS OTP Length</Label>
-                    <Input
-                      type="number"
-                      value={4}
-                      readOnly
-                    />
+                    <Input type="number" value={4} readOnly />
                     <p className="text-xs text-muted-foreground">
                       Fixed at 4 digits. This must match the MSG91 OTP template.
                     </p>
                   </div>
                   <div className="space-y-1.5">
                     <Label>Email OTP Length</Label>
-                    <Input
-                      type="number"
-                      value={4}
-                      readOnly
-                    />
+                    <Input type="number" value={4} readOnly />
                     <p className="text-xs text-muted-foreground">Fixed at 4 digits.</p>
                   </div>
                   <div className="space-y-1.5">
@@ -1021,8 +1078,222 @@ function SettingsPage() {
                     </div>
                   </div>
                 </section>
+                <section className="space-y-4 border-t pt-5">
+                  <div>
+                    <h3 className="text-sm font-semibold">Verification Providers</h3>
+                    <p className="text-xs text-muted-foreground">
+                      The Laravel API resolves the active provider. Website and Flutter never call a
+                      provider directly, and there is no automatic fallback.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label>GST verification provider</Label>
+                      <select
+                        value={integrationSettings.gst_verification_provider ?? "SANDBOX"}
+                        onChange={(e) =>
+                          updateIntegration("gst_verification_provider", e.target.value)
+                        }
+                        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                      >
+                        <option value="SANDBOX">Sandbox</option>
+                        <option value="CASHFREE">Cashfree</option>
+                      </select>
+                      <p className="text-xs text-muted-foreground">
+                        Active:{" "}
+                        {integrationSettings.verification_providers?.gst?.active_provider ??
+                          "SANDBOX"}
+                      </p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>KYC verification provider</Label>
+                      <select
+                        value={integrationSettings.kyc_verification_provider ?? "SANDBOX"}
+                        onChange={(e) =>
+                          updateIntegration("kyc_verification_provider", e.target.value)
+                        }
+                        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                      >
+                        <option value="SANDBOX">Sandbox</option>
+                        <option value="CASHFREE">Cashfree</option>
+                      </select>
+                      <p className="text-xs text-muted-foreground">
+                        Active:{" "}
+                        {integrationSettings.verification_providers?.kyc?.active_provider ??
+                          "SANDBOX"}
+                      </p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Bank verification provider</Label>
+                      <select
+                        value={integrationSettings.bank_verification_provider ?? "SANDBOX"}
+                        onChange={(e) =>
+                          updateIntegration("bank_verification_provider", e.target.value)
+                        }
+                        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                      >
+                        <option value="SANDBOX">Sandbox</option>
+                        <option value="CASHFREE">Cashfree</option>
+                      </select>
+                      <p className="text-xs text-muted-foreground">
+                        Active:{" "}
+                        {integrationSettings.verification_providers?.bank?.active_provider ??
+                          "SANDBOX"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    {(["gst", "kyc", "bank"] as const).map((type) => (
+                      <div key={type} className="rounded-lg border bg-muted/20 p-3 text-xs">
+                        <p className="font-medium">
+                          {type === "gst" ? "GST" : type === "kyc" ? "KYC" : "Bank"} provider
+                          readiness
+                        </p>
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          {(["sandbox", "cashfree"] as const).map((provider) => {
+                            const status =
+                              integrationSettings.verification_providers?.[type]?.providers?.[
+                                provider
+                              ];
+                            return (
+                              <span key={provider} className="rounded-md border px-2 py-1">
+                                {provider === "sandbox" ? "Sandbox" : "Cashfree"}:{" "}
+                                {status?.status ?? "UNKNOWN"}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-sky-950">Sandbox.co.in</h4>
+                        <p className="text-xs text-sky-900/70">
+                          Current default for GST, KYC, and bank verification. Credentials stay
+                          encrypted on Laravel.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={Boolean(integrationSettings.sandbox_verification_enabled)}
+                        onCheckedChange={(value) =>
+                          updateIntegration("sandbox_verification_enabled", value)
+                        }
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label>Environment</Label>
+                        <select
+                          value={integrationSettings.sandbox_verification_environment ?? "test"}
+                          onChange={(e) =>
+                            updateIntegration("sandbox_verification_environment", e.target.value)
+                          }
+                          className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                        >
+                          <option value="test">Test</option>
+                          <option value="live">Live</option>
+                        </select>
+                      </div>
+                      {secretInput("sandbox_verification_api_key", "API Key")}
+                      {secretInput("sandbox_verification_api_secret", "API Secret")}
+                      <div className="space-y-1.5">
+                        <Label>API base URL (optional)</Label>
+                        <Input
+                          value={integrationSettings.sandbox_verification_base_url ?? ""}
+                          onChange={(e) =>
+                            updateIntegration("sandbox_verification_base_url", e.target.value)
+                          }
+                          placeholder="Uses the selected Sandbox environment"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Timeout (seconds)</Label>
+                        <Input
+                          type="number"
+                          min={5}
+                          max={120}
+                          value={integrationSettings.sandbox_verification_timeout ?? 30}
+                          onChange={(e) =>
+                            updateIntegration("sandbox_verification_timeout", e.target.value)
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-[1fr_auto]">
+                      <Input
+                        aria-label="Sandbox GSTIN test value"
+                        placeholder="GSTIN for configuration test"
+                        value={verificationTestGstin}
+                        onChange={(e) => setVerificationTestGstin(e.target.value)}
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => testVerification("GSTIN")}
+                        disabled={verificationTesting !== null}
+                      >
+                        {verificationTesting === "GSTIN" ? "Testing…" : "Test GST Configuration"}
+                      </Button>
+                    </div>
+                    <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-[1fr_1fr_1fr_auto]">
+                      <Input
+                        aria-label="KYC PAN test value"
+                        placeholder="PAN"
+                        value={verificationTestPan}
+                        onChange={(e) => setVerificationTestPan(e.target.value)}
+                      />
+                      <Input
+                        aria-label="KYC name test value"
+                        placeholder="Name as per PAN"
+                        value={verificationTestName}
+                        onChange={(e) => setVerificationTestName(e.target.value)}
+                      />
+                      <Input
+                        aria-label="KYC date of birth test value"
+                        type="date"
+                        value={verificationTestDob}
+                        onChange={(e) => setVerificationTestDob(e.target.value)}
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => testVerification("KYC")}
+                        disabled={verificationTesting !== null}
+                      >
+                        {verificationTesting === "KYC" ? "Testing…" : "Test KYC Configuration"}
+                      </Button>
+                    </div>
+                    <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-[1fr_1fr_1fr_auto]">
+                      <Input
+                        aria-label="Bank account test value"
+                        placeholder="Bank account number"
+                        value={verificationTestBankAccount}
+                        onChange={(e) => setVerificationTestBankAccount(e.target.value)}
+                      />
+                      <Input
+                        aria-label="Bank IFSC test value"
+                        placeholder="IFSC"
+                        value={verificationTestIfsc}
+                        onChange={(e) => setVerificationTestIfsc(e.target.value)}
+                      />
+                      <Input
+                        aria-label="Bank account holder test value"
+                        placeholder="Account holder name (optional)"
+                        value={verificationTestName}
+                        onChange={(e) => setVerificationTestName(e.target.value)}
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => testVerification("BANK")}
+                        disabled={verificationTesting !== null}
+                      >
+                        {verificationTesting === "BANK" ? "Testing…" : "Test Bank Configuration"}
+                      </Button>
+                    </div>
+                  </div>
+                </section>
                 <section className="space-y-3 border-t pt-5">
-                  <h3 className="text-sm font-semibold">Cashfree Secure ID</h3>
+                  <h3 className="text-sm font-semibold">Cashfree Secure ID (alternative)</h3>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <div className="flex items-center justify-between rounded-lg border p-3">
                       <Label>Provider enabled</Label>
