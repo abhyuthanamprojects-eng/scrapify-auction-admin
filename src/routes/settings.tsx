@@ -72,6 +72,11 @@ function SettingsPage() {
   const [participantKybRequired, setParticipantKybRequired] = useState(true);
   const [kybAutoMatch, setKybAutoMatch] = useState("85");
   const [kybReviewMatch, setKybReviewMatch] = useState("60");
+  const [mobileMinVersion, setMobileMinVersion] = useState("1.0.0");
+  const [mobileLatestVersion, setMobileLatestVersion] = useState("1.0.0");
+  const [mobileForceUpdate, setMobileForceUpdate] = useState(false);
+  const [mobileUpdateUrl, setMobileUpdateUrl] = useState("");
+  const [mobileUpdateNotes, setMobileUpdateNotes] = useState("");
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [savingConfig, setSavingConfig] = useState(false);
   const [otpSettings, setOtpSettings] = useState<any>(null);
@@ -91,6 +96,7 @@ function SettingsPage() {
   const [verificationTestBankAccount, setVerificationTestBankAccount] = useState("");
   const [verificationTestIfsc, setVerificationTestIfsc] = useState("");
   const [verificationTesting, setVerificationTesting] = useState<string | null>(null);
+  const [cashfreePaymentTesting, setCashfreePaymentTesting] = useState(false);
 
   const toggleSection = (section: string) => {
     setExpandedSection((current) => (current === section ? "" : section));
@@ -147,6 +153,11 @@ function SettingsPage() {
           setKybAutoMatch(String(config.kyb_auto_approve_match_score));
         if (config?.kyb_review_match_score !== undefined)
           setKybReviewMatch(String(config.kyb_review_match_score));
+        if (config?.mobile_min_version) setMobileMinVersion(String(config.mobile_min_version));
+        if (config?.mobile_latest_version) setMobileLatestVersion(String(config.mobile_latest_version));
+        if (config?.mobile_force_update !== undefined) setMobileForceUpdate(Boolean(config.mobile_force_update));
+        if (config?.mobile_update_url) setMobileUpdateUrl(String(config.mobile_update_url));
+        if (config?.mobile_update_notes) setMobileUpdateNotes(String(config.mobile_update_notes));
       })
       .catch(() => toast.error("Could not load platform settings from the API."))
       .finally(() => setLoadingConfig(false));
@@ -279,6 +290,8 @@ function SettingsPage() {
       const secretKeys = new Set([
         "cashfree_secure_id_client_id",
         "cashfree_secure_id_client_secret",
+        "cashfree_pg_client_id",
+        "cashfree_pg_client_secret",
         "sandbox_verification_api_key",
         "sandbox_verification_api_secret",
         "mail_username",
@@ -295,6 +308,8 @@ function SettingsPage() {
         ...publicIntegrationSettings,
         cashfree_secure_id_enabled: Boolean(integrationSettings.cashfree_secure_id_enabled),
         cashfree_secure_id_timeout: Number(integrationSettings.cashfree_secure_id_timeout),
+        cashfree_pg_enabled: Boolean(integrationSettings.cashfree_pg_enabled),
+        cashfree_pg_timeout: Number(integrationSettings.cashfree_pg_timeout ?? 30),
         mail_port: Number(integrationSettings.mail_port),
         pusher_port: Number(integrationSettings.pusher_port),
         ...Object.fromEntries(
@@ -308,6 +323,19 @@ function SettingsPage() {
       toast.error(error instanceof Error ? error.message : "Could not save integration settings.");
     } finally {
       setIntegrationSaving(false);
+    }
+  };
+
+  const testCashfreePayment = async () => {
+    setCashfreePaymentTesting(true);
+    try {
+      const response = await adminApi.testCashfreePayment({ amount: 10 });
+      const result = response?.data ?? response;
+      toast.success(`Cashfree ${String(result.environment ?? "test").toUpperCase()} order created: ${result.order_id}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Cashfree payment test failed.");
+    } finally {
+      setCashfreePaymentTesting(false);
     }
   };
 
@@ -426,6 +454,11 @@ function SettingsPage() {
         participant_kyb_required: participantKybRequired,
         kyb_auto_approve_match_score: Number(kybAutoMatch),
         kyb_review_match_score: Number(kybReviewMatch),
+        mobile_min_version: mobileMinVersion,
+        mobile_latest_version: mobileLatestVersion,
+        mobile_force_update: mobileForceUpdate,
+        mobile_update_url: mobileUpdateUrl,
+        mobile_update_notes: mobileUpdateNotes,
       });
       setSaved(true);
       toast.success("Platform settings saved and synchronized with Laravel backend.");
@@ -638,6 +671,19 @@ function SettingsPage() {
                 placeholder="wss://api.scrapifyauctions.com/app"
                 className="font-mono text-sm"
               />
+            </div>
+            <div className="space-y-3 border-t pt-4">
+              <div>
+                <h3 className="text-sm font-semibold">Mobile App Updates</h3>
+                <p className="text-xs text-muted-foreground">Control the minimum supported version and update link returned to the mobile app.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="space-y-1.5"><Label>Minimum supported version</Label><Input value={mobileMinVersion} onChange={(e) => setMobileMinVersion(e.target.value)} placeholder="1.0.0" /></div>
+                <div className="space-y-1.5"><Label>Latest version</Label><Input value={mobileLatestVersion} onChange={(e) => setMobileLatestVersion(e.target.value)} placeholder="1.0.0" /></div>
+                <div className="space-y-1.5 md:col-span-2"><Label>Update URL</Label><Input value={mobileUpdateUrl} onChange={(e) => setMobileUpdateUrl(e.target.value)} placeholder="https://play.google.com/store/apps/details?id=..." /></div>
+                <div className="space-y-1.5 md:col-span-2"><Label>Release notes</Label><Input value={mobileUpdateNotes} onChange={(e) => setMobileUpdateNotes(e.target.value)} placeholder="What's new" /></div>
+                <div className="flex items-center justify-between rounded-lg border p-3 md:col-span-2"><Label>Force update below minimum version</Label><Switch checked={mobileForceUpdate} onCheckedChange={setMobileForceUpdate} /></div>
+              </div>
             </div>
             <div className="flex justify-end border-t pt-4">
               <Button
@@ -1341,6 +1387,43 @@ function SettingsPage() {
                       />
                     </div>
                   </div>
+                </section>
+                <section className="space-y-3 border-t pt-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold">Cashfree Payment Gateway</h3>
+                      <p className="text-xs text-muted-foreground">Credentials stay encrypted on Laravel. Test mode is selected by default.</p>
+                    </div>
+                    <Switch
+                      checked={Boolean(integrationSettings.cashfree_pg_enabled)}
+                      onCheckedChange={(value) => updateIntegration("cashfree_pg_enabled", value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label>Environment</Label>
+                      <select
+                        value={integrationSettings.cashfree_pg_environment ?? "test"}
+                        onChange={(e) => updateIntegration("cashfree_pg_environment", e.target.value)}
+                        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                      >
+                        <option value="test">Test / Sandbox</option>
+                        <option value="production">Production</option>
+                      </select>
+                    </div>
+                    {secretInput("cashfree_pg_client_id", "Client ID / App ID")}
+                    {secretInput("cashfree_pg_client_secret", "Client Secret")}
+                    <div className="space-y-1.5">
+                      <Label>API version</Label>
+                      <Input value={integrationSettings.cashfree_pg_api_version ?? "2025-01-01"} onChange={(e) => updateIntegration("cashfree_pg_api_version", e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button variant="outline" onClick={testCashfreePayment} disabled={cashfreePaymentTesting || integrationSaving}>
+                      {cashfreePaymentTesting ? "Testing…" : "Test Cashfree Payment (₹10)"}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-amber-700">The test creates an order only. Complete checkout only in Test/Sandbox; Production orders can create real payment obligations.</p>
                 </section>
                 <section className="space-y-3 border-t pt-5">
                   <h3 className="text-sm font-semibold">Pusher / WebSocket</h3>
