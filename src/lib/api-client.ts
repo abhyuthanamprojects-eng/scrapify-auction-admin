@@ -329,6 +329,26 @@ class ScrapifyAdminApiClient {
     return `${API_BASE_URL}/vendors/${vendorCode}/documents/${docId}/download`;
   }
 
+  async fetchVendorDocument(vendorCode: string, docId: number | string): Promise<Blob> {
+    const res = await fetch(this.getVendorDocumentDownloadUrl(vendorCode, docId), {
+      headers: {
+        Accept: "application/octet-stream",
+        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+      },
+    });
+    if (!res.ok) {
+      let message = "Document could not be downloaded";
+      try {
+        const json = await res.json();
+        message = json.message || message;
+      } catch {
+        // Keep the safe generic message for non-JSON server errors.
+      }
+      throw new Error(message);
+    }
+    return res.blob();
+  }
+
   /* ---------------- Auctions & Control Room ---------------- */
   async getAuctions(params: Record<string, any> = {}) {
     const query = new URLSearchParams(params).toString();

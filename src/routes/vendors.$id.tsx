@@ -83,6 +83,9 @@ function VendorDetail() {
   // Individual document review modal
   const [docReviewOpen, setDocReviewOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<VendorDocument | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewMime, setPreviewMime] = useState<string | null>(null);
+  const [documentBusy, setDocumentBusy] = useState<number | null>(null);
   const [docAction, setDocAction] = useState<"approved" | "rejected">("approved");
   const [docRemark, setDocRemark] = useState("");
 
@@ -170,6 +173,38 @@ function VendorDetail() {
     setDocAction(action);
     setDocRemark(action === "rejected" ? doc.reason || "" : "");
     setDocReviewOpen(true);
+  }
+
+  async function openDocument(doc: VendorDocument) {
+    if (!vendor) return;
+    setDocumentBusy(doc.id);
+    try {
+      const blob = await adminApi.fetchVendorDocument(vendor.code, doc.id);
+      setPreviewMime(blob.type);
+      setPreviewUrl(URL.createObjectURL(blob));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Document could not be opened");
+    } finally {
+      setDocumentBusy(null);
+    }
+  }
+
+  async function downloadDocument(doc: VendorDocument) {
+    if (!vendor) return;
+    setDocumentBusy(doc.id);
+    try {
+      const blob = await adminApi.fetchVendorDocument(vendor.code, doc.id);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = doc.fileName || `${doc.name}.bin`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Document could not be downloaded");
+    } finally {
+      setDocumentBusy(null);
+    }
   }
 
   async function handleDocReviewSubmit() {
@@ -443,14 +478,24 @@ function VendorDetail() {
 
                         {/* Document Actions */}
                         <div className="flex items-center gap-2 shrink-0">
-                          <a
-                            href={adminApi.getVendorDocumentDownloadUrl(vendor.code, d.id)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg border border-border hover:bg-muted text-foreground transition-colors"
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={documentBusy === d.id}
+                            onClick={() => openDocument(d)}
+                            className="h-7 px-2 text-xs"
                           >
-                            <Download className="h-3.5 w-3.5" /> Download
-                          </a>
+                            <Eye className="h-3.5 w-3.5 mr-1" /> View
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={documentBusy === d.id}
+                            onClick={() => downloadDocument(d)}
+                            className="h-7 px-2 text-xs"
+                          >
+                            <Download className="h-3.5 w-3.5 mr-1" /> Download
+                          </Button>
 
                           <Button
                             size="sm"
@@ -670,6 +715,33 @@ function VendorDetail() {
               Save Decision
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={previewUrl !== null}
+        onOpenChange={(open) => {
+          if (!open && previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+            setPreviewUrl(null);
+            setPreviewMime(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Document preview</DialogTitle>
+            <DialogDescription>Secure preview loaded from the authenticated document endpoint.</DialogDescription>
+          </DialogHeader>
+          {previewUrl && previewMime?.startsWith("image/") ? (
+            <img src={previewUrl} alt="Uploaded document preview" className="max-h-[70vh] w-full rounded-lg object-contain" />
+          ) : previewUrl && previewMime === "application/pdf" ? (
+            <iframe title="Uploaded document preview" src={previewUrl} className="h-[70vh] w-full rounded-lg border" />
+          ) : (
+            <div className="rounded-lg border border-border p-6 text-center text-sm text-muted-foreground">
+              Preview is unavailable for this file type. Use Download instead.
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
