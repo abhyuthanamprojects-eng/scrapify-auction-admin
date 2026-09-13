@@ -167,6 +167,8 @@ function SettingsPage() {
         ...otpSettings,
         ...(otpAuthKey.trim() ? { msg91_auth_key: otpAuthKey.trim() } : {}),
         msg91_enabled: Boolean(otpSettings.msg91_enabled),
+        msg91_otp_length: 4,
+        email_otp_length: 4,
         otp_expiry_minutes: Number(otpSettings.otp_expiry_minutes),
         otp_resend_cooldown_seconds: Number(otpSettings.otp_resend_cooldown_seconds),
         otp_max_resend_attempts: Number(otpSettings.otp_max_resend_attempts),
@@ -675,7 +677,7 @@ function SettingsPage() {
                           otpSettings.email_otp_template ||
                           "Your Scrapify Auctions verification code is :code. It expires in :minutes minutes."
                         )
-                          .replace(/:code/g, "123456")
+                          .replace(/:code/g, "1234")
                           .replace(/:minutes/g, String(otpSettings.otp_expiry_minutes || 5))}
                       </p>
                     </div>
@@ -814,28 +816,21 @@ function SettingsPage() {
                     <Label>SMS OTP Length</Label>
                     <Input
                       type="number"
-                      min={4}
-                      max={8}
-                      value={otpSettings.msg91_otp_length ?? 4}
-                      onChange={(e) =>
-                        setOtpSettings({ ...otpSettings, msg91_otp_length: e.target.value })
-                      }
+                      value={4}
+                      readOnly
                     />
                     <p className="text-xs text-muted-foreground">
-                      Must match the digits configured in the MSG91 OTP template.
+                      Fixed at 4 digits. This must match the MSG91 OTP template.
                     </p>
                   </div>
                   <div className="space-y-1.5">
                     <Label>Email OTP Length</Label>
                     <Input
                       type="number"
-                      min={4}
-                      max={8}
-                      value={otpSettings.email_otp_length ?? 6}
-                      onChange={(e) =>
-                        setOtpSettings({ ...otpSettings, email_otp_length: e.target.value })
-                      }
+                      value={4}
+                      readOnly
                     />
+                    <p className="text-xs text-muted-foreground">Fixed at 4 digits.</p>
                   </div>
                   <div className="space-y-1.5">
                     <Label>OTP Expiry (minutes)</Label>
