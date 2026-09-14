@@ -39,6 +39,7 @@ import {
   ShieldCheck,
   Sparkles,
   Trophy,
+  Trash2,
   Upload,
   UserCheck,
   Wallet,
@@ -95,6 +96,7 @@ function VendorDetail() {
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [suspendReason, setSuspendReason] = useState("");
   const [acting, setActing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Individual document review modal
   const [docReviewOpen, setDocReviewOpen] = useState(false);
@@ -185,6 +187,29 @@ function VendorDetail() {
     }
   }
 
+  async function deleteVendor() {
+    if (!vendor?.userId) {
+      toast.error("This vendor is missing its linked user account.");
+      return;
+    }
+    const expected = `DELETE ${vendor.email}`;
+    const confirmation = window.prompt(
+      `This permanently deletes ${vendor.companyName} and all owned vendor data. Type exactly:\n\n${expected}`,
+    );
+    if (confirmation !== expected) return;
+
+    setDeleting(true);
+    try {
+      await adminApi.deleteVendorUser(vendor.userId, vendor.email);
+      toast.success("Vendor and all owned data permanently deleted.");
+      navigate({ to: "/vendors" });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to delete vendor.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   function openDocReview(doc: VendorDocument, action: "approved" | "rejected") {
     setSelectedDoc(doc);
     setDocAction(action);
@@ -270,6 +295,17 @@ function VendorDetail() {
               <Link to="/vendors">
                 <ArrowLeft className="h-4 w-4" /> Back
               </Link>
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={deleteVendor}
+              disabled={acting || deleting}
+              className="gap-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 dark:border-red-900"
+              title="Permanently delete this vendor and all owned data"
+            >
+              <Trash2 className="h-4 w-4" /> {deleting ? "Deleting…" : "Delete Vendor"}
             </Button>
 
             {isPending && (

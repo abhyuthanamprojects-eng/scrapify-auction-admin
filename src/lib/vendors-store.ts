@@ -43,6 +43,7 @@ export type AuctionParticipation = {
 export type Vendor = {
   id: string;
   code: string;
+  userId?: number;
   userRole: "buyer" | "seller";
   companyName: string;
   tradeName?: string;
@@ -103,6 +104,9 @@ function mapVendor(v: any): Vendor {
   return {
     id: v.code ?? v.id,
     code: v.code ?? v.id,
+    userId: Number.isFinite(Number(v.user_id ?? v.user?.id))
+      ? Number(v.user_id ?? v.user?.id)
+      : undefined,
     userRole: (v.user_role ?? v.user?.role ?? v.role) === "seller" ? "seller" : "buyer",
     companyName: v.company_name ?? v.companyName ?? "",
     tradeName: v.trade_name ?? v.tradeName ?? "",

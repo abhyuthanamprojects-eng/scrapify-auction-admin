@@ -249,6 +249,15 @@ class ScrapifyAdminApiClient {
     return this.request<any>(`/vendors/${code}`);
   }
 
+  async deleteVendorUser(userId: number, email: string) {
+    return this.request<any>(`/admin/organisation/users/${userId}`, {
+      method: "DELETE",
+      body: JSON.stringify({
+        confirmation: `DELETE ${email}`,
+      }),
+    });
+  }
+
   async getKyb(params: Record<string, any> = {}) {
     const query = new URLSearchParams(params).toString();
     return this.request<any>(`/admin/kyb${query ? `?${query}` : ""}`);
