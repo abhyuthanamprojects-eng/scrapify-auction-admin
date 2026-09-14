@@ -358,7 +358,7 @@ function VendorDetail() {
               <ReadField label="Trade Name" value={vendor.tradeName || "—"} />
               <ReadField label="Entity Type" value={vendor.businessType || "Private Limited"} />
               <ReadField label="Corporate CIN / Reg No." value={vendor.cinNumber || "—"} mono />
-              <ReadField label="Annual Scrap Turnover" value={vendor.turnoverBand || "< ₹5 Cr"} />
+              <ReadField label="Annual Scrap Turnover" value={vendor.turnoverBand || "Not provided"} />
               <ReadField label="Years in Business" value={vendor.yearsInBusiness || "1 - 3 Years"} />
             </div>
 
