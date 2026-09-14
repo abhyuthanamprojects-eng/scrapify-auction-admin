@@ -736,6 +736,15 @@ class ScrapifyAdminApiClient {
   async getCategories() {
     return this.request<any>("/categories");
   }
+  async createCategory(data: Record<string, any>) {
+    return this.request<any>("/categories", { method: "POST", body: JSON.stringify(data) });
+  }
+  async updateCategory(id: number | string, data: Record<string, any>) {
+    return this.request<any>(`/categories/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+  }
+  async deleteCategory(id: number | string) {
+    return this.request<any>(`/categories/${id}`, { method: "DELETE" });
+  }
 
   async getPlatformConfig() {
     return this.request<any>("/platform-config");
@@ -764,6 +773,60 @@ class ScrapifyAdminApiClient {
       method: "PATCH",
       body: JSON.stringify(data),
     });
+  }
+
+  /* ---------------- Auction Templates ---------------- */
+  async getAuctionTemplates(params: Record<string, any> = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request<any>(`/auction-templates${query ? `?${query}` : ""}`);
+  }
+
+  async getAuctionTemplate(id: number | string) {
+    return this.request<any>(`/auction-templates/${id}`);
+  }
+
+  async createAuctionTemplate(data: any) {
+    return this.request<any>("/auction-templates", { method: "POST", body: JSON.stringify(data) });
+  }
+
+  async updateAuctionTemplate(id: number | string, data: any) {
+    return this.request<any>(`/auction-templates/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+  }
+
+  async activateAuctionTemplate(id: number | string) {
+    return this.request<any>(`/auction-templates/${id}/activate`, { method: "POST" });
+  }
+
+  async deactivateAuctionTemplate(id: number | string) {
+    return this.request<any>(`/auction-templates/${id}/deactivate`, { method: "POST" });
+  }
+
+  async createTemplateVersion(id: number | string, data: { version: string; schema_definition?: any; instructions?: string }) {
+    return this.request<any>(`/auction-templates/${id}/new-version`, { method: "POST", body: JSON.stringify(data) });
+  }
+
+  getTemplateDownloadUrl(id: number | string): string {
+    return `${API_BASE_URL}/auction-templates/${id}/download`;
+  }
+
+  async getAuctionTemplateReview(auctionCode: string) {
+    return this.request<any>(`/auctions/${auctionCode}/template-review`);
+  }
+
+  async getAuctionParsedItems(auctionCode: string, params: Record<string, any> = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request<any>(`/auctions/${auctionCode}/parsed-items${query ? `?${query}` : ""}`);
+  }
+
+  async downloadSourceFile(auctionCode: string, uploadId: number | string): Promise<Blob> {
+    const res = await fetch(`${API_BASE_URL}/auctions/${auctionCode}/template-upload/${uploadId}/download`, {
+      headers: {
+        Accept: "application/octet-stream",
+        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+      },
+    });
+    if (!res.ok) throw new Error("Source file download failed");
+    return res.blob();
   }
 
   /* ---------------- Admin: Finance, Fulfilments, Users, Reports ---------------- */

@@ -40,6 +40,8 @@ const initialForm: FormState = {
   title: "",
   direction: "forward",
   category: "",
+  subcategoryId: "",
+  lotType: "single",
   quantity: "",
   unit: "MT",
   location: "",
@@ -55,13 +57,26 @@ const initialForm: FormState = {
   reservePrice: "",
   startingPrice: "",
   bidIncrement: "",
+  emdAmount: "",
+  terms: "",
+  paymentTerms: "",
+  liftingPeriod: "",
+  liftingUnit: "Days",
+  contactName: "",
+  contactPhone: "",
+  contactEmail: "",
+  inspection: "",
+  inspectionDate: "",
+  inspectionTime: "",
+  inspectionLocation: "",
   scheduleStart: "",
   scheduleEnd: "",
-  template: "Standard",
   initialSlotMinutes: "30",
   continuationSlotMinutes: "2",
   maximumDurationMinutes: "120",
 };
+
+type CategoryOption = { id: number; name: string; slug: string; children?: CategoryOption[] };
 
 function NewAuction() {
   const navigate = useNavigate();
@@ -69,6 +84,17 @@ function NewAuction() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loadingClients, setLoadingClients] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+
+  useEffect(() => {
+    adminApi
+      .getCategories()
+      .then((res) => {
+        const data = res?.data ?? res;
+        setCategories(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     adminApi
@@ -156,9 +182,6 @@ function NewAuction() {
     try {
       const response = await adminApi.createAuction({
         client_code: isSelfOwned ? undefined : form.clientCode,
-        customer_code: isSelfOwned ? undefined : form.clientCode,
-        created_for_self: isSelfOwned,
-        owner_type: isSelfOwned ? "admin" : undefined,
         title: form.title.trim(),
         company: form.company.trim(),
         plant: form.plant.trim() || undefined,
@@ -173,18 +196,30 @@ function NewAuction() {
         location: form.location.trim() || undefined,
         direction: form.direction,
         category: form.category.trim(),
+        subcategory_id: form.subcategoryId ? Number(form.subcategoryId) : undefined,
         material_type: form.category.trim(),
         quantity: String(form.quantity),
         uom: form.unit,
+        lot_type: form.lotType,
         reserve_price: Number(form.reservePrice) || 0,
         starting_price: Number(form.startingPrice) || Number(form.reservePrice) || 0,
         bid_increment: Number(form.bidIncrement) || 0,
+        emd_amount: Number(form.emdAmount) || undefined,
         description: form.description.trim() || undefined,
+        terms: form.terms.trim() || undefined,
+        payment_terms: form.paymentTerms.trim() || undefined,
+        lifting_period: form.liftingPeriod.trim() || undefined,
+        lifting_unit: form.liftingUnit || undefined,
+        contact_name: form.contactName.trim() || undefined,
+        contact_phone: form.contactPhone.trim() || undefined,
+        contact_email: form.contactEmail.trim() || undefined,
+        inspection: form.inspection.trim() || undefined,
+        inspection_date: form.inspectionDate || undefined,
+        inspection_time: form.inspectionTime || undefined,
+        inspection_location: form.inspectionLocation.trim() || undefined,
         status: "draft",
-        lot_type: "single",
         schedule_start: scheduleStart.toISOString(),
         schedule_end: scheduleEnd?.toISOString(),
-        on_behalf_of: isSelfOwned ? undefined : form.clientCode,
       });
       const created = response?.data ?? response;
       const code = String(created?.code ?? created?.auction?.code ?? created?.id ?? "");
@@ -267,13 +302,39 @@ function NewAuction() {
               placeholder="Copper Wire Scrap — 18 MT"
               required
             />
-            <Field
-              label="Material category *"
-              value={form.category}
-              onChange={(value) => set("category", value)}
-              placeholder="Ferrous, Non-Ferrous, E-Waste…"
-              required
-            />
+            <div className="space-y-2">
+              <Label>Material category *</Label>
+              <Select value={form.category} onValueChange={(value) => { set("category", value); set("subcategoryId", ""); }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {(() => {
+              const selectedCat = categories.find((c) => c.name === form.category);
+              const children = selectedCat?.children ?? [];
+              if (children.length === 0) return null;
+              return (
+                <div className="space-y-2">
+                  <Label>Subcategory</Label>
+                  <Select value={form.subcategoryId} onValueChange={(value) => set("subcategoryId", value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select subcategory" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {children.map((sub: any) => (
+                        <SelectItem key={sub.id} value={String(sub.id)}>{sub.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              );
+            })()}
             <div className="space-y-2">
               <Label>Direction *</Label>
               <Select value={form.direction} onValueChange={(value) => set("direction", value)}>
@@ -287,15 +348,14 @@ function NewAuction() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Template</Label>
-              <Select value={form.template} onValueChange={(value) => set("template", value)}>
+              <Label>Lot type</Label>
+              <Select value={form.lotType} onValueChange={(value) => set("lotType", value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Standard">Standard</SelectItem>
-                  <SelectItem value="RFQ">RFQ</SelectItem>
-                  <SelectItem value="RFP">RFP</SelectItem>
+                  <SelectItem value="single">Single</SelectItem>
+                  <SelectItem value="lot_wise">Lot-wise</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -413,6 +473,43 @@ function NewAuction() {
                   onChange={(value) => set("warehousePincode", value)}
                   placeholder="411001"
                 />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="border-b border-border/70 bg-white">
+            <CardTitle className="text-base">Terms & Contact</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-5 p-5 md:grid-cols-2">
+            <Field label="EMD amount (₹)" value={form.emdAmount} onChange={(v) => set("emdAmount", v)} type="number" placeholder="50000" />
+            <Field label="Payment terms" value={form.paymentTerms} onChange={(v) => set("paymentTerms", v)} placeholder="100% advance before lifting" />
+            <Field label="Lifting period" value={form.liftingPeriod} onChange={(v) => set("liftingPeriod", v)} placeholder="7" />
+            <div className="space-y-2">
+              <Label>Lifting unit</Label>
+              <Select value={form.liftingUnit} onValueChange={(v) => set("liftingUnit", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Days">Days</SelectItem>
+                  <SelectItem value="Weeks">Weeks</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Field label="Contact person" value={form.contactName} onChange={(v) => set("contactName", v)} placeholder="Name" />
+            <Field label="Contact phone" value={form.contactPhone} onChange={(v) => set("contactPhone", v)} placeholder="9876543210" />
+            <Field label="Contact email" value={form.contactEmail} onChange={(v) => set("contactEmail", v)} type="email" placeholder="contact@example.com" />
+            <div className="md:col-span-2 space-y-2">
+              <Label>Terms & conditions</Label>
+              <Textarea value={form.terms} onChange={(e) => set("terms", e.target.value)} placeholder="Enter terms and conditions" className="min-h-20" />
+            </div>
+            <div className="md:col-span-2 border-t border-border/70 pt-5">
+              <p className="mb-4 text-sm font-semibold">Inspection</p>
+              <div className="grid gap-5 md:grid-cols-2">
+                <Field label="Inspection details" value={form.inspection} onChange={(v) => set("inspection", v)} placeholder="Details" />
+                <Field label="Inspection date" value={form.inspectionDate} onChange={(v) => set("inspectionDate", v)} type="date" />
+                <Field label="Inspection time" value={form.inspectionTime} onChange={(v) => set("inspectionTime", v)} type="time" />
+                <Field label="Inspection location" value={form.inspectionLocation} onChange={(v) => set("inspectionLocation", v)} placeholder="Location" />
               </div>
             </div>
           </CardContent>

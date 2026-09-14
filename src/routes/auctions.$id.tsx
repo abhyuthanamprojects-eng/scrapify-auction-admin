@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Check, MessageSquare, X, Trash2, MapPin, Calendar, Phone, Mail, User, FileText, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Check, MessageSquare, X, Trash2, MapPin, Calendar, Phone, Mail, User, FileText, Image as ImageIcon, FileSpreadsheet, Download, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +24,10 @@ function AuctionReview() {
   const [settlement, setSettlement] = useState<any>(null);
   const [awards, setAwards] = useState<any[]>([]);
   const [config, setConfig] = useState({ rfq_mode: "DOCUMENT", emd_type: "PERCENTAGE", emd_percentage: 10, minimum_participants: 3, initial_slot_minutes: 30, continuation_slot_minutes: 2, bid_cutoff_ms: 500, maximum_auction_duration_minutes: 120, auction_edit_lock_hours: 3 });
+  const [templateReview, setTemplateReview] = useState<any>(null);
+  const [parsedItems, setParsedItems] = useState<any[]>([]);
+  const [parsedItemsOpen, setParsedItemsOpen] = useState(false);
+  const [parsedItemsLoading, setParsedItemsLoading] = useState(false);
 
   if (!a) {
     return (
@@ -46,6 +50,43 @@ function AuctionReview() {
       if (awardsResponse.status === 'fulfilled') setAwards(awardsResponse.value?.data ?? []);
     });
   }, [a.id, a.status]);
+
+  useEffect(() => {
+    if (!(a as any).template_id) return;
+    adminApi.getAuctionTemplateReview(a.id)
+      .then((res: any) => setTemplateReview(res?.data ?? res))
+      .catch(() => {});
+  }, [a.id]);
+
+  async function loadParsedItems() {
+    if (parsedItemsOpen) { setParsedItemsOpen(false); return; }
+    setParsedItemsLoading(true);
+    try {
+      const res = await adminApi.getAuctionParsedItems(a.id);
+      setParsedItems(Array.isArray(res) ? res : res?.data ?? []);
+      setParsedItemsOpen(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to load parsed items.");
+    } finally {
+      setParsedItemsLoading(false);
+    }
+  }
+
+  async function downloadOriginal(uploadId: number | string, filename: string) {
+    try {
+      const blob = await adminApi.downloadSourceFile(a.id, uploadId);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename || "source-file";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Download failed.");
+    }
+  }
 
   async function saveConfiguration() {
     try {
@@ -208,6 +249,73 @@ function AuctionReview() {
                 <ConfigInput label="Seller Edit Lock (hours)" type="number" value={config.auction_edit_lock_hours} onChange={(v) => setConfig({ ...config, auction_edit_lock_hours: Number(v) })} />
               </div>
               <Button onClick={saveConfiguration} className="mt-4 bg-emerald-600 text-white hover:bg-emerald-700">Save Auction Configuration</Button>
+            </Section>
+          )}
+
+          {templateReview && (
+            <Section title="Template / Excel Review" icon={<FileSpreadsheet className="h-4 w-4" />}>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <Info label="Template" value={templateReview.template?.name ?? "—"} />
+                <Info label="Version" value={templateReview.template?.version ?? "—"} />
+                <Info label="Template Code" value={templateReview.template?.template_code ?? "—"} />
+                <Info label="Status" value={templateReview.template?.status ?? "—"} />
+              </div>
+              {templateReview.upload && (
+                <div className="mt-4">
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Upload Info</div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <Info label="Filename" value={templateReview.upload.original_filename ?? "—"} />
+                    <Info label="File Hash" value={templateReview.upload.file_hash ? String(templateReview.upload.file_hash).substring(0, 12) + "..." : "—"} />
+                    <Info label="Size" value={templateReview.upload.file_size ? `${(Number(templateReview.upload.file_size) / 1024).toFixed(1)} KB` : "—"} />
+                    <Info label="Upload Status" value={templateReview.upload.status ?? "—"} />
+                    <Info label="Uploaded" value={templateReview.upload.created_at ? new Date(templateReview.upload.created_at).toLocaleString() : "—"} />
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => downloadOriginal(templateReview.upload.id, templateReview.upload.original_filename)}>
+                      <Download className="h-3.5 w-3.5" /> Download Original
+                    </Button>
+                    <Button size="sm" variant="outline" className="gap-1.5" onClick={loadParsedItems} disabled={parsedItemsLoading}>
+                      {parsedItemsOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                      {parsedItemsLoading ? "Loading..." : parsedItemsOpen ? "Hide Parsed Items" : "View Parsed Items"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {parsedItemsOpen && parsedItems.length > 0 && (
+                <div className="mt-4 overflow-x-auto rounded-md border">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b bg-muted/40">
+                        {Object.keys(parsedItems[0]).map((k) => <th key={k} className="p-2 whitespace-nowrap">{k}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {parsedItems.map((item, i) => (
+                        <tr key={i} className="border-b last:border-0">
+                          {Object.values(item).map((v, j) => <td key={j} className="p-2 whitespace-nowrap">{v == null ? "—" : String(v)}</td>)}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {parsedItemsOpen && parsedItems.length === 0 && (
+                <p className="mt-3 text-sm text-muted-foreground">No parsed items found.</p>
+              )}
+              {Array.isArray(templateReview.versions) && templateReview.versions.length > 0 && (
+                <div className="mt-4">
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Submission Version History</div>
+                  <div className="space-y-1">
+                    {templateReview.versions.map((v: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between rounded-md border p-2 text-xs">
+                        <span className="font-mono">{v.version ?? v.id}</span>
+                        <span className="text-muted-foreground">{v.created_at ? new Date(v.created_at).toLocaleString() : ""}</span>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${v.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>{v.status ?? "—"}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </Section>
           )}
 

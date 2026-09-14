@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApprovalsRouteImport } from './routes/approvals'
 import { Route as AuctionsRouteImport } from './routes/auctions'
+import { Route as CategoriesRouteImport } from './routes/categories'
+import { Route as TemplatesRouteImport } from './routes/templates'
 import { Route as AuditLogRouteImport } from './routes/audit-log'
 import { Route as ComplianceRouteImport } from './routes/compliance'
 import { Route as ConfigurationRouteImport } from './routes/configuration'
@@ -57,6 +59,16 @@ const ApprovalsRoute = ApprovalsRouteImport.update({
 const AuctionsRoute = AuctionsRouteImport.update({
   id: '/auctions',
   path: '/auctions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategoriesRoute = CategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TemplatesRoute = TemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuditLogRoute = AuditLogRouteImport.update({
@@ -219,6 +231,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
   '/auctions': typeof AuctionsRouteWithChildren
+  '/categories': typeof CategoriesRoute
+  '/templates': typeof TemplatesRoute
   '/audit-log': typeof AuditLogRoute
   '/compliance': typeof ComplianceRoute
   '/configuration': typeof ConfigurationRoute
@@ -254,6 +268,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
+  '/categories': typeof CategoriesRoute
+  '/templates': typeof TemplatesRoute
   '/audit-log': typeof AuditLogRoute
   '/compliance': typeof ComplianceRoute
   '/configuration': typeof ConfigurationRoute
@@ -291,6 +307,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
   '/auctions': typeof AuctionsRouteWithChildren
+  '/categories': typeof CategoriesRoute
+  '/templates': typeof TemplatesRoute
   '/audit-log': typeof AuditLogRoute
   '/compliance': typeof ComplianceRoute
   '/configuration': typeof ConfigurationRoute
@@ -329,6 +347,8 @@ export interface FileRouteTypes {
     | '/'
     | '/approvals'
     | '/auctions'
+    | '/categories'
+    | '/templates'
     | '/audit-log'
     | '/compliance'
     | '/configuration'
@@ -364,6 +384,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/approvals'
+    | '/categories'
+    | '/templates'
     | '/audit-log'
     | '/compliance'
     | '/configuration'
@@ -400,6 +422,8 @@ export interface FileRouteTypes {
     | '/'
     | '/approvals'
     | '/auctions'
+    | '/categories'
+    | '/templates'
     | '/audit-log'
     | '/compliance'
     | '/configuration'
@@ -437,6 +461,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApprovalsRoute: typeof ApprovalsRoute
   AuctionsRoute: typeof AuctionsRouteWithChildren
+  CategoriesRoute: typeof CategoriesRoute
+  TemplatesRoute: typeof TemplatesRoute
   AuditLogRoute: typeof AuditLogRoute
   ComplianceRoute: typeof ComplianceRoute
   ConfigurationRoute: typeof ConfigurationRoute
@@ -485,6 +511,20 @@ declare module '@tanstack/react-router' {
       path: '/auctions'
       fullPath: '/auctions'
       preLoaderRoute: typeof AuctionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/categories': {
+      id: '/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof CategoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/templates': {
+      id: '/templates'
+      path: '/templates'
+      fullPath: '/templates'
+      preLoaderRoute: typeof TemplatesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/audit-log': {
@@ -753,6 +793,8 @@ const rootRouteChildren: RootRouteChildren = {
   OtpLookupRoute: OtpLookupRoute,
   ReportsRoute: ReportsRoute,
   RiskRoute: RiskRoute,
+  CategoriesRoute: CategoriesRoute,
+  TemplatesRoute: TemplatesRoute,
   SecurityRoute: SecurityRoute,
   SettingsRoute: SettingsRoute,
   TokensRoute: TokensRoute,
