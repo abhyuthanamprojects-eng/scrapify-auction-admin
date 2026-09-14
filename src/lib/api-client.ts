@@ -752,6 +752,7 @@ class ScrapifyAdminApiClient {
 
   async updatePlatformConfig(data: {
     auction_edit_lock_hours: number;
+    vendor_registration_fee?: number;
     emd_percentage?: number;
     minimum_participants?: number;
     initial_slot_minutes?: number;
@@ -764,8 +765,33 @@ class ScrapifyAdminApiClient {
     emd_required?: boolean;
     emd_type?: string;
     emd_fixed_amount?: number;
+    seller_kyb_required?: boolean;
+    participant_kyb_required?: boolean;
+    kyb_auto_approve_match_score?: number;
+    kyb_review_match_score?: number;
+    mobile_min_version?: string;
+    mobile_latest_version?: string;
+    mobile_force_update?: boolean;
+    mobile_update_url?: string;
+    mobile_update_notes?: string;
   }) {
     return this.request<any>("/platform-config", { method: "PATCH", body: JSON.stringify(data) });
+  }
+
+  async getRegistrationPromotions() {
+    return this.request<any>("/admin/registration-promotions");
+  }
+
+  async createRegistrationPromotion(data: Record<string, unknown>) {
+    return this.request<any>("/admin/registration-promotions", { method: "POST", body: JSON.stringify(data) });
+  }
+
+  async updateRegistrationPromotion(id: number, data: Record<string, unknown>) {
+    return this.request<any>(`/admin/registration-promotions/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+  }
+
+  async deleteRegistrationPromotion(id: number) {
+    return this.request<any>(`/admin/registration-promotions/${id}`, { method: "DELETE" });
   }
 
   async updateAuctionConfiguration(code: string, data: Record<string, unknown>) {

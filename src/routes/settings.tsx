@@ -52,6 +52,7 @@ function SettingsPage() {
   const [antiSnipeExtension, setAntiSnipeExtension] = useState("180");
   const [mfaMandatory, setMfaMandatory] = useState(true);
   const [autoForfeitEmd, setAutoForfeitEmd] = useState(true);
+  const [vendorRegistrationFee, setVendorRegistrationFee] = useState("5000");
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [smsAlerts, setSmsAlerts] = useState(true);
   const [whatsappAlerts, setWhatsappAlerts] = useState(true);
@@ -97,6 +98,11 @@ function SettingsPage() {
   const [verificationTestIfsc, setVerificationTestIfsc] = useState("");
   const [verificationTesting, setVerificationTesting] = useState<string | null>(null);
   const [cashfreePaymentTesting, setCashfreePaymentTesting] = useState(false);
+  const [registrationPromotions, setRegistrationPromotions] = useState<any[]>([]);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoType, setPromoType] = useState<"fixed" | "percentage">("percentage");
+  const [promoValue, setPromoValue] = useState("");
+  const [promoDescription, setPromoDescription] = useState("");
 
   const toggleSection = (section: string) => {
     setExpandedSection((current) => (current === section ? "" : section));
@@ -128,6 +134,7 @@ function SettingsPage() {
         if (config?.auction_edit_lock_hours !== undefined) {
           setAuctionEditLockHours(String(config.auction_edit_lock_hours));
         }
+        if (config?.vendor_registration_fee !== undefined) setVendorRegistrationFee(String(config.vendor_registration_fee));
         if (config?.emd_percentage !== undefined) setEmdPercentage(String(config.emd_percentage));
         if (config?.minimum_participants !== undefined)
           setMinimumParticipants(String(config.minimum_participants));
@@ -162,6 +169,45 @@ function SettingsPage() {
       .catch(() => toast.error("Could not load platform settings from the API."))
       .finally(() => setLoadingConfig(false));
   }, []);
+
+  useEffect(() => {
+    adminApi.getRegistrationPromotions()
+      .then((response) => setRegistrationPromotions(response?.promotions ?? response?.data?.promotions ?? []))
+      .catch(() => toast.error("Could not load registration promotions."));
+  }, []);
+
+  const createPromotion = async () => {
+    if (!promoCode.trim() || !Number.isFinite(Number(promoValue)) || Number(promoValue) <= 0) {
+      toast.error("Enter a promo code and a positive discount value.");
+      return;
+    }
+    try {
+      const response = await adminApi.createRegistrationPromotion({
+        code: promoCode.trim().toUpperCase(),
+        discount_type: promoType,
+        discount_value: Number(promoValue),
+        description: promoDescription.trim() || undefined,
+        active: true,
+      });
+      setRegistrationPromotions((current) => [response?.promotion ?? response?.data?.promotion, ...current]);
+      setPromoCode("");
+      setPromoValue("");
+      setPromoDescription("");
+      toast.success("Registration promo created.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not create registration promo.");
+    }
+  };
+
+  const togglePromotion = async (promotion: any) => {
+    try {
+      const response = await adminApi.updateRegistrationPromotion(promotion.id, { ...promotion, active: !promotion.active });
+      const updated = response?.promotion ?? response?.data?.promotion;
+      setRegistrationPromotions((current) => current.map((item) => item.id === promotion.id ? updated : item));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update registration promo.");
+    }
+  };
 
   useEffect(() => {
     adminApi
@@ -416,7 +462,9 @@ function SettingsPage() {
 
   const handleSave = async () => {
     const hours = Number(auctionEditLockHours);
+    const registrationFee = Number(vendorRegistrationFee);
     const values = [
+      registrationFee,
       Number(emdPercentage),
       Number(minimumParticipants),
       Number(initialSlotMinutes),
@@ -438,6 +486,7 @@ function SettingsPage() {
     try {
       await adminApi.updatePlatformConfig({
         auction_edit_lock_hours: hours,
+        vendor_registration_fee: registrationFee,
         emd_percentage: Number(emdPercentage),
         minimum_participants: Number(minimumParticipants),
         initial_slot_minutes: Number(initialSlotMinutes),
@@ -537,6 +586,11 @@ function SettingsPage() {
                 placeholder="https://api.scrapifyauctions.com/api/v1"
                 className="font-mono text-sm"
               />
+            </div>
+            <div className="space-y-1.5 border-t pt-4">
+              <Label htmlFor="vendor-registration-fee" className="text-xs font-medium">Vendor Registration Fee (INR)</Label>
+              <Input id="vendor-registration-fee" type="number" min={0} step="0.01" value={vendorRegistrationFee} onChange={(e) => setVendorRegistrationFee(e.target.value)} disabled={loadingConfig} className="text-sm font-mono" />
+              <p className="text-xs text-muted-foreground">Server-authoritative one-time fee. The value in .env is only the initial fallback.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -1672,6 +1726,22 @@ function SettingsPage() {
                   className="text-sm font-mono"
                 />
               </div>
+            </div>
+            <div className="space-y-3 border-t pt-4">
+              <div>
+                <p className="text-sm font-semibold">Registration Promo Codes</p>
+                <p className="text-xs text-muted-foreground">Discounts are validated and applied by Laravel at payment submission.</p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-4">
+                <Input placeholder="WELCOME2026" value={promoCode} onChange={(e) => setPromoCode(e.target.value)} />
+                <select value={promoType} onChange={(e) => setPromoType(e.target.value as "fixed" | "percentage")} className="rounded-md border border-input bg-background px-3 text-sm">
+                  <option value="percentage">Percentage</option><option value="fixed">Fixed INR</option>
+                </select>
+                <Input type="number" min={0.01} step="0.01" placeholder="10" value={promoValue} onChange={(e) => setPromoValue(e.target.value)} />
+                <Button type="button" onClick={createPromotion}>Add Promo</Button>
+              </div>
+              <Input placeholder="Optional customer-facing description" value={promoDescription} onChange={(e) => setPromoDescription(e.target.value)} />
+              {registrationPromotions.length > 0 && <div className="space-y-2">{registrationPromotions.map((promotion) => <div key={promotion.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-xs"><span className="font-mono font-bold">{promotion.code}</span><span>{promotion.discount_type === "percentage" ? `${promotion.discount_value}%` : `₹${promotion.discount_value}`}</span><span>{promotion.redemption_count}{promotion.max_redemptions ? `/${promotion.max_redemptions}` : " redeemed"}</span><Button type="button" variant="outline" size="sm" onClick={() => togglePromotion(promotion)}>{promotion.active ? "Deactivate" : "Activate"}</Button></div>)}</div>}
             </div>
             <div className="flex items-center justify-between pt-2 border-t">
               <div>
