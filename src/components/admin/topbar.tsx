@@ -36,7 +36,9 @@ export function AdminTopbar({
 
   const loadNotifications = async () => {
     try {
-      const response = await adminApi.getNotifications({ per_page: "5" });
+      // The bell is an action queue. Read history belongs in the audit log;
+      // keeping it here made old test-account notifications look current.
+      const response = await adminApi.getNotifications({ per_page: "5", unread: "true" });
       setNotifications(Array.isArray(response?.data) ? response.data : []);
       setUnreadCount(Number(response?.unread_count ?? 0));
     } catch {

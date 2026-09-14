@@ -22,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { ADMIN_ROLES } from "@/lib/ops/roles";
 import { adminApi } from "@/lib/api-client";
 import { toast } from "sonner";
@@ -52,7 +51,6 @@ const initialForm: FormState = {
   password: "",
   role: "Operations",
   department: "",
-  mfaEnabled: false,
   businessName: "",
   tradeName: "",
   businessType: "Private Limited",
@@ -127,7 +125,6 @@ function NewAdminAccount() {
         password: form.password,
         role: isStaff ? form.role : accountType,
         department: form.department || undefined,
-        mfa_enabled: Boolean(form.mfaEnabled),
         account_type: accountType,
         mobile_verified: true,
         email_verified: true,
@@ -269,18 +266,6 @@ function NewAdminAccount() {
                   onChange={(value) => set("department", value)}
                   placeholder="Operations"
                 />
-                <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 p-3 md:col-span-2">
-                  <div>
-                    <p className="text-sm font-semibold">Require staff 2FA</p>
-                    <p className="text-xs text-muted-foreground">
-                      Security policy for internal staff accounts.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={Boolean(form.mfaEnabled)}
-                    onCheckedChange={(value) => set("mfaEnabled", value)}
-                  />
-                </div>
               </>
             )}
           </CardContent>

@@ -14,11 +14,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Search,
-  ShieldAlert,
   UserPlus,
   Trash2,
 } from "lucide-react";
@@ -48,7 +46,11 @@ function StaffUsersContent() {
 
   const loadStaff = async () => {
     try {
-      const response = await adminApi.getOrgUsers();
+      // This screen is for internal operators only. Buyer/seller identities
+      // are managed under Customers and Buyer & Seller Master.
+      const response = await adminApi.getOrgUsers({
+        role: "super_admin,admin,operations,compliance,procurement_manager,finance_manager,technical_evaluator,auditor",
+      });
       const rows = response.data ?? response.users ?? [];
       setStaffList(
         rows.map((rawRow: unknown) => {
@@ -128,7 +130,7 @@ function StaffUsersContent() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <PageHeader
           title="Staff Users & Multi-Role Governance"
-          description="Provision internal operations personnel, assign granular RBAC roles, enforce 2FA requirements, and monitor active sessions."
+          description="Provision internal operations personnel, assign granular RBAC roles, and monitor active sessions."
         />
         <Button asChild className="gradient-gold text-primary shrink-0 gap-2 font-bold shadow-md">
           <Link to="/users/new">
@@ -153,7 +155,6 @@ function StaffUsersContent() {
           index={12}
           valueClass="text-blue-600"
         />
-        <KpiCard label="MFA Compliant" value="100%" index={10} valueClass="text-purple-600" />
       </div>
       <Card className="border-border shadow-sm">
         <CardHeader className="flex flex-col justify-between gap-3 border-b border-border/80 p-4 sm:flex-row sm:items-center">
@@ -200,7 +201,6 @@ function StaffUsersContent() {
                 <th className="px-4 py-3">Employee ID</th>
                 <th className="px-4 py-3">Assigned Role</th>
                 <th className="px-4 py-3">Department</th>
-                <th className="px-4 py-3">2FA / Security</th>
                 <th className="px-4 py-3">Last Activity</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
@@ -257,19 +257,6 @@ function StaffUsersContent() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{staff.department}</td>
-                    <td className="px-4 py-3">
-                      {staff.mfaEnabled ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          Enforced
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] text-amber-600">
-                          <ShieldAlert className="h-3.5 w-3.5" />
-                          Pending
-                        </span>
-                      )}
-                    </td>
                     <td className="px-4 py-3 text-[11px] text-muted-foreground">
                       {staff.lastLogin || "Never"}
                     </td>
