@@ -60,6 +60,20 @@ import {
 import { adminApi } from "@/lib/api-client";
 import { MaterialChip, VendorStatusBadge } from "./vendors.index";
 
+function bankNameFromIfsc(ifsc?: string) {
+  const prefix = ifsc?.trim().slice(0, 4).toUpperCase();
+  return {
+    SBIN: "State Bank of India (SBI)",
+    HDFC: "HDFC Bank",
+    ICIC: "ICICI Bank",
+    UTIB: "Axis Bank",
+    KKBK: "Kotak Mahindra Bank",
+    PUNB: "Punjab National Bank",
+    CNRB: "Canara Bank",
+    BARB: "Bank of Baroda",
+  }[prefix ?? ""] ?? "";
+}
+
 export const Route = createFileRoute("/vendors/$id")({
   head: () => ({
     meta: [
@@ -436,12 +450,12 @@ function VendorDetail() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <ReadField label="Bank Name" value={vendor.bankName || "HDFC Bank Ltd"} />
+              <ReadField label="Bank Name" value={vendor.bankName || bankNameFromIfsc(vendor.ifscCode) || "Not provided"} />
               <ReadField label="Account Holder Name" value={vendor.accountHolderName || vendor.companyName} />
-              <ReadField label="Bank Account Number" value={vendor.accountNumber || "50200012345678"} mono />
-              <ReadField label="IFSC Code" value={vendor.ifscCode || "HDFC0000060"} mono />
-              <ReadField label="Account Type" value={vendor.accountType || "Current Account"} />
-              <ReadField label="Branch" value={vendor.branchName || "Main Commercial Branch"} />
+              <ReadField label="Bank Account Number" value={vendor.accountNumber || "Not provided"} mono />
+              <ReadField label="IFSC Code" value={vendor.ifscCode || "Not provided"} mono />
+              <ReadField label="Account Type" value={vendor.accountType || "Not provided"} />
+              <ReadField label="Branch" value={vendor.branchName || "Not provided"} />
             </div>
           </section>
 
