@@ -890,26 +890,6 @@ class ScrapifyAdminApiClient {
     return this.request<any>(`/auctions/${auctionCode}/terms/accept`, { method: "POST" });
   }
 
-  /* ---------------- Team Members ---------------- */
-  async getTeamMembers(params: Record<string, any> = {}) {
-    const query = new URLSearchParams(params).toString();
-    return this.request<any>(`/team/members${query ? `?${query}` : ""}`);
-  }
-
-  async createTeamMember(data: any) {
-    return this.request<any>("/team/members", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async updateTeamMember(id: number, data: any) {
-    return this.request<any>(`/team/members/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    });
-  }
-
   /* ---------------- Tokens ---------------- */
   async getTokens() {
     return this.request<any>("/tokens");
