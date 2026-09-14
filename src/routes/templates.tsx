@@ -65,7 +65,8 @@ function TemplatesPage() {
     setLoading(true);
     adminApi.getAuctionTemplates()
       .then((res: any) => {
-        const rows = Array.isArray(res) ? res : res?.data ?? [];
+        const inner = res?.data;
+        const rows = Array.isArray(inner) ? inner : Array.isArray(inner?.data) ? inner.data : [];
         setTemplates(rows);
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : "Failed to load templates"))
