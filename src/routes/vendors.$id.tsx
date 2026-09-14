@@ -277,7 +277,8 @@ function VendorDetail() {
         description: `${selectedDoc.name} reviewed.`,
       });
       setDocReviewOpen(false);
-      refetch();
+      setSelectedDoc(null);
+      await refetch();
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to update document review");
     } finally {
@@ -588,15 +589,21 @@ function VendorDetail() {
                             </label>
                           )}
 
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            disabled={documentBusy !== null}
-                            onClick={() => openDocReview(d, "approved")}
-                            className="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                          >
-                            <Check className="h-3.5 w-3.5" /> Approve
-                          </Button>
+                          {isDocApproved ? (
+                            <span className="inline-flex items-center gap-1 px-2 text-xs font-semibold text-emerald-600">
+                              <Check className="h-3.5 w-3.5" /> Verified
+                            </span>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={documentBusy !== null}
+                              onClick={() => openDocReview(d, "approved")}
+                              className="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                            >
+                              <Check className="h-3.5 w-3.5" /> Approve
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="ghost"
