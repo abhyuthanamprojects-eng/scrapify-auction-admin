@@ -13,16 +13,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
 import {
-  ShieldCheck,
-  UserCheck,
-  KeyRound,
-  Lock,
   Mail,
   Phone,
-  Clock,
-  Laptop,
   CheckCircle2,
 } from "lucide-react";
 import { type StaffUser } from "@/hooks/use-auth";
@@ -39,7 +32,6 @@ export function AdminProfileDialog({ open, onOpenChange, user, onSave }: AdminPr
   const [email, setEmail] = useState(user.email);
   const [phone, setPhone] = useState(user.phone || "+91 98765 43210");
   const [department, setDepartment] = useState(user.department);
-  const [mfa, setMfa] = useState(user.mfaEnabled);
   const [saving, setSaving] = useState(false);
 
   const handleSave = () => {
@@ -50,7 +42,6 @@ export function AdminProfileDialog({ open, onOpenChange, user, onSave }: AdminPr
         email,
         phone,
         department,
-        mfaEnabled: mfa,
       });
     }
     setTimeout(() => {
@@ -105,12 +96,9 @@ export function AdminProfileDialog({ open, onOpenChange, user, onSave }: AdminPr
         {/* Content Tabs */}
         <div className="p-6">
           <Tabs defaultValue="details" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3 bg-muted/60 p-1">
+            <TabsList className="grid w-full grid-cols-2 bg-muted/60 p-1">
               <TabsTrigger value="details" className="text-xs">
                 Staff Identity
-              </TabsTrigger>
-              <TabsTrigger value="security" className="text-xs">
-                Security &amp; 2FA
               </TabsTrigger>
               <TabsTrigger value="permissions" className="text-xs">
                 RBAC Matrix
@@ -174,52 +162,7 @@ export function AdminProfileDialog({ open, onOpenChange, user, onSave }: AdminPr
               </div>
             </TabsContent>
 
-            {/* Tab 2: Security & 2FA */}
-            <TabsContent value="security" className="space-y-4 pt-2">
-              <div className="rounded-xl border border-border p-4 bg-muted/20 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                      Two-Factor Authentication (TOTP / SMS)
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Mandatory hardware or app-based OTP required at every login
-                    </p>
-                  </div>
-                  <Switch checked={mfa} onCheckedChange={setMfa} />
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-border p-4 bg-card space-y-2.5">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Active Session &amp; Login Audit
-                </p>
-                <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/50">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Laptop className="h-4 w-4 text-accent" />
-                    <span>Current Session (macOS · Chrome 128)</span>
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40"
-                  >
-                    Active Now
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5" />
-                    Last Logged In:
-                  </span>
-                  <span className="font-mono text-foreground">
-                    {user.lastLogin || "Today, 10:30 AM (IP: 103.21.144.8)"}
-                  </span>
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* Tab 3: Permissions */}
+            {/* Tab 2: Permissions */}
             <TabsContent value="permissions" className="space-y-3 pt-2">
               <div className="rounded-xl border border-border p-3.5 bg-muted/20">
                 <p className="text-xs font-semibold text-foreground mb-1">

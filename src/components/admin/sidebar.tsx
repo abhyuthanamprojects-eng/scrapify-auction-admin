@@ -13,7 +13,6 @@ import {
   Wallet,
   BarChart3,
   ShieldAlert,
-  Lock,
   SlidersHorizontal,
   Settings,
   ScrollText,
@@ -80,7 +79,6 @@ export const NAV_GROUPS: NavGroup[] = [
     permission: "view.risk",
     items: [
       { label: "Risk & Fraud", to: "/risk", icon: ShieldAlert },
-      { label: "Security", to: "/security", icon: Lock },
     ],
   },
   {

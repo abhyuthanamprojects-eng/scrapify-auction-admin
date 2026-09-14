@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, Search, LogOut, User as UserIcon, Menu, ShieldCheck } from "lucide-react";
+import { Bell, Search, LogOut, User as UserIcon, Menu } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -219,13 +219,6 @@ export function AdminTopbar({
               >
                 <UserIcon className="h-4 w-4 mr-2.5 text-accent" />
                 <span className="font-medium">My Profile &amp; Identity</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setProfileOpen(true)}
-                className="cursor-pointer py-2 px-2.5 rounded-lg focus:bg-accent/10"
-              >
-                <ShieldCheck className="h-4 w-4 mr-2.5 text-emerald-600" />
-                <span className="font-medium">Security &amp; 2FA</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

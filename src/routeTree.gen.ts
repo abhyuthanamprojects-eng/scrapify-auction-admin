@@ -12,9 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApprovalsRouteImport } from './routes/approvals'
 import { Route as AuctionsRouteImport } from './routes/auctions'
-import { Route as CategoriesRouteImport } from './routes/categories'
-import { Route as TemplatesRouteImport } from './routes/templates'
 import { Route as AuditLogRouteImport } from './routes/audit-log'
+import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as ComplianceRouteImport } from './routes/compliance'
 import { Route as ConfigurationRouteImport } from './routes/configuration'
 import { Route as ControlRoomRouteImport } from './routes/control-room'
@@ -26,8 +25,8 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as OtpLookupRouteImport } from './routes/otp-lookup'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as RiskRouteImport } from './routes/risk'
-import { Route as SecurityRouteImport } from './routes/security'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as TemplatesRouteImport } from './routes/templates'
 import { Route as TokensRouteImport } from './routes/tokens'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as AuctionsIndexRouteImport } from './routes/auctions.index'
@@ -61,19 +60,14 @@ const AuctionsRoute = AuctionsRouteImport.update({
   path: '/auctions',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CategoriesRoute = CategoriesRouteImport.update({
-  id: '/categories',
-  path: '/categories',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TemplatesRoute = TemplatesRouteImport.update({
-  id: '/templates',
-  path: '/templates',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuditLogRoute = AuditLogRouteImport.update({
   id: '/audit-log',
   path: '/audit-log',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategoriesRoute = CategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComplianceRoute = ComplianceRouteImport.update({
@@ -131,14 +125,14 @@ const RiskRoute = RiskRouteImport.update({
   path: '/risk',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SecurityRoute = SecurityRouteImport.update({
-  id: '/security',
-  path: '/security',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TemplatesRoute = TemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TokensRoute = TokensRouteImport.update({
@@ -231,9 +225,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
   '/auctions': typeof AuctionsRouteWithChildren
-  '/categories': typeof CategoriesRoute
-  '/templates': typeof TemplatesRoute
   '/audit-log': typeof AuditLogRoute
+  '/categories': typeof CategoriesRoute
   '/compliance': typeof ComplianceRoute
   '/configuration': typeof ConfigurationRoute
   '/control-room': typeof ControlRoomRoute
@@ -245,8 +238,8 @@ export interface FileRoutesByFullPath {
   '/otp-lookup': typeof OtpLookupRoute
   '/reports': typeof ReportsRoute
   '/risk': typeof RiskRoute
-  '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
+  '/templates': typeof TemplatesRoute
   '/tokens': typeof TokensRoute
   '/users': typeof UsersRouteWithChildren
   '/auctions/$id': typeof AuctionsIdRoute
@@ -268,9 +261,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
-  '/categories': typeof CategoriesRoute
-  '/templates': typeof TemplatesRoute
   '/audit-log': typeof AuditLogRoute
+  '/categories': typeof CategoriesRoute
   '/compliance': typeof ComplianceRoute
   '/configuration': typeof ConfigurationRoute
   '/control-room': typeof ControlRoomRoute
@@ -282,8 +274,8 @@ export interface FileRoutesByTo {
   '/otp-lookup': typeof OtpLookupRoute
   '/reports': typeof ReportsRoute
   '/risk': typeof RiskRoute
-  '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
+  '/templates': typeof TemplatesRoute
   '/tokens': typeof TokensRoute
   '/users': typeof UsersRouteWithChildren
   '/auctions/$id': typeof AuctionsIdRoute
@@ -307,9 +299,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
   '/auctions': typeof AuctionsRouteWithChildren
-  '/categories': typeof CategoriesRoute
-  '/templates': typeof TemplatesRoute
   '/audit-log': typeof AuditLogRoute
+  '/categories': typeof CategoriesRoute
   '/compliance': typeof ComplianceRoute
   '/configuration': typeof ConfigurationRoute
   '/control-room': typeof ControlRoomRoute
@@ -321,8 +312,8 @@ export interface FileRoutesById {
   '/otp-lookup': typeof OtpLookupRoute
   '/reports': typeof ReportsRoute
   '/risk': typeof RiskRoute
-  '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
+  '/templates': typeof TemplatesRoute
   '/tokens': typeof TokensRoute
   '/users': typeof UsersRouteWithChildren
   '/auctions/$id': typeof AuctionsIdRoute
@@ -347,9 +338,8 @@ export interface FileRouteTypes {
     | '/'
     | '/approvals'
     | '/auctions'
-    | '/categories'
-    | '/templates'
     | '/audit-log'
+    | '/categories'
     | '/compliance'
     | '/configuration'
     | '/control-room'
@@ -361,8 +351,8 @@ export interface FileRouteTypes {
     | '/otp-lookup'
     | '/reports'
     | '/risk'
-    | '/security'
     | '/settings'
+    | '/templates'
     | '/tokens'
     | '/users'
     | '/auctions/$id'
@@ -384,9 +374,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/approvals'
-    | '/categories'
-    | '/templates'
     | '/audit-log'
+    | '/categories'
     | '/compliance'
     | '/configuration'
     | '/control-room'
@@ -398,8 +387,8 @@ export interface FileRouteTypes {
     | '/otp-lookup'
     | '/reports'
     | '/risk'
-    | '/security'
     | '/settings'
+    | '/templates'
     | '/tokens'
     | '/users'
     | '/auctions/$id'
@@ -422,9 +411,8 @@ export interface FileRouteTypes {
     | '/'
     | '/approvals'
     | '/auctions'
-    | '/categories'
-    | '/templates'
     | '/audit-log'
+    | '/categories'
     | '/compliance'
     | '/configuration'
     | '/control-room'
@@ -436,8 +424,8 @@ export interface FileRouteTypes {
     | '/otp-lookup'
     | '/reports'
     | '/risk'
-    | '/security'
     | '/settings'
+    | '/templates'
     | '/tokens'
     | '/users'
     | '/auctions/$id'
@@ -461,9 +449,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApprovalsRoute: typeof ApprovalsRoute
   AuctionsRoute: typeof AuctionsRouteWithChildren
-  CategoriesRoute: typeof CategoriesRoute
-  TemplatesRoute: typeof TemplatesRoute
   AuditLogRoute: typeof AuditLogRoute
+  CategoriesRoute: typeof CategoriesRoute
   ComplianceRoute: typeof ComplianceRoute
   ConfigurationRoute: typeof ConfigurationRoute
   ControlRoomRoute: typeof ControlRoomRoute
@@ -475,8 +462,8 @@ export interface RootRouteChildren {
   OtpLookupRoute: typeof OtpLookupRoute
   ReportsRoute: typeof ReportsRoute
   RiskRoute: typeof RiskRoute
-  SecurityRoute: typeof SecurityRoute
   SettingsRoute: typeof SettingsRoute
+  TemplatesRoute: typeof TemplatesRoute
   TokensRoute: typeof TokensRoute
   UsersRoute: typeof UsersRouteWithChildren
   CustomersIdRoute: typeof CustomersIdRoute
@@ -513,25 +500,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuctionsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/categories': {
-      id: '/categories'
-      path: '/categories'
-      fullPath: '/categories'
-      preLoaderRoute: typeof CategoriesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/templates': {
-      id: '/templates'
-      path: '/templates'
-      fullPath: '/templates'
-      preLoaderRoute: typeof TemplatesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/audit-log': {
       id: '/audit-log'
       path: '/audit-log'
       fullPath: '/audit-log'
       preLoaderRoute: typeof AuditLogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/categories': {
+      id: '/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof CategoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/compliance': {
@@ -611,18 +591,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RiskRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/security': {
-      id: '/security'
-      path: '/security'
-      fullPath: '/security'
-      preLoaderRoute: typeof SecurityRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/settings': {
       id: '/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/templates': {
+      id: '/templates'
+      path: '/templates'
+      fullPath: '/templates'
+      preLoaderRoute: typeof TemplatesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tokens': {
@@ -782,6 +762,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApprovalsRoute: ApprovalsRoute,
   AuctionsRoute: AuctionsRouteWithChildren,
   AuditLogRoute: AuditLogRoute,
+  CategoriesRoute: CategoriesRoute,
   ComplianceRoute: ComplianceRoute,
   ConfigurationRoute: ConfigurationRoute,
   ControlRoomRoute: ControlRoomRoute,
@@ -793,10 +774,8 @@ const rootRouteChildren: RootRouteChildren = {
   OtpLookupRoute: OtpLookupRoute,
   ReportsRoute: ReportsRoute,
   RiskRoute: RiskRoute,
-  CategoriesRoute: CategoriesRoute,
-  TemplatesRoute: TemplatesRoute,
-  SecurityRoute: SecurityRoute,
   SettingsRoute: SettingsRoute,
+  TemplatesRoute: TemplatesRoute,
   TokensRoute: TokensRoute,
   UsersRoute: UsersRouteWithChildren,
   CustomersIdRoute: CustomersIdRoute,
@@ -812,13 +791,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
