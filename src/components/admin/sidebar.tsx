@@ -21,6 +21,7 @@ import {
   Sparkles,
   FileSpreadsheet,
   FolderTree,
+  Scale,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/hooks/use-role";
@@ -88,6 +89,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Platform Config", to: "/configuration", icon: SlidersHorizontal },
       { label: "Categories", to: "/categories", icon: FolderTree },
       { label: "Auction Templates", to: "/templates", icon: FileSpreadsheet },
+      { label: "Terms & Conditions", to: "/terms-conditions", icon: Scale },
       { label: "Settings", to: "/settings", icon: Settings },
     ],
   },

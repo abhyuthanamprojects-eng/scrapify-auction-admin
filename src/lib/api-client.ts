@@ -864,6 +864,24 @@ class ScrapifyAdminApiClient {
     return res.blob();
   }
 
+  /* ---------------- Admin: Terms & Conditions ---------------- */
+  async getTermsConditions(params: Record<string, any> = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request<any>(`/terms-conditions${query ? `?${query}` : ""}`);
+  }
+  async getTermsCondition(id: number) {
+    return this.request<any>(`/terms-conditions/${id}`);
+  }
+  async createTermsCondition(data: any) {
+    return this.request<any>("/terms-conditions", { method: "POST", body: JSON.stringify(data) });
+  }
+  async updateTermsCondition(id: number, data: any) {
+    return this.request<any>(`/terms-conditions/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+  }
+  async deleteTermsCondition(id: number) {
+    return this.request<any>(`/terms-conditions/${id}`, { method: "DELETE" });
+  }
+
   /* ---------------- Admin: Finance, Fulfilments, Users, Reports ---------------- */
   async getFinanceSummary() {
     return this.request<any>("/admin/finance/summary");
