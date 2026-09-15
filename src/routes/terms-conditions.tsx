@@ -50,6 +50,21 @@ const APPLICABLE_BADGE: Record<string, string> = {
 const TYPES = ["general", "payment", "inspection", "delivery", "liability", "dispute", "compliance"] as const;
 const APPLICABLE = ["all", "buyer", "seller"] as const;
 
+type CategoryOption = { id: number; label: string; isChild: boolean };
+
+/** Parents followed by their own children, so a subcategory can be picked too. */
+function flattenCategories(nested: any[]): CategoryOption[] {
+  const out: CategoryOption[] = [];
+  for (const parent of nested) {
+    if (parent.parent_id) continue;
+    out.push({ id: parent.id, label: parent.name, isChild: false });
+    for (const child of parent.children ?? []) {
+      out.push({ id: child.id, label: `    ${child.name}`, isChild: true });
+    }
+  }
+  return out;
+}
+
 function TermsConditionsPage() {
   const [items, setItems] = useState<TNC[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -70,6 +85,8 @@ function TermsConditionsPage() {
     sort_order: 0,
     is_active: true,
   });
+
+  const categoryOptions = flattenCategories(categories);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -182,8 +199,8 @@ function TermsConditionsPage() {
         >
           <option value="">All categories</option>
           <option value="global">Global (all categories)</option>
-          {categories.filter((c) => !c.parent_id).map((c: any) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
+          {categoryOptions.map((c) => (
+            <option key={c.id} value={c.id}>{c.label}</option>
           ))}
         </select>
 
@@ -288,8 +305,8 @@ function TermsConditionsPage() {
                   onChange={(e) => setForm({ ...form, category_id: e.target.value })}
                 >
                   <option value="">Global (all categories)</option>
-                  {categories.filter((c) => !c.parent_id).map((c: any) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                  {categoryOptions.map((c) => (
+                    <option key={c.id} value={c.id}>{c.label}</option>
                   ))}
                 </select>
               </div>

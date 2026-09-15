@@ -27,6 +27,7 @@ import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as RiskRouteImport } from './routes/risk'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TemplatesRouteImport } from './routes/templates'
+import { Route as TermsConditionsRouteImport } from './routes/terms-conditions'
 import { Route as TokensRouteImport } from './routes/tokens'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as AuctionsIndexRouteImport } from './routes/auctions.index'
@@ -135,6 +136,11 @@ const TemplatesRoute = TemplatesRouteImport.update({
   path: '/templates',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermsConditionsRoute = TermsConditionsRouteImport.update({
+  id: '/terms-conditions',
+  path: '/terms-conditions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TokensRoute = TokensRouteImport.update({
   id: '/tokens',
   path: '/tokens',
@@ -240,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/risk': typeof RiskRoute
   '/settings': typeof SettingsRoute
   '/templates': typeof TemplatesRoute
+  '/terms-conditions': typeof TermsConditionsRoute
   '/tokens': typeof TokensRoute
   '/users': typeof UsersRouteWithChildren
   '/auctions/$id': typeof AuctionsIdRoute
@@ -276,6 +283,7 @@ export interface FileRoutesByTo {
   '/risk': typeof RiskRoute
   '/settings': typeof SettingsRoute
   '/templates': typeof TemplatesRoute
+  '/terms-conditions': typeof TermsConditionsRoute
   '/tokens': typeof TokensRoute
   '/users': typeof UsersRouteWithChildren
   '/auctions/$id': typeof AuctionsIdRoute
@@ -314,6 +322,7 @@ export interface FileRoutesById {
   '/risk': typeof RiskRoute
   '/settings': typeof SettingsRoute
   '/templates': typeof TemplatesRoute
+  '/terms-conditions': typeof TermsConditionsRoute
   '/tokens': typeof TokensRoute
   '/users': typeof UsersRouteWithChildren
   '/auctions/$id': typeof AuctionsIdRoute
@@ -353,6 +362,7 @@ export interface FileRouteTypes {
     | '/risk'
     | '/settings'
     | '/templates'
+    | '/terms-conditions'
     | '/tokens'
     | '/users'
     | '/auctions/$id'
@@ -389,6 +399,7 @@ export interface FileRouteTypes {
     | '/risk'
     | '/settings'
     | '/templates'
+    | '/terms-conditions'
     | '/tokens'
     | '/users'
     | '/auctions/$id'
@@ -426,6 +437,7 @@ export interface FileRouteTypes {
     | '/risk'
     | '/settings'
     | '/templates'
+    | '/terms-conditions'
     | '/tokens'
     | '/users'
     | '/auctions/$id'
@@ -464,6 +476,7 @@ export interface RootRouteChildren {
   RiskRoute: typeof RiskRoute
   SettingsRoute: typeof SettingsRoute
   TemplatesRoute: typeof TemplatesRoute
+  TermsConditionsRoute: typeof TermsConditionsRoute
   TokensRoute: typeof TokensRoute
   UsersRoute: typeof UsersRouteWithChildren
   CustomersIdRoute: typeof CustomersIdRoute
@@ -603,6 +616,13 @@ declare module '@tanstack/react-router' {
       path: '/templates'
       fullPath: '/templates'
       preLoaderRoute: typeof TemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms-conditions': {
+      id: '/terms-conditions'
+      path: '/terms-conditions'
+      fullPath: '/terms-conditions'
+      preLoaderRoute: typeof TermsConditionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tokens': {
@@ -776,6 +796,7 @@ const rootRouteChildren: RootRouteChildren = {
   RiskRoute: RiskRoute,
   SettingsRoute: SettingsRoute,
   TemplatesRoute: TemplatesRoute,
+  TermsConditionsRoute: TermsConditionsRoute,
   TokensRoute: TokensRoute,
   UsersRoute: UsersRouteWithChildren,
   CustomersIdRoute: CustomersIdRoute,
