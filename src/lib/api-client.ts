@@ -867,19 +867,19 @@ class ScrapifyAdminApiClient {
   /* ---------------- Admin: Terms & Conditions ---------------- */
   async getTermsConditions(params: Record<string, any> = {}) {
     const query = new URLSearchParams(params).toString();
-    return this.request<any>(`/terms-conditions${query ? `?${query}` : ""}`);
+    return this.request<any>(`/admin/terms-conditions${query ? `?${query}` : ""}`);
   }
   async getTermsCondition(id: number) {
-    return this.request<any>(`/terms-conditions/${id}`);
+    return this.request<any>(`/admin/terms-conditions/${id}`);
   }
   async createTermsCondition(data: any) {
-    return this.request<any>("/terms-conditions", { method: "POST", body: JSON.stringify(data) });
+    return this.request<any>("/admin/terms-conditions", { method: "POST", body: JSON.stringify(data) });
   }
   async updateTermsCondition(id: number, data: any) {
-    return this.request<any>(`/terms-conditions/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+    return this.request<any>(`/admin/terms-conditions/${id}`, { method: "PATCH", body: JSON.stringify(data) });
   }
   async deleteTermsCondition(id: number) {
-    return this.request<any>(`/terms-conditions/${id}`, { method: "DELETE" });
+    return this.request<any>(`/admin/terms-conditions/${id}`, { method: "DELETE" });
   }
 
   /* ---------------- Admin: Finance, Fulfilments, Users, Reports ---------------- */
