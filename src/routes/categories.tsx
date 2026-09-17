@@ -250,12 +250,12 @@ function CategoriesPage() {
             </div>
             <div className="space-y-2">
               <Label>Parent category</Label>
-              <Select value={form.parent_id} onValueChange={(v) => set("parent_id", v)}>
+              <Select value={form.parent_id || "none"} onValueChange={(v) => set("parent_id", v === "none" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="None (root category)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None (root category)</SelectItem>
+                  <SelectItem value="none">None (root category)</SelectItem>
                   {categories.map((c) => (
                     <SelectItem key={c.id} value={String(c.id)}>
                       {c.name}

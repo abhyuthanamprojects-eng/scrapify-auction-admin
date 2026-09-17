@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Building2, CheckCircle2, Clock3, RefreshCw, Search, ShieldCheck } from "lucide-react";
+import { Building2, CheckCircle2, Clock3, Fingerprint, RefreshCw, Search, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/admin/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -248,6 +248,70 @@ function KybPage() {
                 <Badge>{selected.overall_kyb_status ?? "pending"}</Badge>
               </div>
             </div>
+
+            {selected.identity_verification && (
+              <div className="mt-4 rounded-xl border p-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <Fingerprint className="size-4 text-primary" />
+                  <p className="font-semibold">Identity Verification</p>
+                </div>
+                <div className="mt-3 grid gap-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs text-muted-foreground">Provider</span>
+                    <span className="text-xs font-medium">
+                      {selected.identity_verification.provider ?? "—"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs text-muted-foreground">Status</span>
+                    <Badge
+                      variant={
+                        selected.identity_verification.status === "VERIFIED"
+                          ? "default"
+                          : "secondary"
+                      }
+                    >
+                      {selected.identity_verification.status ?? "—"}
+                    </Badge>
+                  </div>
+                  {selected.identity_verification.identity_name && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs text-muted-foreground">Name</span>
+                      <span className="text-xs font-medium">
+                        {selected.identity_verification.identity_name}
+                      </span>
+                    </div>
+                  )}
+                  {selected.identity_verification.aadhaar_masked && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs text-muted-foreground">Aadhaar</span>
+                      <span className="text-xs font-medium font-mono">
+                        {selected.identity_verification.aadhaar_masked}
+                      </span>
+                    </div>
+                  )}
+                  {selected.identity_verification.verified_at && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs text-muted-foreground">Verified</span>
+                      <span className="text-xs font-medium">
+                        {new Date(selected.identity_verification.verified_at).toLocaleDateString(
+                          "en-IN",
+                          { day: "numeric", month: "short", year: "numeric" },
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  {selected.identity_verification.failure_code && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs text-muted-foreground">Error</span>
+                      <span className="text-xs font-medium text-destructive">
+                        {selected.identity_verification.failure_code}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {Array.isArray(selected.history) && selected.history.length > 0 && (
               <div className="mt-4 rounded-xl border p-4 text-sm">

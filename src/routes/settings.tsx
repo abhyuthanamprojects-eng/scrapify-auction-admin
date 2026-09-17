@@ -97,7 +97,7 @@ function SettingsPage() {
   const [verificationTestBankAccount, setVerificationTestBankAccount] = useState("");
   const [verificationTestIfsc, setVerificationTestIfsc] = useState("");
   const [verificationTesting, setVerificationTesting] = useState<string | null>(null);
-  const [cashfreePaymentTesting, setCashfreePaymentTesting] = useState(false);
+  const [paymentGatewayTesting, setPaymentGatewayTesting] = useState(false);
   const [registrationPromotions, setRegistrationPromotions] = useState<any[]>([]);
   const [promoCode, setPromoCode] = useState("");
   const [promoType, setPromoType] = useState<"fixed" | "percentage">("percentage");
@@ -334,12 +334,14 @@ function SettingsPage() {
     setIntegrationSaving(true);
     try {
       const secretKeys = new Set([
-        "cashfree_secure_id_client_id",
-        "cashfree_secure_id_client_secret",
+        "razorpay_key_id",
+        "razorpay_key_secret",
         "cashfree_pg_client_id",
         "cashfree_pg_client_secret",
         "sandbox_verification_api_key",
         "sandbox_verification_api_secret",
+        "digilocker_client_id",
+        "digilocker_client_secret",
         "mail_username",
         "mail_password",
         "pusher_app_key",
@@ -352,10 +354,12 @@ function SettingsPage() {
       );
       const response = await adminApi.updateIntegrationSettings({
         ...publicIntegrationSettings,
-        cashfree_secure_id_enabled: Boolean(integrationSettings.cashfree_secure_id_enabled),
-        cashfree_secure_id_timeout: Number(integrationSettings.cashfree_secure_id_timeout),
+        razorpay_enabled: Boolean(integrationSettings.razorpay_enabled),
+        razorpay_timeout: Number(integrationSettings.razorpay_timeout ?? 30),
         cashfree_pg_enabled: Boolean(integrationSettings.cashfree_pg_enabled),
         cashfree_pg_timeout: Number(integrationSettings.cashfree_pg_timeout ?? 30),
+        digilocker_enabled: Boolean(integrationSettings.digilocker_enabled),
+        digilocker_timeout: Number(integrationSettings.digilocker_timeout ?? 30),
         mail_port: Number(integrationSettings.mail_port),
         pusher_port: Number(integrationSettings.pusher_port),
         ...Object.fromEntries(
@@ -373,15 +377,15 @@ function SettingsPage() {
   };
 
   const testCashfreePayment = async () => {
-    setCashfreePaymentTesting(true);
+    setPaymentGatewayTesting(true);
     try {
       const response = await adminApi.testCashfreePayment({ amount: 10 });
       const result = response?.data ?? response;
-      toast.success(`Cashfree ${String(result.environment ?? "test").toUpperCase()} order created: ${result.order_id}`);
+      toast.success(`Payment Gateway ${String(result.environment ?? "test").toUpperCase()} order created: ${result.order_id}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Cashfree payment test failed.");
+      toast.error(error instanceof Error ? error.message : "Payment gateway test failed.");
     } finally {
-      setCashfreePaymentTesting(false);
+      setPaymentGatewayTesting(false);
     }
   };
 
@@ -1200,91 +1204,10 @@ function SettingsPage() {
                 </section>
                 <section className="space-y-4 border-t pt-5">
                   <div>
-                    <h3 className="text-sm font-semibold">Verification Providers</h3>
+                    <h3 className="text-sm font-semibold">Verification Provider</h3>
                     <p className="text-xs text-muted-foreground">
-                      The Laravel API resolves the active provider. Website and Flutter never call a
-                      provider directly, and there is no automatic fallback.
+                      Sandbox is the active verification provider for GST, KYC, and bank verification. Credentials stay encrypted on Laravel.
                     </p>
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label>GST verification provider</Label>
-                      <select
-                        value={integrationSettings.gst_verification_provider ?? "SANDBOX"}
-                        onChange={(e) =>
-                          updateIntegration("gst_verification_provider", e.target.value)
-                        }
-                        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                      >
-                        <option value="SANDBOX">Sandbox</option>
-                        <option value="CASHFREE">Cashfree</option>
-                      </select>
-                      <p className="text-xs text-muted-foreground">
-                        Active:{" "}
-                        {integrationSettings.verification_providers?.gst?.active_provider ??
-                          "SANDBOX"}
-                      </p>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>KYC verification provider</Label>
-                      <select
-                        value={integrationSettings.kyc_verification_provider ?? "SANDBOX"}
-                        onChange={(e) =>
-                          updateIntegration("kyc_verification_provider", e.target.value)
-                        }
-                        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                      >
-                        <option value="SANDBOX">Sandbox</option>
-                        <option value="CASHFREE">Cashfree</option>
-                      </select>
-                      <p className="text-xs text-muted-foreground">
-                        Active:{" "}
-                        {integrationSettings.verification_providers?.kyc?.active_provider ??
-                          "SANDBOX"}
-                      </p>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Bank verification provider</Label>
-                      <select
-                        value={integrationSettings.bank_verification_provider ?? "SANDBOX"}
-                        onChange={(e) =>
-                          updateIntegration("bank_verification_provider", e.target.value)
-                        }
-                        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                      >
-                        <option value="SANDBOX">Sandbox</option>
-                        <option value="CASHFREE">Cashfree</option>
-                      </select>
-                      <p className="text-xs text-muted-foreground">
-                        Active:{" "}
-                        {integrationSettings.verification_providers?.bank?.active_provider ??
-                          "SANDBOX"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                    {(["gst", "kyc", "bank"] as const).map((type) => (
-                      <div key={type} className="rounded-lg border bg-muted/20 p-3 text-xs">
-                        <p className="font-medium">
-                          {type === "gst" ? "GST" : type === "kyc" ? "KYC" : "Bank"} provider
-                          readiness
-                        </p>
-                        <div className="mt-2 grid grid-cols-2 gap-2">
-                          {(["sandbox", "cashfree"] as const).map((provider) => {
-                            const status =
-                              integrationSettings.verification_providers?.[type]?.providers?.[
-                                provider
-                              ];
-                            return (
-                              <span key={provider} className="rounded-md border px-2 py-1">
-                                {provider === "sandbox" ? "Sandbox" : "Cashfree"}:{" "}
-                                {status?.status ?? "UNKNOWN"}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
                   </div>
                   <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-4">
                     <div className="mb-3 flex items-center justify-between gap-3">
@@ -1413,56 +1336,6 @@ function SettingsPage() {
                   </div>
                 </section>
                 <section className="space-y-3 border-t pt-5">
-                  <h3 className="text-sm font-semibold">Cashfree Secure ID (alternative)</h3>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <div className="flex items-center justify-between rounded-lg border p-3">
-                      <Label>Provider enabled</Label>
-                      <Switch
-                        checked={Boolean(integrationSettings.cashfree_secure_id_enabled)}
-                        onCheckedChange={(value) =>
-                          updateIntegration("cashfree_secure_id_enabled", value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Environment</Label>
-                      <select
-                        value={integrationSettings.cashfree_secure_id_environment ?? "sandbox"}
-                        onChange={(e) =>
-                          updateIntegration("cashfree_secure_id_environment", e.target.value)
-                        }
-                        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                      >
-                        <option value="sandbox">Sandbox</option>
-                        <option value="production">Production</option>
-                      </select>
-                    </div>
-                    {secretInput("cashfree_secure_id_client_id", "Client ID")}
-                    {secretInput("cashfree_secure_id_client_secret", "Client Secret")}
-                    <div className="space-y-1.5">
-                      <Label>Base URL</Label>
-                      <Input
-                        value={integrationSettings.cashfree_secure_id_base_url ?? ""}
-                        onChange={(e) =>
-                          updateIntegration("cashfree_secure_id_base_url", e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Timeout (seconds)</Label>
-                      <Input
-                        type="number"
-                        min={5}
-                        max={120}
-                        value={integrationSettings.cashfree_secure_id_timeout ?? 30}
-                        onChange={(e) =>
-                          updateIntegration("cashfree_secure_id_timeout", e.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                </section>
-                <section className="space-y-3 border-t pt-5">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <h3 className="text-sm font-semibold">Cashfree Payment Gateway</h3>
@@ -1493,11 +1366,101 @@ function SettingsPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap justify-end gap-2">
-                    <Button variant="outline" onClick={testCashfreePayment} disabled={cashfreePaymentTesting || integrationSaving}>
-                      {cashfreePaymentTesting ? "Testing…" : "Test Cashfree Payment (₹10)"}
+                    <Button variant="outline" onClick={testCashfreePayment} disabled={paymentGatewayTesting || integrationSaving}>
+                      {paymentGatewayTesting ? "Testing…" : "Test Payment Gateway (₹10)"}
                     </Button>
                   </div>
                   <p className="text-xs text-amber-700">The test creates an order only. Complete checkout only in Test/Sandbox; Production orders can create real payment obligations.</p>
+                </section>
+                <section className="space-y-3 border-t pt-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold">Razorpay Payment Gateway</h3>
+                      <p className="text-xs text-muted-foreground">Standard Web Checkout for wallet top-ups and order payments. Credentials stay encrypted on Laravel.</p>
+                    </div>
+                    <Switch
+                      checked={Boolean(integrationSettings.razorpay_enabled)}
+                      onCheckedChange={(value) => updateIntegration("razorpay_enabled", value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label>Environment</Label>
+                      <select
+                        value={integrationSettings.razorpay_environment ?? "test"}
+                        onChange={(e) => updateIntegration("razorpay_environment", e.target.value)}
+                        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                      >
+                        <option value="test">Test</option>
+                        <option value="live">Live</option>
+                      </select>
+                    </div>
+                    {secretInput("razorpay_key_id", "Key ID", "Publishable key (rzp_test_... or rzp_live_...). Safe for frontend.")}
+                    {secretInput("razorpay_key_secret", "Key Secret", "Backend-only secret. Never exposed to clients.")}
+                    <div className="space-y-1.5">
+                      <Label>Timeout (seconds)</Label>
+                      <Input
+                        type="number"
+                        min={5}
+                        max={120}
+                        value={integrationSettings.razorpay_timeout ?? 30}
+                        onChange={(e) => updateIntegration("razorpay_timeout", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </section>
+                <section className="space-y-3 border-t pt-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold">DigiLocker — Identity Verification</h3>
+                      <p className="text-xs text-muted-foreground">Aadhaar/identity verification via official DigiLocker partner API. Requires partner registration and approval.</p>
+                    </div>
+                    <Switch
+                      checked={Boolean(integrationSettings.digilocker_enabled)}
+                      onCheckedChange={(value) => updateIntegration("digilocker_enabled", value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label>Environment</Label>
+                      <select
+                        value={integrationSettings.digilocker_environment ?? "sandbox"}
+                        onChange={(e) => updateIntegration("digilocker_environment", e.target.value)}
+                        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                      >
+                        <option value="sandbox">Sandbox</option>
+                        <option value="production">Production</option>
+                      </select>
+                    </div>
+                    {secretInput("digilocker_client_id", "Client ID")}
+                    {secretInput("digilocker_client_secret", "Client Secret")}
+                    <div className="space-y-1.5">
+                      <Label>Redirect URI</Label>
+                      <Input
+                        value={integrationSettings.digilocker_redirect_uri ?? ""}
+                        onChange={(e) => updateIntegration("digilocker_redirect_uri", e.target.value)}
+                        placeholder="https://scrapifyauctions.com/business-verification"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Scopes</Label>
+                      <Input
+                        value={integrationSettings.digilocker_scopes ?? "openid"}
+                        onChange={(e) => updateIntegration("digilocker_scopes", e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Timeout (seconds)</Label>
+                      <Input
+                        type="number"
+                        min={5}
+                        max={120}
+                        value={integrationSettings.digilocker_timeout ?? 30}
+                        onChange={(e) => updateIntegration("digilocker_timeout", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">DigiLocker secrets are encrypted on the backend and never exposed to clients. Partner credentials must be obtained from the DigiLocker partner portal.</p>
                 </section>
                 <section className="space-y-3 border-t pt-5">
                   <h3 className="text-sm font-semibold">Pusher / WebSocket</h3>
