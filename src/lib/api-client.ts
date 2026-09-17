@@ -215,13 +215,6 @@ class ScrapifyAdminApiClient {
     });
   }
 
-  async testCashfreePayment(data: Record<string, unknown> = {}) {
-    return this.request<any>("/admin/integration-settings/test-cashfree-payment", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
   /* ---------------- Organizations & Customers ---------------- */
   async getOrganizations(params: Record<string, any> = {}) {
     const query = new URLSearchParams(params).toString();

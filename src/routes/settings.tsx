@@ -97,7 +97,6 @@ function SettingsPage() {
   const [verificationTestBankAccount, setVerificationTestBankAccount] = useState("");
   const [verificationTestIfsc, setVerificationTestIfsc] = useState("");
   const [verificationTesting, setVerificationTesting] = useState<string | null>(null);
-  const [paymentGatewayTesting, setPaymentGatewayTesting] = useState(false);
   const [registrationPromotions, setRegistrationPromotions] = useState<any[]>([]);
   const [promoCode, setPromoCode] = useState("");
   const [promoType, setPromoType] = useState<"fixed" | "percentage">("percentage");
@@ -336,8 +335,6 @@ function SettingsPage() {
       const secretKeys = new Set([
         "razorpay_key_id",
         "razorpay_key_secret",
-        "cashfree_pg_client_id",
-        "cashfree_pg_client_secret",
         "sandbox_verification_api_key",
         "sandbox_verification_api_secret",
         "digilocker_client_id",
@@ -356,8 +353,6 @@ function SettingsPage() {
         ...publicIntegrationSettings,
         razorpay_enabled: Boolean(integrationSettings.razorpay_enabled),
         razorpay_timeout: Number(integrationSettings.razorpay_timeout ?? 30),
-        cashfree_pg_enabled: Boolean(integrationSettings.cashfree_pg_enabled),
-        cashfree_pg_timeout: Number(integrationSettings.cashfree_pg_timeout ?? 30),
         digilocker_enabled: Boolean(integrationSettings.digilocker_enabled),
         digilocker_timeout: Number(integrationSettings.digilocker_timeout ?? 30),
         mail_port: Number(integrationSettings.mail_port),
@@ -376,18 +371,6 @@ function SettingsPage() {
     }
   };
 
-  const testCashfreePayment = async () => {
-    setPaymentGatewayTesting(true);
-    try {
-      const response = await adminApi.testCashfreePayment({ amount: 10 });
-      const result = response?.data ?? response;
-      toast.success(`Payment Gateway ${String(result.environment ?? "test").toUpperCase()} order created: ${result.order_id}`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Payment gateway test failed.");
-    } finally {
-      setPaymentGatewayTesting(false);
-    }
-  };
 
   const updateIntegration = (key: string, value: unknown) => {
     setIntegrationSettings((current: any) => ({ ...current, [key]: value }));
@@ -1334,43 +1317,6 @@ function SettingsPage() {
                       </Button>
                     </div>
                   </div>
-                </section>
-                <section className="space-y-3 border-t pt-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-semibold">Cashfree Payment Gateway</h3>
-                      <p className="text-xs text-muted-foreground">Credentials stay encrypted on Laravel. Test mode is selected by default.</p>
-                    </div>
-                    <Switch
-                      checked={Boolean(integrationSettings.cashfree_pg_enabled)}
-                      onCheckedChange={(value) => updateIntegration("cashfree_pg_enabled", value)}
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label>Environment</Label>
-                      <select
-                        value={integrationSettings.cashfree_pg_environment ?? "test"}
-                        onChange={(e) => updateIntegration("cashfree_pg_environment", e.target.value)}
-                        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                      >
-                        <option value="test">Test / Sandbox</option>
-                        <option value="production">Production</option>
-                      </select>
-                    </div>
-                    {secretInput("cashfree_pg_client_id", "Client ID / App ID")}
-                    {secretInput("cashfree_pg_client_secret", "Client Secret")}
-                    <div className="space-y-1.5">
-                      <Label>API version</Label>
-                      <Input value={integrationSettings.cashfree_pg_api_version ?? "2025-01-01"} onChange={(e) => updateIntegration("cashfree_pg_api_version", e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap justify-end gap-2">
-                    <Button variant="outline" onClick={testCashfreePayment} disabled={paymentGatewayTesting || integrationSaving}>
-                      {paymentGatewayTesting ? "Testing…" : "Test Payment Gateway (₹10)"}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-amber-700">The test creates an order only. Complete checkout only in Test/Sandbox; Production orders can create real payment obligations.</p>
                 </section>
                 <section className="space-y-3 border-t pt-5">
                   <div className="flex items-center justify-between gap-3">
