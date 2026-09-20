@@ -40,6 +40,7 @@ function AuctionsSettingsPage() {
   const [newPromoDiscountType, setNewPromoDiscountType] = useState("PERCENTAGE");
   const [newPromoDiscountValue, setNewPromoDiscountValue] = useState("");
   const [newPromoMaxUses, setNewPromoMaxUses] = useState("100");
+  const [creatingPromotion, setCreatingPromotion] = useState(false);
 
   useEffect(() => {
     adminApi
@@ -86,24 +87,42 @@ function AuctionsSettingsPage() {
   };
 
   const createPromotion = async () => {
-    if (!newPromoCode.trim()) { toast.error("Enter a promo code."); return; }
+    const code = newPromoCode.trim();
+    if (!code) { toast.error("Enter a promo code."); return; }
+    if (!/^[A-Za-z0-9][A-Za-z0-9 _-]*$/.test(code)) {
+      toast.error("Use letters, numbers, spaces, hyphens, or underscores only.");
+      return;
+    }
     const value = Number(newPromoDiscountValue);
     if (!Number.isFinite(value) || value <= 0) { toast.error("Enter a valid discount value."); return; }
+    if (newPromoDiscountType === "PERCENTAGE" && value > 100) {
+      toast.error("Percentage discount cannot be greater than 100%.");
+      return;
+    }
+    const maxRedemptions = Number(newPromoMaxUses);
+    if (!Number.isInteger(maxRedemptions) || maxRedemptions < 1) {
+      toast.error("Maximum uses must be a whole number greater than zero.");
+      return;
+    }
+    setCreatingPromotion(true);
     try {
       const response = await adminApi.createRegistrationPromotion({
-        code: newPromoCode.trim().toUpperCase(),
+        code: code.toUpperCase(),
         discount_type: newPromoDiscountType.toLowerCase(),
         discount_value: value,
-        max_redemptions: Number(newPromoMaxUses) || 100,
+        max_redemptions: maxRedemptions,
         active: true,
       });
       const promo = response?.promotion ?? response?.data?.promotion ?? response?.data ?? response;
-      setRegistrationPromotions((current) => [...current, promo]);
+      if (!promo?.code) throw new Error("The server did not return the created promotion.");
+      setRegistrationPromotions((current) => [promo, ...current.filter((item) => item.id !== promo.id)]);
       setNewPromoCode("");
       setNewPromoDiscountValue("");
       toast.success("Promotion created.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not create promotion.");
+    } finally {
+      setCreatingPromotion(false);
     }
   };
 
@@ -191,7 +210,9 @@ function AuctionsSettingsPage() {
                 </select>
                 <Input type="number" min={0} placeholder="Value" value={newPromoDiscountValue} onChange={(e) => setNewPromoDiscountValue(e.target.value)} />
                 <Input type="number" min={1} placeholder="Max uses" value={newPromoMaxUses} onChange={(e) => setNewPromoMaxUses(e.target.value)} />
-                <Button onClick={createPromotion} variant="outline" className="gap-1"><Plus className="h-4 w-4" /> Add</Button>
+                <Button onClick={createPromotion} variant="outline" disabled={creatingPromotion} className="gap-1">
+                  <Plus className="h-4 w-4" /> {creatingPromotion ? "Adding…" : "Add"}
+                </Button>
               </div>
               {registrationPromotions.length > 0 && (
                 <div className="space-y-2">
