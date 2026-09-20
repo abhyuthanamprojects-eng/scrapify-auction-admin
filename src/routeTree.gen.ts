@@ -42,6 +42,14 @@ import { Route as EventsIdRouteImport } from './routes/events.$id'
 import { Route as OrganizationsIndexRouteImport } from './routes/organizations.index'
 import { Route as OrganizationsIdRouteImport } from './routes/organizations.$id'
 import { Route as OrganizationsNewRouteImport } from './routes/organizations.new'
+import { Route as SettingsIndexRouteImport } from './routes/settings.index'
+import { Route as SettingsAuctionsRouteImport } from './routes/settings.auctions'
+import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
+import { Route as SettingsKybRouteImport } from './routes/settings.kyb'
+import { Route as SettingsNotificationsRouteImport } from './routes/settings.notifications'
+import { Route as SettingsOtpRouteImport } from './routes/settings.otp'
+import { Route as SettingsPlatformRouteImport } from './routes/settings.platform'
+import { Route as SettingsSecurityRouteImport } from './routes/settings.security'
 import { Route as UsersNewRouteImport } from './routes/users.new'
 import { Route as VendorsIndexRouteImport } from './routes/vendors.index'
 import { Route as VendorsIdRouteImport } from './routes/vendors.$id'
@@ -211,6 +219,46 @@ const OrganizationsNewRoute = OrganizationsNewRouteImport.update({
   path: '/organizations/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsAuctionsRoute = SettingsAuctionsRouteImport.update({
+  id: '/auctions',
+  path: '/auctions',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsKybRoute = SettingsKybRouteImport.update({
+  id: '/kyb',
+  path: '/kyb',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsNotificationsRoute = SettingsNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsOtpRoute = SettingsOtpRouteImport.update({
+  id: '/otp',
+  path: '/otp',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsPlatformRoute = SettingsPlatformRouteImport.update({
+  id: '/platform',
+  path: '/platform',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsSecurityRoute = SettingsSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const UsersNewRoute = UsersNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -244,7 +292,7 @@ export interface FileRoutesByFullPath {
   '/otp-lookup': typeof OtpLookupRoute
   '/reports': typeof ReportsRoute
   '/risk': typeof RiskRoute
-  '/settings': typeof SettingsRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/templates': typeof TemplatesRoute
   '/terms-conditions': typeof TermsConditionsRoute
   '/tokens': typeof TokensRoute
@@ -257,12 +305,20 @@ export interface FileRoutesByFullPath {
   '/events/$id': typeof EventsIdRoute
   '/organizations/$id': typeof OrganizationsIdRoute
   '/organizations/new': typeof OrganizationsNewRoute
+  '/settings/auctions': typeof SettingsAuctionsRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/kyb': typeof SettingsKybRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
+  '/settings/otp': typeof SettingsOtpRoute
+  '/settings/platform': typeof SettingsPlatformRoute
+  '/settings/security': typeof SettingsSecurityRoute
   '/users/new': typeof UsersNewRoute
   '/vendors/$id': typeof VendorsIdRoute
   '/auctions/': typeof AuctionsIndexRoute
   '/customers/': typeof CustomersIndexRoute
   '/events/': typeof EventsIndexRoute
   '/organizations/': typeof OrganizationsIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/vendors/': typeof VendorsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -281,7 +337,6 @@ export interface FileRoutesByTo {
   '/otp-lookup': typeof OtpLookupRoute
   '/reports': typeof ReportsRoute
   '/risk': typeof RiskRoute
-  '/settings': typeof SettingsRoute
   '/templates': typeof TemplatesRoute
   '/terms-conditions': typeof TermsConditionsRoute
   '/tokens': typeof TokensRoute
@@ -294,12 +349,20 @@ export interface FileRoutesByTo {
   '/events/$id': typeof EventsIdRoute
   '/organizations/$id': typeof OrganizationsIdRoute
   '/organizations/new': typeof OrganizationsNewRoute
+  '/settings/auctions': typeof SettingsAuctionsRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/kyb': typeof SettingsKybRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
+  '/settings/otp': typeof SettingsOtpRoute
+  '/settings/platform': typeof SettingsPlatformRoute
+  '/settings/security': typeof SettingsSecurityRoute
   '/users/new': typeof UsersNewRoute
   '/vendors/$id': typeof VendorsIdRoute
   '/auctions': typeof AuctionsIndexRoute
   '/customers': typeof CustomersIndexRoute
   '/events': typeof EventsIndexRoute
   '/organizations': typeof OrganizationsIndexRoute
+  '/settings': typeof SettingsIndexRoute
   '/vendors': typeof VendorsIndexRoute
 }
 export interface FileRoutesById {
@@ -320,7 +383,7 @@ export interface FileRoutesById {
   '/otp-lookup': typeof OtpLookupRoute
   '/reports': typeof ReportsRoute
   '/risk': typeof RiskRoute
-  '/settings': typeof SettingsRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/templates': typeof TemplatesRoute
   '/terms-conditions': typeof TermsConditionsRoute
   '/tokens': typeof TokensRoute
@@ -333,12 +396,20 @@ export interface FileRoutesById {
   '/events/$id': typeof EventsIdRoute
   '/organizations/$id': typeof OrganizationsIdRoute
   '/organizations/new': typeof OrganizationsNewRoute
+  '/settings/auctions': typeof SettingsAuctionsRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/kyb': typeof SettingsKybRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
+  '/settings/otp': typeof SettingsOtpRoute
+  '/settings/platform': typeof SettingsPlatformRoute
+  '/settings/security': typeof SettingsSecurityRoute
   '/users/new': typeof UsersNewRoute
   '/vendors/$id': typeof VendorsIdRoute
   '/auctions/': typeof AuctionsIndexRoute
   '/customers/': typeof CustomersIndexRoute
   '/events/': typeof EventsIndexRoute
   '/organizations/': typeof OrganizationsIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/vendors/': typeof VendorsIndexRoute
 }
 export interface FileRouteTypes {
@@ -373,12 +444,20 @@ export interface FileRouteTypes {
     | '/events/$id'
     | '/organizations/$id'
     | '/organizations/new'
+    | '/settings/auctions'
+    | '/settings/integrations'
+    | '/settings/kyb'
+    | '/settings/notifications'
+    | '/settings/otp'
+    | '/settings/platform'
+    | '/settings/security'
     | '/users/new'
     | '/vendors/$id'
     | '/auctions/'
     | '/customers/'
     | '/events/'
     | '/organizations/'
+    | '/settings/'
     | '/vendors/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -397,7 +476,6 @@ export interface FileRouteTypes {
     | '/otp-lookup'
     | '/reports'
     | '/risk'
-    | '/settings'
     | '/templates'
     | '/terms-conditions'
     | '/tokens'
@@ -410,12 +488,20 @@ export interface FileRouteTypes {
     | '/events/$id'
     | '/organizations/$id'
     | '/organizations/new'
+    | '/settings/auctions'
+    | '/settings/integrations'
+    | '/settings/kyb'
+    | '/settings/notifications'
+    | '/settings/otp'
+    | '/settings/platform'
+    | '/settings/security'
     | '/users/new'
     | '/vendors/$id'
     | '/auctions'
     | '/customers'
     | '/events'
     | '/organizations'
+    | '/settings'
     | '/vendors'
   id:
     | '__root__'
@@ -448,12 +534,20 @@ export interface FileRouteTypes {
     | '/events/$id'
     | '/organizations/$id'
     | '/organizations/new'
+    | '/settings/auctions'
+    | '/settings/integrations'
+    | '/settings/kyb'
+    | '/settings/notifications'
+    | '/settings/otp'
+    | '/settings/platform'
+    | '/settings/security'
     | '/users/new'
     | '/vendors/$id'
     | '/auctions/'
     | '/customers/'
     | '/events/'
     | '/organizations/'
+    | '/settings/'
     | '/vendors/'
   fileRoutesById: FileRoutesById
 }
@@ -474,7 +568,7 @@ export interface RootRouteChildren {
   OtpLookupRoute: typeof OtpLookupRoute
   ReportsRoute: typeof ReportsRoute
   RiskRoute: typeof RiskRoute
-  SettingsRoute: typeof SettingsRoute
+  SettingsRoute: typeof SettingsRouteWithChildren
   TemplatesRoute: typeof TemplatesRoute
   TermsConditionsRoute: typeof TermsConditionsRoute
   TokensRoute: typeof TokensRoute
@@ -723,6 +817,62 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizationsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/auctions': {
+      id: '/settings/auctions'
+      path: '/auctions'
+      fullPath: '/settings/auctions'
+      preLoaderRoute: typeof SettingsAuctionsRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/integrations': {
+      id: '/settings/integrations'
+      path: '/integrations'
+      fullPath: '/settings/integrations'
+      preLoaderRoute: typeof SettingsIntegrationsRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/kyb': {
+      id: '/settings/kyb'
+      path: '/kyb'
+      fullPath: '/settings/kyb'
+      preLoaderRoute: typeof SettingsKybRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/notifications': {
+      id: '/settings/notifications'
+      path: '/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof SettingsNotificationsRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/otp': {
+      id: '/settings/otp'
+      path: '/otp'
+      fullPath: '/settings/otp'
+      preLoaderRoute: typeof SettingsOtpRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/platform': {
+      id: '/settings/platform'
+      path: '/platform'
+      fullPath: '/settings/platform'
+      preLoaderRoute: typeof SettingsPlatformRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/security': {
+      id: '/settings/security'
+      path: '/security'
+      fullPath: '/settings/security'
+      preLoaderRoute: typeof SettingsSecurityRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/users/new': {
       id: '/users/new'
       path: '/new'
@@ -767,6 +917,32 @@ const AuctionsRouteWithChildren = AuctionsRoute._addFileChildren(
   AuctionsRouteChildren,
 )
 
+interface SettingsRouteChildren {
+  SettingsAuctionsRoute: typeof SettingsAuctionsRoute
+  SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
+  SettingsKybRoute: typeof SettingsKybRoute
+  SettingsNotificationsRoute: typeof SettingsNotificationsRoute
+  SettingsOtpRoute: typeof SettingsOtpRoute
+  SettingsPlatformRoute: typeof SettingsPlatformRoute
+  SettingsSecurityRoute: typeof SettingsSecurityRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
+}
+
+const SettingsRouteChildren: SettingsRouteChildren = {
+  SettingsAuctionsRoute: SettingsAuctionsRoute,
+  SettingsIntegrationsRoute: SettingsIntegrationsRoute,
+  SettingsKybRoute: SettingsKybRoute,
+  SettingsNotificationsRoute: SettingsNotificationsRoute,
+  SettingsOtpRoute: SettingsOtpRoute,
+  SettingsPlatformRoute: SettingsPlatformRoute,
+  SettingsSecurityRoute: SettingsSecurityRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
+}
+
+const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
+  SettingsRouteChildren,
+)
+
 interface UsersRouteChildren {
   UsersNewRoute: typeof UsersNewRoute
 }
@@ -794,7 +970,7 @@ const rootRouteChildren: RootRouteChildren = {
   OtpLookupRoute: OtpLookupRoute,
   ReportsRoute: ReportsRoute,
   RiskRoute: RiskRoute,
-  SettingsRoute: SettingsRoute,
+  SettingsRoute: SettingsRouteWithChildren,
   TemplatesRoute: TemplatesRoute,
   TermsConditionsRoute: TermsConditionsRoute,
   TokensRoute: TokensRoute,

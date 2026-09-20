@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
@@ -18,10 +19,17 @@ import {
   ScrollText,
   Coins,
   ChevronLeft,
+  ChevronDown,
   Sparkles,
   FileSpreadsheet,
   FolderTree,
   Scale,
+  Globe,
+  MessageSquare,
+  KeyRound,
+  Gavel as GavelIcon,
+  Lock,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/hooks/use-role";
@@ -32,6 +40,7 @@ type NavItem = {
   to: string;
   icon: React.ComponentType<{ className?: string }>;
   exact?: boolean;
+  children?: NavItem[];
 };
 
 type NavGroup = { title: string; permission: Permission; items: NavItem[] };
@@ -90,7 +99,20 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Categories", to: "/categories", icon: FolderTree },
       { label: "Auction Templates", to: "/templates", icon: FileSpreadsheet },
       { label: "Terms & Conditions", to: "/terms-conditions", icon: Scale },
-      { label: "Settings", to: "/settings", icon: Settings },
+      {
+        label: "Settings",
+        to: "/settings",
+        icon: Settings,
+        children: [
+          { label: "Platform & API", to: "/settings/platform", icon: Globe },
+          { label: "OTP & Email", to: "/settings/otp", icon: MessageSquare },
+          { label: "Integrations", to: "/settings/integrations", icon: KeyRound },
+          { label: "Business Verification", to: "/settings/kyb", icon: ShieldCheck },
+          { label: "Auctions & EMD", to: "/settings/auctions", icon: GavelIcon },
+          { label: "Security", to: "/settings/security", icon: Lock },
+          { label: "Notifications", to: "/settings/notifications", icon: Bell },
+        ],
+      },
     ],
   },
   {
@@ -148,9 +170,14 @@ export function AdminSidebar({
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [role] = useRole();
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
   const isMobile = variant === "mobile";
   const showLabels = isMobile || !collapsed;
   const groups = NAV_GROUPS.filter((g) => roleCan(role, g.permission));
+
+  const toggleMenu = (to: string) => {
+    setExpandedMenus((prev) => ({ ...prev, [to]: !prev[to] }));
+  };
 
   return (
     <aside
@@ -222,11 +249,100 @@ export function AdminSidebar({
             )}
             {!showLabels && <div className="mx-3 my-2 h-px bg-sidebar-border/60" />}
             {group.items.map((item) => {
+              const hasChildren = item.children && item.children.length > 0;
               const active = item.exact
                 ? pathname === item.to
                 : pathname === item.to || pathname.startsWith(item.to + "/");
+              const isExpanded = hasChildren && (expandedMenus[item.to] ?? active);
               const Icon = item.icon;
               const navIndex = NAV.findIndex((navItem) => navItem.to === item.to);
+
+              const iconElement = navIndex < 16 ? (
+                <SidebarThreeDIcon index={navIndex} />
+              ) : navIndex < 21 ? (
+                <SidebarSystemThreeDIcon index={navIndex - 16} />
+              ) : (
+                <Icon
+                  className={cn(
+                    "h-4 w-4 shrink-0 transition-colors",
+                    active
+                      ? "text-sidebar-primary"
+                      : "text-sidebar-foreground/60 group-hover:text-sidebar-primary",
+                  )}
+                  aria-hidden="true"
+                />
+              );
+
+              if (hasChildren) {
+                return (
+                  <div key={item.to}>
+                    <button
+                      type="button"
+                      onClick={() => toggleMenu(item.to)}
+                      className={cn(
+                        "group relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-primary",
+                        active
+                          ? "bg-gradient-to-r from-sidebar-primary/20 via-sidebar-accent/60 to-transparent text-white shadow-inner"
+                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-white",
+                        !showLabels && "justify-center px-0",
+                      )}
+                      title={!showLabels ? item.label : undefined}
+                      aria-label={item.label}
+                      aria-expanded={isExpanded}
+                    >
+                      {active && (
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r-full gradient-gold shadow-[0_0_12px_rgba(201,163,77,0.6)]" />
+                      )}
+                      {iconElement}
+                      {showLabels && (
+                        <>
+                          <span className="flex-1 truncate text-left">{item.label}</span>
+                          <ChevronDown
+                            className={cn(
+                              "h-3.5 w-3.5 shrink-0 transition-transform duration-200 text-sidebar-foreground/40",
+                              isExpanded && "rotate-180",
+                            )}
+                          />
+                        </>
+                      )}
+                    </button>
+                    {showLabels && isExpanded && (
+                      <div className="ml-3 mt-0.5 space-y-0.5 border-l border-sidebar-border/40 pl-3">
+                        {item.children!.map((child) => {
+                          const childActive = pathname === child.to || pathname.startsWith(child.to + "/");
+                          const ChildIcon = child.icon;
+                          return (
+                            <Link
+                              key={child.to}
+                              to={child.to as string}
+                              className={cn(
+                                "group relative flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-primary",
+                                childActive
+                                  ? "bg-sidebar-accent/60 text-white"
+                                  : "text-sidebar-foreground/60 hover:bg-sidebar-accent/30 hover:text-white",
+                              )}
+                              aria-label={child.label}
+                              aria-current={childActive ? "page" : undefined}
+                            >
+                              <ChildIcon
+                                className={cn(
+                                  "h-3.5 w-3.5 shrink-0 transition-colors",
+                                  childActive
+                                    ? "text-sidebar-primary"
+                                    : "text-sidebar-foreground/50 group-hover:text-sidebar-primary",
+                                )}
+                                aria-hidden="true"
+                              />
+                              <span className="truncate">{child.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   key={item.to}
@@ -245,21 +361,7 @@ export function AdminSidebar({
                   {active && (
                     <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r-full gradient-gold shadow-[0_0_12px_rgba(201,163,77,0.6)]" />
                   )}
-                  {navIndex < 16 ? (
-                    <SidebarThreeDIcon index={navIndex} />
-                  ) : navIndex < 21 ? (
-                    <SidebarSystemThreeDIcon index={navIndex - 16} />
-                  ) : (
-                    <Icon
-                      className={cn(
-                        "h-4 w-4 shrink-0 transition-colors",
-                        active
-                          ? "text-sidebar-primary"
-                          : "text-sidebar-foreground/60 group-hover:text-sidebar-primary",
-                      )}
-                      aria-hidden="true"
-                    />
-                  )}
+                  {iconElement}
                   {showLabels && <span className="truncate">{item.label}</span>}
                 </Link>
               );

@@ -98,6 +98,11 @@ function VendorDetail() {
   const [acting, setActing] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Approve confirmation modal
+  const [approveOpen, setApproveOpen] = useState(false);
+  const [docsVerifiedChecked, setDocsVerifiedChecked] = useState(false);
+  const [verificationRemarks, setVerificationRemarks] = useState("");
+
   // Individual document review modal
   const [docReviewOpen, setDocReviewOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<VendorDocument | null>(null);
@@ -138,13 +143,23 @@ function VendorDetail() {
   const isRejected = vendor.status === "Rejected";
   const isSuspended = vendor.status === "Suspended";
 
-  async function approve() {
+  function openApproveDialog() {
+    setDocsVerifiedChecked(false);
+    setVerificationRemarks("");
+    setApproveOpen(true);
+  }
+
+  async function confirmApprove() {
     setActing(true);
     try {
-      await approveVendorApi(vendor!.id);
+      await approveVendorApi(vendor!.id, {
+        documents_verified: true,
+        verification_remarks: verificationRemarks.trim() || undefined,
+      });
       toast.success(`${vendor!.companyName} Approved`, {
         description: "KYC approved and wallet provisioned. Account is now eligible for live auctions.",
       });
+      setApproveOpen(false);
       refetch();
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to approve vendor");
@@ -322,7 +337,7 @@ function VendorDetail() {
                 </Button>
                 <Button
                   size="sm"
-                  onClick={approve}
+                  onClick={openApproveDialog}
                   disabled={acting}
                   className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
                 >
@@ -346,7 +361,7 @@ function VendorDetail() {
             {isSuspended && (
               <Button
                 size="sm"
-                onClick={approve}
+                onClick={openApproveDialog}
                 disabled={acting}
                 className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
               >
@@ -357,7 +372,7 @@ function VendorDetail() {
             {isRejected && (
               <Button
                 size="sm"
-                onClick={approve}
+                onClick={openApproveDialog}
                 disabled={acting}
                 className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
               >
@@ -869,6 +884,85 @@ function VendorDetail() {
             <Button variant="outline" onClick={() => setSuspendOpen(false)}>Cancel</Button>
             <Button onClick={suspend} disabled={!suspendReason.trim()} className="bg-amber-600 text-white">
               Confirm Suspension
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Approve Confirmation Modal */}
+      <Dialog open={approveOpen} onOpenChange={setApproveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Vendor Approval</DialogTitle>
+            <DialogDescription>
+              Review all submitted documents before approving this vendor. Approval grants full auction eligibility.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {/* Document statuses summary */}
+            <div>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Document Review Status
+              </Label>
+              {vendor.documents.length === 0 ? (
+                <p className="mt-2 text-xs text-muted-foreground">No documents submitted.</p>
+              ) : (
+                <div className="mt-2 space-y-1.5">
+                  {vendor.documents.map((d) => (
+                    <div key={d.id} className="flex items-center justify-between rounded-md border border-border p-2 text-xs">
+                      <span className="font-medium text-foreground">{d.name}</span>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] ${
+                          d.status === "approved"
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"
+                            : d.status === "rejected"
+                            ? "border-red-500/30 bg-red-500/10 text-red-600"
+                            : "border-amber-500/30 bg-amber-500/10 text-amber-600"
+                        }`}
+                      >
+                        {d.status.toUpperCase()}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Verification checkbox */}
+            <label className="flex items-start gap-3 cursor-pointer select-none rounded-lg border border-border p-3 hover:bg-muted/40 transition-colors">
+              <input
+                type="checkbox"
+                checked={docsVerifiedChecked}
+                onChange={(e) => setDocsVerifiedChecked(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              <span className="text-sm text-foreground">
+                I have verified all submitted documents and confirm they meet compliance requirements.
+              </span>
+            </label>
+
+            {/* Optional remarks */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">
+                Verification Remarks (optional)
+              </Label>
+              <Textarea
+                value={verificationRemarks}
+                onChange={(e) => setVerificationRemarks(e.target.value)}
+                placeholder="e.g. All documents verified against government records. GST active, PAN matched."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApproveOpen(false)}>Cancel</Button>
+            <Button
+              onClick={confirmApprove}
+              disabled={!docsVerifiedChecked || acting}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {acting ? "Approving..." : "Confirm Approval"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -297,8 +297,11 @@ class ScrapifyAdminApiClient {
     return json;
   }
 
-  async approveVendor(code: string) {
-    return this.request<any>(`/vendors/${code}/approve`, { method: "POST" });
+  async approveVendor(code: string, data: { documents_verified: boolean; verification_remarks?: string } = { documents_verified: true }) {
+    return this.request<any>(`/vendors/${code}/approve`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
   }
 
   async rejectVendor(code: string, reason: string) {
@@ -387,8 +390,48 @@ class ScrapifyAdminApiClient {
     });
   }
 
-  async approveAuction(code: string) {
-    return this.request<any>(`/auctions/${code}/approve`, { method: "POST" });
+  /* ---------------- Auction Documents ---------------- */
+  async getAuctionDocuments(code: string) {
+    return this.request<any>(`/admin/auctions/${encodeURIComponent(code)}/documents`);
+  }
+
+  async reviewAuctionDocument(
+    code: string,
+    id: number,
+    data: { status: string; review_remarks?: string },
+  ) {
+    return this.request<any>(
+      `/admin/auctions/${encodeURIComponent(code)}/documents/${id}/review`,
+      { method: "PUT", body: JSON.stringify(data) },
+    );
+  }
+
+  async downloadAuctionDocument(code: string, id: number): Promise<Blob> {
+    const url = `${API_BASE_URL}/auctions/${encodeURIComponent(code)}/documents/${id}/download`;
+    const res = await fetch(url, {
+      headers: {
+        Accept: "application/octet-stream",
+        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+      },
+    });
+    if (!res.ok) {
+      let message = "Document could not be downloaded";
+      try {
+        const json = await res.json();
+        message = json.message || message;
+      } catch {
+        // Keep the safe generic message for non-JSON server errors.
+      }
+      throw new Error(message);
+    }
+    return res.blob();
+  }
+
+  async approveAuction(code: string, data: { documents_verified: boolean; remarks?: string } = { documents_verified: true }) {
+    return this.request<any>(`/auctions/${code}/approve`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
   }
 
   async extendAuction(code: string, minutes: number, reason: string) {
@@ -752,31 +795,7 @@ class ScrapifyAdminApiClient {
     return this.request<any>("/platform-config");
   }
 
-  async updatePlatformConfig(data: {
-    auction_edit_lock_hours: number;
-    vendor_registration_fee?: number;
-    emd_percentage?: number;
-    minimum_participants?: number;
-    initial_slot_minutes?: number;
-    continuation_slot_minutes?: number;
-    bid_cutoff_ms?: number;
-    maximum_auction_duration_minutes?: number;
-    rfq_required?: boolean;
-    rfq_mode?: string;
-    rfq_benchmark_strategy?: string;
-    emd_required?: boolean;
-    emd_type?: string;
-    emd_fixed_amount?: number;
-    seller_kyb_required?: boolean;
-    participant_kyb_required?: boolean;
-    kyb_auto_approve_match_score?: number;
-    kyb_review_match_score?: number;
-    mobile_min_version?: string;
-    mobile_latest_version?: string;
-    mobile_force_update?: boolean;
-    mobile_update_url?: string;
-    mobile_update_notes?: string;
-  }) {
+  async updatePlatformConfig(data: Record<string, unknown>) {
     return this.request<any>("/platform-config", { method: "PATCH", body: JSON.stringify(data) });
   }
 

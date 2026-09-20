@@ -1,8 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Check, MessageSquare, X, Trash2, MapPin, Calendar, Phone, Mail, User, FileText, Image as ImageIcon, FileSpreadsheet, Download, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Check, MessageSquare, X, Trash2, MapPin, Calendar, Phone, Mail, User, FileText, Image as ImageIcon, FileSpreadsheet, Download, ChevronDown, ChevronUp, Loader2, Eye, FileCheck, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { auctionStatusTone, formatInr, getAuction, updateAuction, type Auction } from "@/lib/auctions-store";
@@ -28,6 +30,26 @@ function AuctionReview() {
   const [parsedItems, setParsedItems] = useState<any[]>([]);
   const [parsedItemsOpen, setParsedItemsOpen] = useState(false);
   const [parsedItemsLoading, setParsedItemsLoading] = useState(false);
+
+  // Auction documents
+  const [auctionDocs, setAuctionDocs] = useState<any[]>([]);
+  const [auctionDocsLoading, setAuctionDocsLoading] = useState(false);
+
+  // Document review dialog
+  const [docReviewOpen, setDocReviewOpen] = useState(false);
+  const [reviewingDoc, setReviewingDoc] = useState<any>(null);
+  const [reviewStatus, setReviewStatus] = useState("verified");
+  const [reviewRemarks, setReviewRemarks] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+
+  // Document download busy state
+  const [docDownloading, setDocDownloading] = useState<number | null>(null);
+
+  // Approve confirmation dialog
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [approveDocsChecked, setApproveDocsChecked] = useState(false);
+  const [approveRemarks, setApproveRemarks] = useState("");
+  const [approving, setApproving] = useState(false);
 
   if (!a) {
     return (
@@ -56,6 +78,15 @@ function AuctionReview() {
     adminApi.getAuctionTemplateReview(a.id)
       .then((res: any) => setTemplateReview(res?.data ?? res))
       .catch(() => {});
+  }, [a.id]);
+
+  // Fetch auction documents
+  useEffect(() => {
+    setAuctionDocsLoading(true);
+    adminApi.getAuctionDocuments(a.id)
+      .then((res: any) => setAuctionDocs(Array.isArray(res) ? res : res?.data ?? []))
+      .catch(() => setAuctionDocs([]))
+      .finally(() => setAuctionDocsLoading(false));
   }, [a.id]);
 
   async function loadParsedItems() {
@@ -88,6 +119,76 @@ function AuctionReview() {
     }
   }
 
+  function openDocReview(doc: any) {
+    setReviewingDoc(doc);
+    setReviewStatus("verified");
+    setReviewRemarks("");
+    setDocReviewOpen(true);
+  }
+
+  async function submitDocReview() {
+    if (!reviewingDoc) return;
+    setReviewSubmitting(true);
+    try {
+      await adminApi.reviewAuctionDocument(a.id, reviewingDoc.id, {
+        status: reviewStatus,
+        review_remarks: reviewRemarks.trim() || undefined,
+      });
+      toast.success(`Document marked as ${reviewStatus.replace(/_/g, " ")}`);
+      setDocReviewOpen(false);
+      // Refresh docs
+      const res = await adminApi.getAuctionDocuments(a.id);
+      setAuctionDocs(Array.isArray(res) ? res : res?.data ?? []);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to review document");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  }
+
+  async function downloadAuctionDoc(doc: any) {
+    setDocDownloading(doc.id);
+    try {
+      const blob = await adminApi.downloadAuctionDocument(a.id, doc.id);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = doc.original_filename || doc.file_name || `${doc.doc_type}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Download failed");
+    } finally {
+      setDocDownloading(null);
+    }
+  }
+
+  function openApproveDialog() {
+    setApproveDocsChecked(false);
+    setApproveRemarks("");
+    setApproveDialogOpen(true);
+  }
+
+  async function confirmApprove() {
+    setApproving(true);
+    try {
+      await adminApi.approveAuction(a.id, {
+        documents_verified: true,
+        remarks: approveRemarks.trim() || undefined,
+      });
+      updateAuction(a.id, { status: "Approved" });
+      toast.success(`Auction ${a.id} approved and moved to Publish queue.`);
+      setApproveDialogOpen(false);
+      navigate({ to: "/auctions" });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to approve auction");
+    } finally {
+      setApproving(false);
+    }
+  }
+
   async function saveConfiguration() {
     try {
       await adminApi.updateAuctionConfiguration(a.id, config);
@@ -98,9 +199,7 @@ function AuctionReview() {
   }
 
   function approve() {
-    updateAuction(a!.id, { status: "Approved" });
-    toast.success(`Auction ${a!.id} approved and moved to Publish queue.`);
-    navigate({ to: "/auctions" });
+    openApproveDialog();
   }
   async function submitModal() {
     if (!reason.trim()) return toast.error("A reason is required.");
@@ -319,6 +418,109 @@ function AuctionReview() {
             </Section>
           )}
 
+          {/* Auction Documents Section */}
+          <Section title="Auction Documents" icon={<FileCheck className="h-4 w-4" />}>
+            {auctionDocsLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading documents...
+              </div>
+            ) : auctionDocs.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No auction documents uploaded yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {auctionDocs.map((doc: any) => {
+                  const statusColors: Record<string, string> = {
+                    pending_review: "border-amber-500/30 bg-amber-500/10 text-amber-600",
+                    verified: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600",
+                    changes_required: "border-orange-500/30 bg-orange-500/10 text-orange-600",
+                    rejected: "border-red-500/30 bg-red-500/10 text-red-600",
+                    not_applicable: "border-gray-400/30 bg-gray-400/10 text-gray-500",
+                  };
+                  const docTypeLabels: Record<string, string> = {
+                    catalog: "Catalog PDF",
+                    tnc: "Terms & Conditions PDF",
+                    photographs: "Photographs PDF",
+                  };
+                  return (
+                    <div
+                      key={doc.id}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-border p-4 hover:border-amber-500/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-10 w-10 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                          <FileText className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-foreground flex items-center gap-2">
+                            {docTypeLabels[doc.doc_type] || doc.doc_type}
+                            <Badge variant="outline" className={`text-[10px] ${statusColors[doc.status] || statusColors.pending_review}`}>
+                              {(doc.status || "pending_review").replace(/_/g, " ").toUpperCase()}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5 font-mono truncate">
+                            {doc.original_filename || doc.file_name || "—"}
+                            {doc.file_size ? ` · ${(Number(doc.file_size) / 1024).toFixed(1)} KB` : ""}
+                            {doc.created_at ? ` · ${new Date(doc.created_at).toLocaleDateString()}` : ""}
+                          </div>
+                          {doc.review_remarks && (
+                            <p className="text-xs text-muted-foreground mt-1 italic">Remarks: {doc.review_remarks}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={docDownloading !== null}
+                          onClick={() => downloadAuctionDoc(doc)}
+                          className="h-8 px-3 text-xs"
+                        >
+                          {docDownloading === doc.id ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1 h-3.5 w-3.5" />}
+                          {docDownloading === doc.id ? "Downloading..." : "Download"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openDocReview(doc)}
+                          className="h-8 px-3 text-xs"
+                        >
+                          <Eye className="mr-1 h-3.5 w-3.5" /> Review
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Material list status from template review */}
+            {templateReview?.upload && (
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <div className="flex items-center justify-between rounded-xl border border-border p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                      <FileSpreadsheet className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-foreground">Material List (Template Upload)</div>
+                      <div className="text-xs text-muted-foreground font-mono">
+                        {templateReview.upload.original_filename || "—"}
+                        {templateReview.upload.file_size ? ` · ${(Number(templateReview.upload.file_size) / 1024).toFixed(1)} KB` : ""}
+                      </div>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className={`text-[10px] ${
+                    templateReview.upload.status === "processed" || templateReview.upload.status === "active"
+                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"
+                      : "border-amber-500/30 bg-amber-500/10 text-amber-600"
+                  }`}>
+                    {(templateReview.upload.status || "pending").toUpperCase()}
+                  </Badge>
+                </div>
+              </div>
+            )}
+          </Section>
+
           <Section title="Photo Gallery" icon={<ImageIcon className="h-4 w-4" />}>
             {a.photos.length === 0 ? (
               <p className="text-sm text-muted-foreground">No photos uploaded.</p>
@@ -416,6 +618,182 @@ function AuctionReview() {
             <Button variant="ghost" onClick={() => setModal(null)}>Cancel</Button>
             <Button onClick={submitModal} className={modal === "reject" || modal === "archive" ? "bg-red-600 hover:bg-red-700 text-white" : "bg-accent hover:bg-accent/90 text-accent-foreground"}>
               {modal === "sendback" ? "Send Back" : modal === "reject" ? "Reject" : "Archive"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Auction Document Review Dialog */}
+      <Dialog open={docReviewOpen} onOpenChange={setDocReviewOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Review Document</DialogTitle>
+            <DialogDescription>
+              Review this auction document and set its verification status.
+            </DialogDescription>
+          </DialogHeader>
+          {reviewingDoc && (
+            <div className="space-y-4 py-2">
+              <div className="rounded-md border border-border p-3 text-sm">
+                <div className="font-medium">
+                  {({ catalog: "Catalog PDF", tnc: "Terms & Conditions PDF", photographs: "Photographs PDF" } as Record<string, string>)[reviewingDoc.doc_type] || reviewingDoc.doc_type}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 font-mono">
+                  {reviewingDoc.original_filename || reviewingDoc.file_name || "—"}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Verification Status
+                </Label>
+                <select
+                  value={reviewStatus}
+                  onChange={(e) => setReviewStatus(e.target.value)}
+                  className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                >
+                  <option value="verified">Verified</option>
+                  <option value="changes_required">Changes Required</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">
+                  Review Remarks
+                </Label>
+                <Textarea
+                  value={reviewRemarks}
+                  onChange={(e) => setReviewRemarks(e.target.value)}
+                  placeholder="Optional remarks about this document..."
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDocReviewOpen(false)}>Cancel</Button>
+            <Button
+              onClick={submitDocReview}
+              disabled={reviewSubmitting}
+              className={reviewStatus === "rejected" ? "bg-red-600 hover:bg-red-700 text-white" : reviewStatus === "changes_required" ? "bg-orange-600 hover:bg-orange-700 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white"}
+            >
+              {reviewSubmitting ? "Submitting..." : `Mark as ${reviewStatus.replace(/_/g, " ")}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Auction Approve Confirmation Dialog */}
+      <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Auction Approval</DialogTitle>
+            <DialogDescription>
+              Review all required auction documents before approving. Approval moves this auction to the Publish queue.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {/* Document verification status summary */}
+            <div>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Required Document Verification
+              </Label>
+              <div className="mt-2 space-y-1.5">
+                {(() => {
+                  const isForward = (a as any).auction_type === "forward" || (a as any).type === "forward";
+                  const docTypeLabels: Record<string, string> = {
+                    catalog: "Catalog PDF",
+                    tnc: "Terms & Conditions PDF",
+                    photographs: "Photographs PDF",
+                  };
+                  const requiredTypes = isForward ? ["catalog", "photographs"] : ["catalog"];
+                  const allTypes = ["catalog", "tnc", "photographs"];
+                  const statusColors: Record<string, string> = {
+                    pending_review: "border-amber-500/30 bg-amber-500/10 text-amber-600",
+                    verified: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600",
+                    changes_required: "border-orange-500/30 bg-orange-500/10 text-orange-600",
+                    rejected: "border-red-500/30 bg-red-500/10 text-red-600",
+                    not_applicable: "border-gray-400/30 bg-gray-400/10 text-gray-500",
+                  };
+
+                  return allTypes.map((docType) => {
+                    const doc = auctionDocs.find((d: any) => d.doc_type === docType);
+                    const isRequired = requiredTypes.includes(docType);
+                    const status = doc?.status || (isRequired ? "not_uploaded" : "not_applicable");
+                    return (
+                      <div key={docType} className="flex items-center justify-between rounded-md border border-border p-2 text-xs">
+                        <span className="font-medium text-foreground flex items-center gap-1.5">
+                          {docTypeLabels[docType]}
+                          {isRequired && <span className="text-red-500 text-[10px]">*</span>}
+                        </span>
+                        {doc ? (
+                          <Badge variant="outline" className={`text-[10px] ${statusColors[status] || statusColors.pending_review}`}>
+                            {status.replace(/_/g, " ").toUpperCase()}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] border-gray-400/30 bg-gray-400/10 text-gray-500">
+                            {isRequired ? "NOT UPLOADED" : "N/A"}
+                          </Badge>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
+
+                {/* Material list status */}
+                {templateReview?.upload && (
+                  <div className="flex items-center justify-between rounded-md border border-border p-2 text-xs">
+                    <span className="font-medium text-foreground flex items-center gap-1.5">
+                      Material List
+                      {((a as any).auction_type === "forward" || (a as any).type === "forward") && <span className="text-red-500 text-[10px]">*</span>}
+                    </span>
+                    <Badge variant="outline" className={`text-[10px] ${
+                      templateReview.upload.status === "processed" || templateReview.upload.status === "active"
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"
+                        : "border-amber-500/30 bg-amber-500/10 text-amber-600"
+                    }`}>
+                      {(templateReview.upload.status || "PENDING").toUpperCase()}
+                    </Badge>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Verification checkbox */}
+            <label className="flex items-start gap-3 cursor-pointer select-none rounded-lg border border-border p-3 hover:bg-muted/40 transition-colors">
+              <input
+                type="checkbox"
+                checked={approveDocsChecked}
+                onChange={(e) => setApproveDocsChecked(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              <span className="text-sm text-foreground">
+                I have verified all auction documents and confirm they meet requirements.
+              </span>
+            </label>
+
+            {/* Optional remarks */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">
+                Approval Remarks (optional)
+              </Label>
+              <Textarea
+                value={approveRemarks}
+                onChange={(e) => setApproveRemarks(e.target.value)}
+                placeholder="e.g. All documents reviewed and verified. Ready for publication."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setApproveDialogOpen(false)}>Cancel</Button>
+            <Button
+              onClick={confirmApprove}
+              disabled={!approveDocsChecked || approving}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {approving ? "Approving..." : "Confirm Approval"}
             </Button>
           </DialogFooter>
         </DialogContent>

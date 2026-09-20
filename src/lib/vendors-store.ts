@@ -209,8 +209,11 @@ export async function fetchVendorById(id: string): Promise<Vendor | null> {
   }
 }
 
-export async function approveVendorApi(id: string): Promise<void> {
-  await adminApi.approveVendor(id);
+export async function approveVendorApi(
+  id: string,
+  data: { documents_verified: boolean; verification_remarks?: string } = { documents_verified: true },
+): Promise<void> {
+  await adminApi.approveVendor(id, data);
 }
 
 export async function rejectVendorApi(id: string, reason: string): Promise<void> {
