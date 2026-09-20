@@ -18,7 +18,8 @@ interface Promotion {
   code: string;
   discount_type: string;
   discount_value: number;
-  max_uses: number;
+  max_redemptions: number;
+  redemption_count?: number;
   active: boolean;
 }
 
@@ -51,10 +52,16 @@ function AuctionsSettingsPage() {
         if (config?.max_extensions !== undefined) setMaxExtensions(String(config.max_extensions));
         if (config?.auto_forfeit_emd !== undefined) setAutoForfeitEmd(Boolean(config.auto_forfeit_emd));
         if (config?.auto_forfeit_days !== undefined) setAutoForfeitDays(String(config.auto_forfeit_days));
-        if (Array.isArray(config?.registration_promotions)) setRegistrationPromotions(config.registration_promotions);
       })
       .catch(() => toast.error("Could not load auction settings."))
       .finally(() => setLoading(false));
+    adminApi
+      .getRegistrationPromotions()
+      .then((response) => {
+        const promotions = response?.promotions ?? response?.data?.promotions ?? response?.data ?? [];
+        if (Array.isArray(promotions)) setRegistrationPromotions(promotions);
+      })
+      .catch(() => toast.error("Could not load registration promotions."));
   }, []);
 
   const handleSave = async () => {
@@ -85,12 +92,12 @@ function AuctionsSettingsPage() {
     try {
       const response = await adminApi.createRegistrationPromotion({
         code: newPromoCode.trim().toUpperCase(),
-        discount_type: newPromoDiscountType,
+        discount_type: newPromoDiscountType.toLowerCase(),
         discount_value: value,
-        max_uses: Number(newPromoMaxUses) || 100,
+        max_redemptions: Number(newPromoMaxUses) || 100,
         active: true,
       });
-      const promo = response?.data ?? response;
+      const promo = response?.promotion ?? response?.data?.promotion ?? response?.data ?? response;
       setRegistrationPromotions((current) => [...current, promo]);
       setNewPromoCode("");
       setNewPromoDiscountValue("");
@@ -193,7 +200,7 @@ function AuctionsSettingsPage() {
                       <div className="flex items-center gap-3">
                         <code className="rounded bg-muted px-2 py-0.5 text-sm font-semibold">{promo.code}</code>
                         <span className="text-sm text-muted-foreground">
-                          {promo.discount_type === "PERCENTAGE" ? `${promo.discount_value}%` : `₹${promo.discount_value}`} off · max {promo.max_uses} uses
+                          {promo.discount_type === "percentage" ? `${promo.discount_value}%` : `₹${promo.discount_value}`} off · {promo.redemption_count ?? 0}/{promo.max_redemptions ?? "∞"} used
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
