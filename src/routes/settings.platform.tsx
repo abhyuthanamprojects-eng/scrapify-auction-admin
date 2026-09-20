@@ -18,6 +18,8 @@ function PlatformSettingsPage() {
   const [apiUrl, setApiUrl] = useState("https://api.scrapifyauctions.com/api/v1");
   const [wsUrl, setWsUrl] = useState("wss://api.scrapifyauctions.com/app");
   const [vendorRegistrationFee, setVendorRegistrationFee] = useState("5000");
+  const [webRegistrationFeeRequired, setWebRegistrationFeeRequired] = useState(true);
+  const [mobileRegistrationFeeRequired, setMobileRegistrationFeeRequired] = useState(false);
   const [emdPercentage, setEmdPercentage] = useState("10");
   const [minimumParticipants, setMinimumParticipants] = useState("3");
   const [initialSlotMinutes, setInitialSlotMinutes] = useState("30");
@@ -44,6 +46,8 @@ function PlatformSettingsPage() {
       .then((response) => {
         const config = response?.data ?? response;
         if (config?.vendor_registration_fee !== undefined) setVendorRegistrationFee(String(config.vendor_registration_fee));
+        if (config?.web_registration_fee_required !== undefined) setWebRegistrationFeeRequired(Boolean(config.web_registration_fee_required));
+        if (config?.mobile_registration_fee_required !== undefined) setMobileRegistrationFeeRequired(Boolean(config.mobile_registration_fee_required));
         if (config?.emd_percentage !== undefined) setEmdPercentage(String(config.emd_percentage));
         if (config?.minimum_participants !== undefined) setMinimumParticipants(String(config.minimum_participants));
         if (config?.initial_slot_minutes !== undefined) setInitialSlotMinutes(String(config.initial_slot_minutes));
@@ -85,6 +89,8 @@ function PlatformSettingsPage() {
     try {
       await adminApi.updatePlatformConfig({
         vendor_registration_fee: registrationFee,
+        web_registration_fee_required: webRegistrationFeeRequired,
+        mobile_registration_fee_required: mobileRegistrationFeeRequired,
         emd_percentage: Number(emdPercentage),
         minimum_participants: Number(minimumParticipants),
         initial_slot_minutes: Number(initialSlotMinutes),
@@ -133,6 +139,22 @@ function PlatformSettingsPage() {
           <Label htmlFor="vendor-registration-fee" className="text-xs font-medium">Vendor Registration Fee (INR)</Label>
           <Input id="vendor-registration-fee" type="number" min={0} step="0.01" value={vendorRegistrationFee} onChange={(e) => setVendorRegistrationFee(e.target.value)} disabled={loadingConfig} className="text-sm font-mono" />
           <p className="text-xs text-muted-foreground">Server-authoritative one-time fee. The value in .env is only the initial fallback.</p>
+        </div>
+        <div className="grid gap-3 border-t pt-4 md:grid-cols-2">
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <Label>Require web registration fee</Label>
+              <p className="text-xs text-muted-foreground">Keep Razorpay payment required on the website.</p>
+            </div>
+            <Switch checked={webRegistrationFeeRequired} onCheckedChange={setWebRegistrationFeeRequired} disabled={loadingConfig} />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <Label>Require mobile registration fee</Label>
+              <p className="text-xs text-muted-foreground">Enable this when the mobile app is ready for paid registration.</p>
+            </div>
+            <Switch checked={mobileRegistrationFeeRequired} onCheckedChange={setMobileRegistrationFeeRequired} disabled={loadingConfig} />
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
