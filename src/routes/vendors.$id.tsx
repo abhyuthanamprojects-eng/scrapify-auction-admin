@@ -146,6 +146,7 @@ function VendorDetail() {
   const registrationPayment = vendor.registrationPayment;
   const registrationFeePaid = registrationPayment.status === "success";
   const registrationFeePending = registrationPayment.status === "pending";
+  const registrationFeeUnpaid = !registrationFeePaid;
   const paymentAmount = registrationPayment.amount ?? registrationPayment.baseAmount;
 
   function openApproveDialog() {
@@ -452,10 +453,12 @@ function VendorDetail() {
             {registrationPayment.gateway ? ` · Gateway: ${registrationPayment.gateway}` : ""}
           </p>
         )}
-        {registrationFeePending && (
+        {registrationFeeUnpaid && (
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3 text-sm dark:border-amber-900 dark:bg-amber-950/20">
             <div>
-              <p className="font-semibold text-amber-800 dark:text-amber-300">Registration payment is pending</p>
+              <p className="font-semibold text-amber-800 dark:text-amber-300">
+                {registrationFeePending ? "Registration payment is pending" : "Registration fee has not been paid"}
+              </p>
               <p className="text-xs text-amber-700/80 dark:text-amber-400">Send the payment instructions to {vendor.email}.</p>
             </div>
             <Button type="button" size="sm" variant="outline" onClick={emailRegistrationPayment} disabled={emailingPayment} className="gap-1.5 border-amber-300 text-amber-800 hover:bg-amber-100 dark:text-amber-300">
