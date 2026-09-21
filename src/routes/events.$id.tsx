@@ -11,9 +11,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { adminApi } from "@/lib/api-client";
-import { Check, MessageSquare, X } from "lucide-react";
+import { Check, Image as ImageIcon, MessageSquare, Pencil, Trash2, X } from "lucide-react";
 import {
   DataTable,
   Field,
@@ -126,6 +127,11 @@ function EventWorkspace() {
   const [reviewAction, setReviewAction] = useState<"approve" | "changes" | "reject" | null>(null);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editPhotos, setEditPhotos] = useState<string[]>([]);
+  const [editPhotoFiles, setEditPhotoFiles] = useState<File[]>([]);
+  const [editForm, setEditForm] = useState<Record<string, string>>({});
 
   const normalizedStatus = String(event.status).toLowerCase().replaceAll("_", " ");
   const requiresReview = [
@@ -135,6 +141,108 @@ function EventWorkspace() {
     "sent back",
   ].includes(normalizedStatus);
   const canOpenLiveControls = ["approved", "published", "live"].includes(normalizedStatus);
+
+  const openEdit = () => {
+    const raw = event.raw ?? {};
+    const value = (key: string, fallback = "") => raw[key] == null ? fallback : String(raw[key]);
+    const warehouseDetails = raw.warehouse_details ?? {};
+    setEditForm({
+      title: value("title", event.name),
+      description: value("description"),
+      company: value("company", event.customerName),
+      plant: value("plant"),
+      warehouse: value("warehouse"),
+      location: value("location"),
+      direction: value("direction", "forward"),
+      lot_type: value("lot_type", "single"),
+      warehouse_address: warehouseDetails.address == null ? "" : String(warehouseDetails.address),
+      warehouse_city: warehouseDetails.city == null ? "" : String(warehouseDetails.city),
+      warehouse_state: warehouseDetails.state == null ? "" : String(warehouseDetails.state),
+      warehouse_pincode: warehouseDetails.pincode == null ? "" : String(warehouseDetails.pincode),
+      warehouse_contact: warehouseDetails.contact == null ? "" : String(warehouseDetails.contact),
+      category: value("category", event.category),
+      quantity: value("quantity"),
+      uom: value("uom", "MT"),
+      reserve_price: value("reserve_price", String(event.reserve ?? "")),
+      starting_price: value("starting_price", String(event.currentPrice ?? "")),
+      bid_increment: value("bid_increment", String(event.increment ?? "")),
+      emd_amount: value("emd_amount"),
+      schedule_start: value("schedule_start", event.startAt ? new Date(event.startAt).toISOString().slice(0, 16) : ""),
+      schedule_end: value("schedule_end", event.endAt ? new Date(event.endAt).toISOString().slice(0, 16) : ""),
+      payment_terms: value("payment_terms"),
+      lifting_period: value("lifting_period"),
+      lifting_unit: value("lifting_unit", "Days"),
+      contact_name: value("contact_name"),
+      contact_phone: value("contact_phone"),
+      contact_email: value("contact_email"),
+      terms: value("terms"),
+      inspection: value("inspection"),
+      inspection_date: value("inspection_date"),
+      inspection_time: value("inspection_time"),
+      inspection_location: value("inspection_location"),
+    });
+    setEditPhotos(Array.isArray(event.photos) ? event.photos : []);
+    setEditPhotoFiles([]);
+    setEditOpen(true);
+  };
+
+  const setEdit = (key: string, value: string) => setEditForm((current) => ({ ...current, [key]: value }));
+
+  const saveEdit = async () => {
+    if (!editForm.title?.trim() || !editForm.category?.trim()) {
+      toast.error("Auction title and category are required.");
+      return;
+    }
+    setEditSaving(true);
+    try {
+      await adminApi.updateAuction(id, {
+        title: editForm.title.trim(),
+        description: editForm.description.trim() || null,
+        company: editForm.company.trim() || null,
+        plant: editForm.plant.trim() || null,
+        warehouse: editForm.warehouse.trim() || null,
+        location: editForm.location.trim() || null,
+        direction: editForm.direction || "forward",
+        lot_type: editForm.lot_type || "single",
+        warehouse_details: {
+          address: editForm.warehouse_address.trim() || null,
+          city: editForm.warehouse_city.trim() || null,
+          state: editForm.warehouse_state.trim() || null,
+          pincode: editForm.warehouse_pincode.trim() || null,
+          contact: editForm.warehouse_contact.trim() || null,
+        },
+        category: editForm.category.trim(),
+        quantity: editForm.quantity.trim() || null,
+        uom: editForm.uom || "MT",
+        reserve_price: Number(editForm.reserve_price) || 0,
+        starting_price: Number(editForm.starting_price) || 0,
+        bid_increment: Number(editForm.bid_increment) || 0,
+        emd_amount: Number(editForm.emd_amount) || 0,
+        schedule_start: editForm.schedule_start ? new Date(editForm.schedule_start).toISOString() : null,
+        schedule_end: editForm.schedule_end ? new Date(editForm.schedule_end).toISOString() : null,
+        payment_terms: editForm.payment_terms.trim() || null,
+        lifting_period: editForm.lifting_period.trim() || null,
+        lifting_unit: editForm.lifting_unit || "Days",
+        contact_name: editForm.contact_name.trim() || null,
+        contact_phone: editForm.contact_phone.trim() || null,
+        contact_email: editForm.contact_email.trim() || null,
+        terms: editForm.terms.trim() || null,
+        inspection: editForm.inspection.trim() || null,
+        inspection_date: editForm.inspection_date || null,
+        inspection_time: editForm.inspection_time || null,
+        inspection_location: editForm.inspection_location.trim() || null,
+        photos: editPhotos,
+      });
+      await Promise.all(editPhotoFiles.map((file) => adminApi.uploadAuctionPhoto(id, file)));
+      toast.success("Auction details and images updated.");
+      setEditOpen(false);
+      window.location.reload();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Auction could not be updated.");
+    } finally {
+      setEditSaving(false);
+    }
+  };
 
   const submitReviewAction = async () => {
     if (!reviewAction) return;
@@ -272,6 +380,9 @@ function EventWorkspace() {
         description={`${event.id} · ${event.customerName} · ${event.direction} ${event.kind} · ${event.template}`}
         actions={
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={openEdit} className="gap-1.5">
+              <Pencil className="size-4" /> Edit auction
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -938,6 +1049,92 @@ function EventWorkspace() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={editOpen} onOpenChange={(open) => !open && setEditOpen(false)}>
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit auction</DialogTitle>
+            <DialogDescription>
+              Operations-only editing. Changes are saved to the auction record and images are
+              stored on the server for listing and detail pages.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2 sm:grid-cols-2">
+            {[
+              ["title", "Auction title"],
+              ["company", "Company / facility"],
+              ["plant", "Plant / unit"],
+              ["warehouse", "Warehouse"],
+              ["location", "Location"],
+              ["direction", "Direction (forward/reverse)"],
+              ["lot_type", "Lot type (single/lot_wise)"],
+              ["warehouse_address", "Warehouse address"],
+              ["warehouse_city", "Warehouse city"],
+              ["warehouse_state", "Warehouse state"],
+              ["warehouse_pincode", "Warehouse pincode"],
+              ["warehouse_contact", "Warehouse contact"],
+              ["category", "Category"],
+              ["quantity", "Quantity"],
+              ["uom", "Unit"],
+              ["reserve_price", "Reserve price (₹)"],
+              ["starting_price", "Starting price (₹)"],
+              ["bid_increment", "Bid increment (₹)"],
+              ["emd_amount", "EMD amount (₹)"],
+              ["schedule_start", "Scheduled start"],
+              ["schedule_end", "Scheduled end"],
+              ["payment_terms", "Payment terms"],
+              ["lifting_period", "Lifting period"],
+              ["lifting_unit", "Lifting unit"],
+              ["contact_name", "Contact person"],
+              ["contact_phone", "Contact phone"],
+              ["contact_email", "Contact email"],
+              ["inspection_date", "Inspection date"],
+              ["inspection_time", "Inspection time"],
+              ["inspection_location", "Inspection location"],
+            ].map(([key, label]) => (
+              <label key={key} className="space-y-1.5 text-sm font-medium">
+                {label}
+                <Input
+                  type={key.includes("price") || key === "quantity" || key === "emd_amount" || key === "lifting_period" ? "number" : key.includes("schedule") ? "datetime-local" : key === "inspection_date" ? "date" : key === "inspection_time" ? "time" : key === "contact_email" ? "email" : "text"}
+                  value={editForm[key] ?? ""}
+                  onChange={(e) => setEdit(key, e.target.value)}
+                />
+              </label>
+            ))}
+            <label className="space-y-1.5 text-sm font-medium sm:col-span-2">
+              Description
+              <Textarea value={editForm.description ?? ""} onChange={(e) => setEdit("description", e.target.value)} rows={3} />
+            </label>
+            <label className="space-y-1.5 text-sm font-medium sm:col-span-2">
+              Seller / auction terms
+              <Textarea value={editForm.terms ?? ""} onChange={(e) => setEdit("terms", e.target.value)} rows={3} />
+            </label>
+            <label className="space-y-1.5 text-sm font-medium sm:col-span-2">
+              Inspection details
+              <Textarea value={editForm.inspection ?? ""} onChange={(e) => setEdit("inspection", e.target.value)} rows={2} />
+            </label>
+            <div className="space-y-3 sm:col-span-2">
+              <div className="flex items-center gap-2 text-sm font-semibold"><ImageIcon className="size-4" /> Auction images</div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {editPhotos.map((photo) => (
+                  <div key={photo} className="relative overflow-hidden rounded-lg border">
+                    <img src={photo} alt="Auction" className="aspect-video w-full object-cover" />
+                    <button type="button" className="absolute right-1 top-1 rounded-full bg-white/90 p-1 text-red-600 shadow" onClick={() => setEditPhotos((current) => current.filter((item) => item !== photo))} aria-label="Remove image">
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <Input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(e) => setEditPhotoFiles(Array.from(e.target.files ?? []))} />
+              {editPhotoFiles.length > 0 && <p className="text-xs text-muted-foreground">{editPhotoFiles.length} new image(s) selected.</p>}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={editSaving}>Cancel</Button>
+            <Button onClick={() => void saveEdit()} disabled={editSaving}>{editSaving ? "Saving…" : "Save auction changes"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -953,6 +1150,7 @@ function mapApiAuction(auction: any, fallbackId: string): any {
 
   return {
     id: auction.code ?? fallbackId,
+    raw: auction,
     name: auction.title ?? auction.name ?? fallbackId,
     kind: auction.kind ?? "Auction",
     template: auction.template ?? "Standard",
@@ -986,5 +1184,6 @@ function mapApiAuction(auction: any, fallbackId: string): any {
     award: auction.award ?? null,
     connectionHealth: auction.connection_health ?? "Unknown",
     alerts: auction.alerts ?? [],
+    photos: Array.isArray(auction.photos) ? auction.photos : [],
   };
 }

@@ -6,6 +6,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Gavel,
+  Image as ImageIcon,
   MapPin,
   Plus,
   Warehouse,
@@ -85,6 +86,7 @@ function NewAuction() {
   const [loadingClients, setLoadingClients] = useState(true);
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
 
   useEffect(() => {
     adminApi
@@ -231,6 +233,9 @@ function NewAuction() {
           bid_cutoff_ms: 500,
           continuation_mode: "MANUAL_ADMIN",
         });
+        if (photoFiles.length > 0) {
+          await Promise.all(photoFiles.map((file) => adminApi.uploadAuctionPhoto(code, file)));
+        }
       }
       toast.success(
         code
@@ -368,6 +373,41 @@ function NewAuction() {
                 className="mt-2 min-h-24"
               />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="border-b border-border/70 bg-white">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ImageIcon className="h-5 w-5 text-accent" /> Auction images
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 p-5">
+            <p className="text-sm text-muted-foreground">
+              Images added here are managed by the operations team and will be visible in the
+              auction listing and details. Sellers cannot upload or replace these images.
+            </p>
+            <Input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              onChange={(event) => setPhotoFiles(Array.from(event.target.files ?? []))}
+              disabled={saving}
+            />
+            {photoFiles.length > 0 && (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {photoFiles.map((file) => (
+                  <div key={file.name + file.lastModified} className="overflow-hidden rounded-lg border bg-muted">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={file.name}
+                      className="aspect-video w-full object-cover"
+                    />
+                    <p className="truncate px-2 py-1 text-xs text-muted-foreground">{file.name}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 

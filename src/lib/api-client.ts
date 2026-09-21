@@ -73,7 +73,7 @@ class ScrapifyAdminApiClient {
     };
 
     // Avoid an unnecessary CORS preflight for requests that have no body.
-    if (options.body !== undefined && options.body !== null) {
+    if (options.body !== undefined && options.body !== null && !(options.body instanceof FormData)) {
       headers["Content-Type"] ??= "application/json";
     }
 
@@ -536,6 +536,15 @@ class ScrapifyAdminApiClient {
 
   async updateAuction(code: string, data: any) {
     return this.request<any>(`/auctions/${code}`, { method: "PATCH", body: JSON.stringify(data) });
+  }
+
+  async uploadAuctionPhoto(code: string, file: File) {
+    const body = new FormData();
+    body.append("file", file);
+    return this.request<any>(
+      "/admin/auctions/" + encodeURIComponent(code) + "/photos",
+      { method: "POST", body },
+    );
   }
 
   async archiveAuction(code: string, reason: string) {
