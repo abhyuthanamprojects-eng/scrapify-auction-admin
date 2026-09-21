@@ -37,6 +37,7 @@ function PlatformSettingsPage() {
   const [mobileForceUpdate, setMobileForceUpdate] = useState(false);
   const [mobileUpdateUrl, setMobileUpdateUrl] = useState("");
   const [mobileUpdateNotes, setMobileUpdateNotes] = useState("");
+  const [bankDetails, setBankDetails] = useState({ bank_name: "", account_name: "", account_number: "", ifsc: "", branch: "", address: "" });
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [savingConfig, setSavingConfig] = useState(false);
 
@@ -65,6 +66,7 @@ function PlatformSettingsPage() {
         if (config?.mobile_force_update !== undefined) setMobileForceUpdate(Boolean(config.mobile_force_update));
         if (config?.mobile_update_url) setMobileUpdateUrl(String(config.mobile_update_url));
         if (config?.mobile_update_notes) setMobileUpdateNotes(String(config.mobile_update_notes));
+        if (config?.registration_bank_details) setBankDetails({ bank_name: String(config.registration_bank_details.bank_name ?? ""), account_name: String(config.registration_bank_details.account_name ?? ""), account_number: String(config.registration_bank_details.account_number ?? ""), ifsc: String(config.registration_bank_details.ifsc ?? ""), branch: String(config.registration_bank_details.branch ?? ""), address: String(config.registration_bank_details.address ?? "") });
       })
       .catch(() => toast.error("Could not load platform settings from the API."))
       .finally(() => setLoadingConfig(false));
@@ -108,6 +110,12 @@ function PlatformSettingsPage() {
         mobile_force_update: mobileForceUpdate,
         mobile_update_url: mobileUpdateUrl,
         mobile_update_notes: mobileUpdateNotes,
+        registration_bank_name: bankDetails.bank_name,
+        registration_bank_account_name: bankDetails.account_name,
+        registration_bank_account_number: bankDetails.account_number,
+        registration_bank_ifsc: bankDetails.ifsc,
+        registration_bank_branch: bankDetails.branch,
+        registration_bank_address: bankDetails.address,
       });
       setSaved(true);
       toast.success("Platform settings saved and synchronized with Laravel backend.");
@@ -140,11 +148,17 @@ function PlatformSettingsPage() {
           <Input id="vendor-registration-fee" type="number" min={0} step="0.01" value={vendorRegistrationFee} onChange={(e) => setVendorRegistrationFee(e.target.value)} disabled={loadingConfig} className="text-sm font-mono" />
           <p className="text-xs text-muted-foreground">Server-authoritative one-time fee. The value in .env is only the initial fallback.</p>
         </div>
+        <div className="space-y-3 border-t pt-4">
+          <div><Label className="text-sm font-semibold">Manual registration bank transfer</Label><p className="text-xs text-muted-foreground">These details are shown to buyers and sellers when they submit their registration fee proof.</p></div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {([['bank_name','Bank name'],['account_name','Account name'],['account_number','Account number'],['ifsc','IFSC'],['branch','Branch'],['address','Bank address']] as const).map(([key,label]) => <div className="space-y-1.5" key={key}><Label className="text-xs font-medium">{label}</Label><Input value={bankDetails[key]} onChange={(e) => setBankDetails((prev) => ({ ...prev, [key]: e.target.value }))} disabled={loadingConfig} /></div>)}
+          </div>
+        </div>
         <div className="grid gap-3 border-t pt-4 md:grid-cols-2">
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div>
               <Label>Require web registration fee</Label>
-              <p className="text-xs text-muted-foreground">Keep Razorpay payment required on the website.</p>
+              <p className="text-xs text-muted-foreground">Keep bank-transfer payment proof required on the website.</p>
             </div>
             <Switch checked={webRegistrationFeeRequired} onCheckedChange={setWebRegistrationFeeRequired} disabled={loadingConfig} />
           </div>

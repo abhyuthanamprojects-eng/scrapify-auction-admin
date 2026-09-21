@@ -51,6 +51,12 @@ export type RegistrationPayment = {
   offerDescription?: string | null;
   gateway?: string | null;
   paidAt?: string | null;
+  proofUrl?: string | null;
+  transactionId?: string | null;
+  verificationReference?: string | null;
+  submittedAt?: string | null;
+  verifiedAt?: string | null;
+  rejectionReason?: string | null;
 };
 
 export type Vendor = {
@@ -207,6 +213,12 @@ function mapVendor(v: any): Vendor {
       offerDescription: v.registration_payment?.offer_description ?? null,
       gateway: v.registration_payment?.gateway ?? null,
       paidAt: v.registration_payment?.paid_at ?? null,
+      proofUrl: v.registration_payment?.proof_url ?? null,
+      transactionId: v.registration_payment?.transaction_id ?? null,
+      verificationReference: v.registration_payment?.verification_reference ?? null,
+      submittedAt: v.registration_payment?.submitted_at ?? null,
+      verifiedAt: v.registration_payment?.verified_at ?? null,
+      rejectionReason: v.registration_payment?.rejection_reason ?? null,
     },
   };
 }

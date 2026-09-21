@@ -82,12 +82,10 @@ function IntegrationsSettingsPage() {
     if (!integrationSettings) return;
     setIntegrationSaving(true);
     try {
-      const secretKeys = new Set(["razorpay_key_id", "razorpay_key_secret", "sandbox_verification_api_key", "sandbox_verification_api_secret", "digilocker_client_id", "digilocker_client_secret", "mail_username", "mail_password", "pusher_app_key", "pusher_app_secret", "aws_access_key_id", "aws_secret_access_key"]);
+      const secretKeys = new Set(["sandbox_verification_api_key", "sandbox_verification_api_secret", "digilocker_client_id", "digilocker_client_secret", "mail_username", "mail_password", "pusher_app_key", "pusher_app_secret", "aws_access_key_id", "aws_secret_access_key"]);
       const publicIntegrationSettings = Object.fromEntries(Object.entries(integrationSettings).filter(([key]) => !secretKeys.has(key)));
       const response = await adminApi.updateIntegrationSettings({
         ...publicIntegrationSettings,
-        razorpay_enabled: Boolean(integrationSettings.razorpay_enabled),
-        razorpay_timeout: Number(integrationSettings.razorpay_timeout ?? 30),
         digilocker_enabled: Boolean(integrationSettings.digilocker_enabled),
         digilocker_timeout: Number(integrationSettings.digilocker_timeout ?? 30),
         mail_port: Number(integrationSettings.mail_port),
@@ -178,26 +176,9 @@ function IntegrationsSettingsPage() {
                 </div>
               </div>
             </section>
-            <section className="space-y-3 border-t pt-5">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-semibold">Razorpay Payment Gateway</h3>
-                  <p className="text-xs text-muted-foreground">Standard Web Checkout for wallet top-ups and order payments. Credentials stay encrypted on Laravel.</p>
-                </div>
-                <Switch checked={Boolean(integrationSettings.razorpay_enabled)} onCheckedChange={(value) => updateIntegration("razorpay_enabled", value)} />
-              </div>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label>Environment</Label>
-                  <select value={integrationSettings.razorpay_environment ?? "test"} onChange={(e) => updateIntegration("razorpay_environment", e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                    <option value="test">Test</option>
-                    <option value="live">Live</option>
-                  </select>
-                </div>
-                {secretInput("razorpay_key_id", "Key ID", "Publishable key (rzp_test_... or rzp_live_...). Safe for frontend.")}
-                {secretInput("razorpay_key_secret", "Key Secret", "Backend-only secret. Never exposed to clients.")}
-                <div className="space-y-1.5"><Label>Timeout (seconds)</Label><Input type="number" min={5} max={120} value={integrationSettings.razorpay_timeout ?? 30} onChange={(e) => updateIntegration("razorpay_timeout", e.target.value)} /></div>
-              </div>
+            <section className="space-y-1 border-t pt-5">
+              <h3 className="text-sm font-semibold">Payments</h3>
+              <p className="text-xs text-muted-foreground">All registration, wallet, EMD and order payments use bank-transfer proof with admin verification.</p>
             </section>
             <section className="space-y-3 border-t pt-5">
               <div className="flex items-center justify-between gap-3">

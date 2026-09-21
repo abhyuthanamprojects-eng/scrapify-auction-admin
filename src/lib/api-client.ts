@@ -248,6 +248,19 @@ class ScrapifyAdminApiClient {
     });
   }
 
+  async verifyVendorRegistrationPayment(code: string, status: "verified" | "rejected", reason?: string) {
+    return this.request<any>(`/vendors/${code}/registration-payment/verify`, {
+      method: "POST",
+      body: JSON.stringify({ status, reason: reason?.trim() || undefined }),
+    });
+  }
+
+  async fetchRegistrationPaymentProof(code: string) {
+    const response = await fetch(`${API_BASE_URL}/vendors/${code}/registration-payment/proof`, { headers: this.token ? { Authorization: `Bearer ${this.token}` } : {} });
+    if (!response.ok) throw new Error("Payment proof could not be loaded.");
+    return response.blob();
+  }
+
   async deleteVendorUser(userId: number, email: string) {
     return this.request<any>(`/admin/organisation/users/${userId}`, {
       method: "DELETE",

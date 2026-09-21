@@ -144,7 +144,7 @@ function VendorDetail() {
   const isRejected = vendor.status === "Rejected";
   const isSuspended = vendor.status === "Suspended";
   const registrationPayment = vendor.registrationPayment;
-  const registrationFeePaid = registrationPayment.status === "success";
+  const registrationFeePaid = ["success", "verified"].includes(registrationPayment.status);
   const registrationFeePending = registrationPayment.status === "pending";
   const registrationFeeUnpaid = !registrationFeePaid;
   const paymentAmount = registrationPayment.amount ?? registrationPayment.baseAmount;
@@ -237,12 +237,28 @@ function VendorDetail() {
     try {
       await adminApi.sendVendorRegistrationPaymentEmail(vendor.code);
       toast.success("Registration payment email sent", {
-        description: `Razorpay payment instructions sent to ${vendor.email}.`,
+        description: `Bank-transfer payment instructions sent to ${vendor.email}.`,
       });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to send payment email.");
     } finally {
       setEmailingPayment(false);
+    }
+  }
+
+  async function verifyRegistrationPayment(status: "verified" | "rejected") {
+    if (!vendor) return;
+    const reason = status === "rejected" ? window.prompt("Reason for rejecting this payment proof:") : undefined;
+    if (status === "rejected" && !reason?.trim()) return;
+    setActing(true);
+    try {
+      await adminApi.verifyVendorRegistrationPayment(vendor.code, status, reason);
+      toast.success(status === "verified" ? "Payment verified and reference generated." : "Payment proof rejected.");
+      refetch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to update payment status.");
+    } finally {
+      setActing(false);
     }
   }
 
@@ -263,6 +279,22 @@ function VendorDetail() {
       setPreviewUrl(URL.createObjectURL(blob));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Document could not be opened");
+    } finally {
+      setDocumentBusy(null);
+      setDocumentBusyAction(null);
+    }
+  }
+
+  async function openRegistrationPaymentProof() {
+    if (!vendor) return;
+    setDocumentBusy(-1);
+    setDocumentBusyAction("view");
+    try {
+      const blob = await adminApi.fetchRegistrationPaymentProof(vendor.code);
+      setPreviewMime(blob.type);
+      setPreviewUrl(URL.createObjectURL(blob));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Payment proof could not be opened");
     } finally {
       setDocumentBusy(null);
       setDocumentBusyAction(null);
@@ -446,6 +478,12 @@ function VendorDetail() {
           <ReadField label="Offer Used" value={registrationPayment.offerCode || "No offer"} />
           <ReadField label="Payment Reference" value={registrationPayment.reference || "—"} mono />
         </div>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+          <ReadField label="Transaction ID" value={registrationPayment.transactionId || "Not provided"} mono />
+          <ReadField label="Gateway" value={registrationPayment.gateway || "Manual bank transfer"} />
+          <ReadField label="Paid date" value={registrationPayment.paidAt ? new Date(registrationPayment.paidAt).toLocaleString() : "Pending verification"} />
+          <ReadField label="Verification reference" value={registrationPayment.verificationReference || "Generated after approval"} mono />
+        </div>
         {registrationPayment.baseAmount !== null && registrationPayment.baseAmount !== undefined && (
           <p className="mt-3 text-xs text-muted-foreground">
             Fee ₹{Number(registrationPayment.baseAmount).toLocaleString("en-IN")}
@@ -465,6 +503,14 @@ function VendorDetail() {
               {emailingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
               {emailingPayment ? "Sending…" : "Email payment instructions"}
             </Button>
+          </div>
+        )}
+        {registrationPayment.proofUrl && registrationPayment.status === "pending" && (
+          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-blue-200 bg-blue-50/60 p-3 text-sm">
+            <span className="font-semibold text-blue-800">Payment screenshot submitted for review.</span>
+            <Button size="sm" variant="outline" onClick={openRegistrationPaymentProof} disabled={acting || documentBusy === -1}>{documentBusy === -1 ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />} View proof</Button>
+            <Button size="sm" onClick={() => verifyRegistrationPayment("verified")} disabled={acting} className="ml-auto gap-1"><Check className="h-4 w-4" /> Verify payment</Button>
+            <Button size="sm" variant="outline" onClick={() => verifyRegistrationPayment("rejected")} disabled={acting} className="gap-1 text-destructive"><X className="h-4 w-4" /> Reject proof</Button>
           </div>
         )}
       </section>
