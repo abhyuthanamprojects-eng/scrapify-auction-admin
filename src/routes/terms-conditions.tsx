@@ -39,6 +39,7 @@ const TYPE_BADGE: Record<string, string> = {
   liability: "bg-red-50 text-red-700 ring-red-300 dark:bg-red-950 dark:text-red-300",
   dispute: "bg-orange-50 text-orange-700 ring-orange-300 dark:bg-orange-950 dark:text-orange-300",
   compliance: "bg-teal-50 text-teal-700 ring-teal-300 dark:bg-teal-950 dark:text-teal-300",
+  auction: "bg-orange-50 text-orange-700 ring-orange-300 dark:bg-orange-950 dark:text-orange-300",
 };
 
 const APPLICABLE_BADGE: Record<string, string> = {
@@ -47,7 +48,7 @@ const APPLICABLE_BADGE: Record<string, string> = {
   seller: "bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
 };
 
-const TYPES = ["general", "payment", "inspection", "delivery", "liability", "dispute", "compliance"] as const;
+const TYPES = ["general", "auction", "payment", "inspection", "delivery", "liability", "dispute", "compliance"] as const;
 const APPLICABLE = ["all", "buyer", "seller"] as const;
 
 type CategoryOption = { id: number; label: string; isChild: boolean };
@@ -177,7 +178,7 @@ function TermsConditionsPage() {
     <>
       <PageHeader
         title="Terms & Conditions"
-        description="Manage terms and conditions that apply to auctions by category. Buyers see these on the auction detail page."
+        description="Manage admin-published registration and auction terms. They appear on auction details for buyers, sellers, and staff."
       />
 
       {error && <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-300">{error}</div>}

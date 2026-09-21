@@ -500,8 +500,8 @@ function NewAuction() {
             <Field label="Contact phone" value={form.contactPhone} onChange={(v) => set("contactPhone", v)} placeholder="9876543210" />
             <Field label="Contact email" value={form.contactEmail} onChange={(v) => set("contactEmail", v)} type="email" placeholder="contact@example.com" />
             <div className="md:col-span-2 space-y-2">
-              <Label>Terms & conditions</Label>
-              <Textarea value={form.terms} onChange={(e) => set("terms", e.target.value)} placeholder="Enter terms and conditions" className="min-h-20" />
+              <Label>Seller-added auction terms</Label>
+              <Textarea value={form.terms} onChange={(e) => set("terms", e.target.value)} placeholder="Add terms specific to this auction (optional)" className="min-h-20" />
             </div>
             <div className="md:col-span-2 border-t border-border/70 pt-5">
               <p className="mb-4 text-sm font-semibold">Inspection</p>

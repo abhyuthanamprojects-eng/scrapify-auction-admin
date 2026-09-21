@@ -299,8 +299,27 @@ function AuctionReview() {
             </div>
           </Section>
 
-          <Section title="Terms">
-            <p className="text-sm text-muted-foreground whitespace-pre-line">{a.terms}</p>
+          <Section title="Auction Terms & Conditions">
+            {Array.isArray(a.terms_conditions) && a.terms_conditions.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold">Admin-published terms</h3>
+                {a.terms_conditions.map((term: any) => (
+                  <div key={term.id ?? term.title} className="rounded-lg border border-border p-3">
+                    <p className="font-semibold">{term.title}</p>
+                    <p className="mt-1 text-sm text-muted-foreground whitespace-pre-line">{term.content}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            {String(a.terms ?? "").trim() && (
+              <div className="mt-4">
+                <h3 className="text-sm font-semibold">Seller-added terms</h3>
+                <p className="mt-1 text-sm text-muted-foreground whitespace-pre-line">{a.terms}</p>
+              </div>
+            )}
+            {(!Array.isArray(a.terms_conditions) || a.terms_conditions.length === 0) && !String(a.terms ?? "").trim() && (
+              <p className="text-sm text-muted-foreground">No terms published for this auction.</p>
+            )}
           </Section>
 
           {result && (
