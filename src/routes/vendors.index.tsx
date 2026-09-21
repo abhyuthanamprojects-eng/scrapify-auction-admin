@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import {
   CheckCircle2,
+  CreditCard,
   Download,
   Eye,
   FileText,
@@ -225,6 +226,7 @@ function VendorsList() {
                 <th className="px-4 py-3 font-semibold">Contact</th>
                 <th className="px-4 py-3 font-semibold">GSTIN / PAN</th>
                 <th className="px-4 py-3 font-semibold text-center">Docs</th>
+                <th className="px-4 py-3 font-semibold">Registration Fee</th>
                 <th className="px-4 py-3 font-semibold text-center">KYC Status</th>
                 <th className="px-4 py-3 font-semibold text-right">Action</th>
               </tr>
@@ -232,13 +234,13 @@ function VendorsList() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
+                  <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
                     Loading vendor dossiers...
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
+                  <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
                     No vendor records match the selected filter.
                   </td>
                 </tr>
@@ -281,6 +283,9 @@ function VendorsList() {
                         <FileText className="h-3 w-3 text-muted-foreground" /> {v.documents.length}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-xs min-w-[170px]">
+                      <RegistrationPaymentSummary payment={v.registrationPayment} />
+                    </td>
                     <td className="px-4 py-3 text-center">
                       <VendorStatusBadge status={v.status} />
                     </td>
@@ -299,6 +304,23 @@ function VendorsList() {
         </div>
       </div>
     </>
+  );
+}
+
+function RegistrationPaymentSummary({ payment }: { payment: Vendor["registrationPayment"] }) {
+  const paid = payment.status === "success";
+  const pending = payment.status === "pending";
+  const amount = payment.amount ?? payment.baseAmount;
+
+  return (
+    <div className="space-y-1">
+      <div className={`flex items-center gap-1.5 font-bold ${paid ? "text-emerald-600" : pending ? "text-amber-600" : "text-muted-foreground"}`}>
+        <CreditCard className="h-3.5 w-3.5" />
+        {paid ? `₹${Number(amount ?? 0).toLocaleString("en-IN")} paid` : pending ? "Payment pending" : "Not paid"}
+      </div>
+      {payment.method && <div className="text-muted-foreground">Method: {payment.method}</div>}
+      {payment.offerCode && <div className="text-violet-600">Offer: {payment.offerCode}</div>}
+    </div>
   );
 }
 

@@ -40,6 +40,19 @@ export type AuctionParticipation = {
   amountInr: number;
 };
 
+export type RegistrationPayment = {
+  method?: string | null;
+  reference?: string | null;
+  status: "success" | "pending" | "failed" | "not_started" | string;
+  amount?: number | null;
+  baseAmount?: number | null;
+  discountAmount?: number | null;
+  offerCode?: string | null;
+  offerDescription?: string | null;
+  gateway?: string | null;
+  paidAt?: string | null;
+};
+
 export type Vendor = {
   id: string;
   code: string;
@@ -95,6 +108,7 @@ export type Vendor = {
   suspensionReason?: string;
   documents: VendorDocument[];
   participation: AuctionParticipation[];
+  registrationPayment: RegistrationPayment;
 };
 
 /** Map a single vendor from the Laravel API snake_case shape to the front-end camelCase Vendor type. */
@@ -182,6 +196,18 @@ function mapVendor(v: any): Vendor {
       won: !!p.won,
       amountInr: p.amount_inr ?? p.amountInr ?? 0,
     })),
+    registrationPayment: {
+      method: v.registration_payment?.method ?? null,
+      reference: v.registration_payment?.reference ?? null,
+      status: v.registration_payment?.status ?? "not_started",
+      amount: v.registration_payment?.amount ?? null,
+      baseAmount: v.registration_payment?.base_amount ?? null,
+      discountAmount: v.registration_payment?.discount_amount ?? null,
+      offerCode: v.registration_payment?.offer_code ?? null,
+      offerDescription: v.registration_payment?.offer_description ?? null,
+      gateway: v.registration_payment?.gateway ?? null,
+      paidAt: v.registration_payment?.paid_at ?? null,
+    },
   };
 }
 

@@ -97,6 +97,7 @@ function VendorDetail() {
   const [suspendReason, setSuspendReason] = useState("");
   const [acting, setActing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [emailingPayment, setEmailingPayment] = useState(false);
 
   // Approve confirmation modal
   const [approveOpen, setApproveOpen] = useState(false);
@@ -142,6 +143,10 @@ function VendorDetail() {
   const isApproved = vendor.status === "Approved";
   const isRejected = vendor.status === "Rejected";
   const isSuspended = vendor.status === "Suspended";
+  const registrationPayment = vendor.registrationPayment;
+  const registrationFeePaid = registrationPayment.status === "success";
+  const registrationFeePending = registrationPayment.status === "pending";
+  const paymentAmount = registrationPayment.amount ?? registrationPayment.baseAmount;
 
   function openApproveDialog() {
     setDocsVerifiedChecked(false);
@@ -222,6 +227,21 @@ function VendorDetail() {
       toast.error(error instanceof Error ? error.message : "Unable to delete vendor.");
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function emailRegistrationPayment() {
+    if (!vendor) return;
+    setEmailingPayment(true);
+    try {
+      await adminApi.sendVendorRegistrationPaymentEmail(vendor.code);
+      toast.success("Registration payment email sent", {
+        description: `Razorpay payment instructions sent to ${vendor.email}.`,
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to send payment email.");
+    } finally {
+      setEmailingPayment(false);
     }
   }
 
@@ -403,6 +423,48 @@ function VendorDetail() {
           </div>
         </div>
       )}
+
+      <section className="card-premium mb-6 p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border/60 pb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-amber-500" />
+              <h2 className="font-display text-xl font-bold text-foreground">Registration Fee</h2>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Payment status and pricing snapshot for this vendor registration.
+            </p>
+          </div>
+          <Badge variant="outline" className={registrationFeePaid ? "border-emerald-300 text-emerald-600" : registrationFeePending ? "border-amber-300 text-amber-600" : "text-muted-foreground"}>
+            {registrationFeePaid ? "PAID" : registrationFeePending ? "PENDING" : "NOT PAID"}
+          </Badge>
+        </div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <ReadField label="Amount Paid" value={registrationFeePaid && paymentAmount !== null && paymentAmount !== undefined ? `₹${Number(paymentAmount).toLocaleString("en-IN")}` : "—"} />
+          <ReadField label="Payment Method" value={registrationPayment.method || "—"} />
+          <ReadField label="Offer Used" value={registrationPayment.offerCode || "No offer"} />
+          <ReadField label="Payment Reference" value={registrationPayment.reference || "—"} mono />
+        </div>
+        {registrationPayment.baseAmount !== null && registrationPayment.baseAmount !== undefined && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Fee ₹{Number(registrationPayment.baseAmount).toLocaleString("en-IN")}
+            {registrationPayment.discountAmount ? ` · Discount ₹${Number(registrationPayment.discountAmount).toLocaleString("en-IN")}` : ""}
+            {registrationPayment.gateway ? ` · Gateway: ${registrationPayment.gateway}` : ""}
+          </p>
+        )}
+        {registrationFeePending && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3 text-sm dark:border-amber-900 dark:bg-amber-950/20">
+            <div>
+              <p className="font-semibold text-amber-800 dark:text-amber-300">Registration payment is pending</p>
+              <p className="text-xs text-amber-700/80 dark:text-amber-400">Send the payment instructions to {vendor.email}.</p>
+            </div>
+            <Button type="button" size="sm" variant="outline" onClick={emailRegistrationPayment} disabled={emailingPayment} className="gap-1.5 border-amber-300 text-amber-800 hover:bg-amber-100 dark:text-amber-300">
+              {emailingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+              {emailingPayment ? "Sending…" : "Email payment instructions"}
+            </Button>
+          </div>
+        )}
+      </section>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left 2 Cols: Main KYC dossiers */}

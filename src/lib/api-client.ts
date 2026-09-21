@@ -242,6 +242,12 @@ class ScrapifyAdminApiClient {
     return this.request<any>(`/vendors/${code}`);
   }
 
+  async sendVendorRegistrationPaymentEmail(code: string) {
+    return this.request<any>(`/vendors/${code}/registration-payment/email`, {
+      method: "POST",
+    });
+  }
+
   async deleteVendorUser(userId: number, email: string) {
     return this.request<any>(`/admin/organisation/users/${userId}`, {
       method: "DELETE",
