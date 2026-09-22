@@ -82,6 +82,7 @@ export type Vendor = {
 
   contactName: string;
   email: string;
+  registeredEmail?: string;
   phone: string;
 
   gstNumber: string;
@@ -146,6 +147,7 @@ function mapVendor(v: any): Vendor {
 
     contactName: v.contact_name ?? v.contactName ?? "",
     email: v.email ?? "",
+    registeredEmail: v.registered_email ?? v.registeredEmail ?? v.user?.email ?? v.email ?? "",
     phone: v.phone ?? "",
 
     gstNumber: v.gst_number ?? v.gstNumber ?? "",

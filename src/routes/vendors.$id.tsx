@@ -237,7 +237,7 @@ function VendorDetail() {
     try {
       await adminApi.sendVendorRegistrationPaymentEmail(vendor.code);
       toast.success("Registration payment email sent", {
-        description: `Bank-transfer payment instructions sent to ${vendor.email}.`,
+        description: `Bank-transfer payment instructions sent to ${vendor.registeredEmail || vendor.email}.`,
       });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to send payment email.");
@@ -497,7 +497,7 @@ function VendorDetail() {
               <p className="font-semibold text-amber-800 dark:text-amber-300">
                 {registrationFeePending ? "Registration payment is pending" : "Registration fee has not been paid"}
               </p>
-              <p className="text-xs text-amber-700/80 dark:text-amber-400">Send the payment instructions to {vendor.email}.</p>
+              <p className="text-xs text-amber-700/80 dark:text-amber-400">Send the payment instructions to {vendor.registeredEmail || vendor.email}.</p>
             </div>
             <Button type="button" size="sm" variant="outline" onClick={emailRegistrationPayment} disabled={emailingPayment} className="gap-1.5 border-amber-300 text-amber-800 hover:bg-amber-100 dark:text-amber-300">
               {emailingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
