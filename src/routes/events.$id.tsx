@@ -526,6 +526,22 @@ function EventWorkspace() {
               <Field label="Anti-snipe" value={`${event.antiSnipe} min`} />
             </FieldGrid>
           </Section>
+          <Section title="Auction images" icon={<ImageIcon className="size-4" />}>
+            {event.photos.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No photos uploaded.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {event.photos.map((photo: string, index: number) => (
+                  <img
+                    key={`${photo}-${index}`}
+                    src={photo}
+                    alt={`${event.name} photo ${index + 1}`}
+                    className="aspect-video w-full rounded-lg object-cover ring-1 ring-border"
+                  />
+                ))}
+              </div>
+            )}
+          </Section>
           <Section title="Operational risk">
             <div className="space-y-3">
               <RiskDot level={event.risk} />
@@ -1148,6 +1164,20 @@ function mapApiAuction(auction: any, fallbackId: string): any {
   const currentPrice = Number(auction.current_highest_inr ?? auction.current_price ?? reserve);
   const customer = auction.customer ?? {};
 
+  const apiOrigin = (import.meta.env.VITE_API_BASE_URL || "https://api.scrapifyauctions.com/api/v1")
+    .replace(/\/api\/v1\/?$/, "");
+  const photoUrl = (value: any): string | null => {
+    const raw = typeof value === "string"
+      ? value
+      : value?.url ?? value?.image_url ?? value?.path;
+    if (!raw || typeof raw !== "string") return null;
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i.test(raw)) {
+      return `${apiOrigin}${raw.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, "")}`;
+    }
+    if (/^https?:\/\//i.test(raw)) return raw;
+    return `${apiOrigin}/${raw.replace(/^\//, "")}`;
+  };
+
   return {
     id: auction.code ?? fallbackId,
     raw: auction,
@@ -1184,6 +1214,8 @@ function mapApiAuction(auction: any, fallbackId: string): any {
     award: auction.award ?? null,
     connectionHealth: auction.connection_health ?? "Unknown",
     alerts: auction.alerts ?? [],
-    photos: Array.isArray(auction.photos) ? auction.photos : [],
+    photos: (Array.isArray(auction.photos) ? auction.photos : [])
+      .map(photoUrl)
+      .filter((photo): photo is string => Boolean(photo)),
   };
 }
