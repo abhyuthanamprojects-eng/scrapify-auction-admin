@@ -70,7 +70,7 @@ function AdminLoginPage() {
         <div className="relative z-10 px-12 xl:px-16 max-w-lg text-center">
           <div className="mx-auto mb-8 h-20 w-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-2xl">
             <img
-              src="/scrapify-auction-app-icon.png"
+              src="/logo.svg"
               alt="Scrapify"
               className="h-14 w-14 object-contain"
             />
@@ -115,7 +115,7 @@ function AdminLoginPage() {
           <div className="lg:hidden flex items-center gap-3 mb-8">
             <div className="h-10 w-10 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
               <img
-                src="/scrapify-auction-app-icon.png"
+                src="/logo.svg"
                 alt="Scrapify"
                 className="h-8 w-8 object-contain"
               />
