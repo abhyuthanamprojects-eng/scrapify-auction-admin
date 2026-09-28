@@ -594,9 +594,9 @@ function EventWorkspace() {
             <Field label="Approval chain" value={event.approvals.map((a) => a.tier).join(" → ")} />
             <Field
               label="Inspection"
-              value={event.inspection.required ? event.inspection.window : "Not required"}
+              value={event.inspection?.required ? event.inspection.window : "Not required"}
             />
-            <Field label="Inspection contact" value={event.inspection.contact} />
+            <Field label="Inspection contact" value={event.inspection?.contact ?? "—"} />
           </FieldGrid>
         </Section>
       )}
