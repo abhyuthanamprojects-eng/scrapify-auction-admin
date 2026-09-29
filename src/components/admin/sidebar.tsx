@@ -30,6 +30,7 @@ import {
   Gavel as GavelIcon,
   Lock,
   Bell,
+  Smartphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/hooks/use-role";
@@ -109,6 +110,7 @@ export const NAV_GROUPS: NavGroup[] = [
           { label: "Integrations", to: "/settings/integrations", icon: KeyRound },
           { label: "Business Verification", to: "/settings/kyb", icon: ShieldCheck },
           { label: "Auctions & EMD", to: "/settings/auctions", icon: GavelIcon },
+          { label: "Mobile Config", to: "/settings/mobile", icon: Smartphone },
           { label: "Security", to: "/settings/security", icon: Lock },
           { label: "Notifications", to: "/settings/notifications", icon: Bell },
         ],
