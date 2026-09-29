@@ -46,6 +46,7 @@ import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as SettingsAuctionsRouteImport } from './routes/settings.auctions'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
 import { Route as SettingsKybRouteImport } from './routes/settings.kyb'
+import { Route as SettingsMobileRouteImport } from './routes/settings.mobile'
 import { Route as SettingsNotificationsRouteImport } from './routes/settings.notifications'
 import { Route as SettingsOtpRouteImport } from './routes/settings.otp'
 import { Route as SettingsPlatformRouteImport } from './routes/settings.platform'
@@ -239,6 +240,11 @@ const SettingsKybRoute = SettingsKybRouteImport.update({
   path: '/kyb',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsMobileRoute = SettingsMobileRouteImport.update({
+  id: '/mobile',
+  path: '/mobile',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const SettingsNotificationsRoute = SettingsNotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
@@ -308,6 +314,7 @@ export interface FileRoutesByFullPath {
   '/settings/auctions': typeof SettingsAuctionsRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/kyb': typeof SettingsKybRoute
+  '/settings/mobile': typeof SettingsMobileRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
   '/settings/otp': typeof SettingsOtpRoute
   '/settings/platform': typeof SettingsPlatformRoute
@@ -352,6 +359,7 @@ export interface FileRoutesByTo {
   '/settings/auctions': typeof SettingsAuctionsRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/kyb': typeof SettingsKybRoute
+  '/settings/mobile': typeof SettingsMobileRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
   '/settings/otp': typeof SettingsOtpRoute
   '/settings/platform': typeof SettingsPlatformRoute
@@ -399,6 +407,7 @@ export interface FileRoutesById {
   '/settings/auctions': typeof SettingsAuctionsRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/kyb': typeof SettingsKybRoute
+  '/settings/mobile': typeof SettingsMobileRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
   '/settings/otp': typeof SettingsOtpRoute
   '/settings/platform': typeof SettingsPlatformRoute
@@ -447,6 +456,7 @@ export interface FileRouteTypes {
     | '/settings/auctions'
     | '/settings/integrations'
     | '/settings/kyb'
+    | '/settings/mobile'
     | '/settings/notifications'
     | '/settings/otp'
     | '/settings/platform'
@@ -491,6 +501,7 @@ export interface FileRouteTypes {
     | '/settings/auctions'
     | '/settings/integrations'
     | '/settings/kyb'
+    | '/settings/mobile'
     | '/settings/notifications'
     | '/settings/otp'
     | '/settings/platform'
@@ -537,6 +548,7 @@ export interface FileRouteTypes {
     | '/settings/auctions'
     | '/settings/integrations'
     | '/settings/kyb'
+    | '/settings/mobile'
     | '/settings/notifications'
     | '/settings/otp'
     | '/settings/platform'
@@ -845,6 +857,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsKybRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/mobile': {
+      id: '/settings/mobile'
+      path: '/mobile'
+      fullPath: '/settings/mobile'
+      preLoaderRoute: typeof SettingsMobileRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/notifications': {
       id: '/settings/notifications'
       path: '/notifications'
@@ -921,6 +940,7 @@ interface SettingsRouteChildren {
   SettingsAuctionsRoute: typeof SettingsAuctionsRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
   SettingsKybRoute: typeof SettingsKybRoute
+  SettingsMobileRoute: typeof SettingsMobileRoute
   SettingsNotificationsRoute: typeof SettingsNotificationsRoute
   SettingsOtpRoute: typeof SettingsOtpRoute
   SettingsPlatformRoute: typeof SettingsPlatformRoute
@@ -932,6 +952,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsAuctionsRoute: SettingsAuctionsRoute,
   SettingsIntegrationsRoute: SettingsIntegrationsRoute,
   SettingsKybRoute: SettingsKybRoute,
+  SettingsMobileRoute: SettingsMobileRoute,
   SettingsNotificationsRoute: SettingsNotificationsRoute,
   SettingsOtpRoute: SettingsOtpRoute,
   SettingsPlatformRoute: SettingsPlatformRoute,

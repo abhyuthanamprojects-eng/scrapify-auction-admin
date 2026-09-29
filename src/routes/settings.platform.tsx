@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Globe, Save, CheckCircle2, Smartphone } from "lucide-react";
+import { Globe, Save, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { adminApi } from "@/lib/api-client";
 
@@ -32,15 +32,6 @@ function PlatformSettingsPage() {
   const [emdRequired, setEmdRequired] = useState(true);
   const [emdType, setEmdType] = useState("PERCENTAGE");
   const [emdFixedAmount, setEmdFixedAmount] = useState("0");
-  const [mobileMinVersion, setMobileMinVersion] = useState("1.0.0");
-  const [mobileLatestVersion, setMobileLatestVersion] = useState("1.0.0");
-  const [mobileForceUpdate, setMobileForceUpdate] = useState(false);
-  const [mobileUpdateUrl, setMobileUpdateUrl] = useState("");
-  const [mobileUpdateNotes, setMobileUpdateNotes] = useState("");
-  const [appStoreUrl, setAppStoreUrl] = useState("");
-  const [playStoreUrl, setPlayStoreUrl] = useState("");
-  const [appTagline, setAppTagline] = useState("Bid on the go — anytime, anywhere");
-  const [appDescription, setAppDescription] = useState("Browse live auctions, place bids in real-time, track orders, and manage your auction portfolio — all from your mobile device.");
   const [bankDetails, setBankDetails] = useState({ bank_name: "", account_name: "", account_number: "", ifsc: "", branch: "", address: "" });
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [savingConfig, setSavingConfig] = useState(false);
@@ -65,18 +56,6 @@ function PlatformSettingsPage() {
         if (config?.emd_required !== undefined) setEmdRequired(Boolean(config.emd_required));
         if (config?.emd_type) setEmdType(config.emd_type);
         if (config?.emd_fixed_amount !== undefined) setEmdFixedAmount(String(config.emd_fixed_amount));
-        if (config?.mobile_min_version) setMobileMinVersion(String(config.mobile_min_version));
-        if (config?.mobile_latest_version) setMobileLatestVersion(String(config.mobile_latest_version));
-        if (config?.mobile_force_update !== undefined) setMobileForceUpdate(Boolean(config.mobile_force_update));
-        if (config?.mobile_update_url) setMobileUpdateUrl(String(config.mobile_update_url));
-        if (config?.mobile_update_notes) setMobileUpdateNotes(String(config.mobile_update_notes));
-        const ma = config?.mobile_app;
-        if (ma) {
-          if (ma.app_store_url) setAppStoreUrl(String(ma.app_store_url));
-          if (ma.play_store_url) setPlayStoreUrl(String(ma.play_store_url));
-          if (ma.app_tagline) setAppTagline(String(ma.app_tagline));
-          if (ma.app_description) setAppDescription(String(ma.app_description));
-        }
         if (config?.registration_bank_details) setBankDetails({ bank_name: String(config.registration_bank_details.bank_name ?? ""), account_name: String(config.registration_bank_details.account_name ?? ""), account_number: String(config.registration_bank_details.account_number ?? ""), ifsc: String(config.registration_bank_details.ifsc ?? ""), branch: String(config.registration_bank_details.branch ?? ""), address: String(config.registration_bank_details.address ?? "") });
       })
       .catch(() => toast.error("Could not load platform settings from the API."))
@@ -116,15 +95,6 @@ function PlatformSettingsPage() {
         emd_required: emdRequired,
         emd_type: emdType,
         emd_fixed_amount: Number(emdFixedAmount),
-        mobile_min_version: mobileMinVersion,
-        mobile_latest_version: mobileLatestVersion,
-        mobile_force_update: mobileForceUpdate,
-        mobile_update_url: mobileUpdateUrl,
-        mobile_update_notes: mobileUpdateNotes,
-        app_store_url: appStoreUrl || null,
-        play_store_url: playStoreUrl || null,
-        app_tagline: appTagline || null,
-        app_description: appDescription || null,
         registration_bank_name: bankDetails.bank_name,
         registration_bank_account_name: bankDetails.account_name,
         registration_bank_account_number: bankDetails.account_number,
@@ -253,46 +223,6 @@ function PlatformSettingsPage() {
         <div className="space-y-1.5">
           <Label htmlFor="ws-url" className="text-xs font-medium">WebSocket / Reverb Cluster URL</Label>
           <Input id="ws-url" value={wsUrl} onChange={(e) => setWsUrl(e.target.value)} placeholder="wss://api.scrapifyauctions.com/app" className="font-mono text-sm" />
-        </div>
-        <div className="space-y-3 border-t pt-4">
-          <div>
-            <h3 className="text-sm font-semibold">Mobile App Updates</h3>
-            <p className="text-xs text-muted-foreground">Control the minimum supported version and update link returned to the mobile app.</p>
-          </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div className="space-y-1.5"><Label>Minimum supported version</Label><Input value={mobileMinVersion} onChange={(e) => setMobileMinVersion(e.target.value)} placeholder="1.0.0" /></div>
-            <div className="space-y-1.5"><Label>Latest version</Label><Input value={mobileLatestVersion} onChange={(e) => setMobileLatestVersion(e.target.value)} placeholder="1.0.0" /></div>
-            <div className="space-y-1.5 md:col-span-2"><Label>Update URL</Label><Input value={mobileUpdateUrl} onChange={(e) => setMobileUpdateUrl(e.target.value)} placeholder="https://play.google.com/store/apps/details?id=..." /></div>
-            <div className="space-y-1.5 md:col-span-2"><Label>Release notes</Label><Input value={mobileUpdateNotes} onChange={(e) => setMobileUpdateNotes(e.target.value)} placeholder="What's new" /></div>
-            <div className="flex items-center justify-between rounded-lg border p-3 md:col-span-2"><Label>Force update below minimum version</Label><Switch checked={mobileForceUpdate} onCheckedChange={setMobileForceUpdate} /></div>
-          </div>
-        </div>
-        <div className="space-y-3 border-t pt-4">
-          <div className="flex items-center gap-2">
-            <Smartphone className="h-4 w-4 text-orange-500" />
-            <div>
-              <h3 className="text-sm font-semibold">Mobile App Store Links</h3>
-              <p className="text-xs text-muted-foreground">App Store and Play Store URLs displayed on the website. Leave empty to show "Coming soon".</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label>App Store URL (iOS)</Label>
-              <Input value={appStoreUrl} onChange={(e) => setAppStoreUrl(e.target.value)} placeholder="https://apps.apple.com/app/..." disabled={loadingConfig} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Play Store URL (Android)</Label>
-              <Input value={playStoreUrl} onChange={(e) => setPlayStoreUrl(e.target.value)} placeholder="https://play.google.com/store/apps/details?id=..." disabled={loadingConfig} />
-            </div>
-            <div className="space-y-1.5 md:col-span-2">
-              <Label>App Tagline</Label>
-              <Input value={appTagline} onChange={(e) => setAppTagline(e.target.value)} placeholder="Bid on the go — anytime, anywhere" disabled={loadingConfig} />
-            </div>
-            <div className="space-y-1.5 md:col-span-2">
-              <Label>App Description</Label>
-              <Input value={appDescription} onChange={(e) => setAppDescription(e.target.value)} placeholder="Short description for the mobile app section" disabled={loadingConfig} />
-            </div>
-          </div>
         </div>
         <div className="flex justify-end border-t pt-4">
           <Button onClick={handleSave} disabled={savingConfig || loadingConfig} className="gap-2 bg-[color:var(--navy)] text-white hover:brightness-110">

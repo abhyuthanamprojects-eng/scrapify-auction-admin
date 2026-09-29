@@ -28,6 +28,7 @@ const TABS = [
   { to: "/settings/integrations", label: "Integrations" },
   { to: "/settings/kyb", label: "Business Verification" },
   { to: "/settings/auctions", label: "Auctions & EMD" },
+  { to: "/settings/mobile", label: "Mobile Config" },
   { to: "/settings/security", label: "Security" },
   { to: "/settings/notifications", label: "Notifications" },
 ];
