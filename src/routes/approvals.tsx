@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,32 @@ function Approvals() {
   const canApprove = roleCan(role, "act.approve");
   const canKyb = roleCan(role, "act.kyb");
   const canFinance = roleCan(role, "act.refund");
+
+  const pendingEventCount = events.filter((e) => ["Draft Review", "Ready to Publish"].includes(e.status)).length;
+  const pendingAwardCount = events.filter(
+    (e) => e.award && (e.award.state === "Pending Approval" || e.award.state === "Winner Acceptance Pending"),
+  ).length;
+  const pendingVendorCount = apiVendors.filter((v) => v.status === "Pending").length;
+  const pendingFinanceCount = refunds.filter((r) => ["Queued", "On Hold", "Failed"].includes(r.status)).length;
+
+  // The dashboard can surface a non-default queue (for example Vendor KYB),
+  // while this page initially opens on Event Publishing. Once API data has
+  // loaded, show the first queue that actually has work instead of an empty
+  // table that makes the dashboard count look incorrect.
+  useEffect(() => {
+    if (vendorsLoading || tab !== "Event Publishing") return;
+    if (pendingEventCount > 0) return;
+    if (pendingAwardCount > 0) return setTab("Award Decisions");
+    if (pendingVendorCount > 0) return setTab("Vendor KYB");
+    if (pendingFinanceCount > 0) return setTab("Finance Maker-Checker");
+  }, [
+    pendingAwardCount,
+    pendingEventCount,
+    pendingFinanceCount,
+    pendingVendorCount,
+    tab,
+    vendorsLoading,
+  ]);
 
   const rows: Row[] = useMemo(() => {
     if (tab === "Event Publishing")
@@ -156,10 +182,10 @@ function Approvals() {
       />
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Event publishing" value={events.filter((e) => ["Draft Review", "Ready to Publish"].includes(e.status)).length} tone="warn" />
-        <StatCard label="Award decisions" value={events.filter((e) => e.award?.state === "Pending Approval").length} tone="warn" />
-        <StatCard label="Vendor KYB" value={apiVendors.filter((v) => v.status === "Pending").length} tone="warn" />
-        <StatCard label="Finance checks" value={refunds.filter((r) => r.status !== "Refunded").length} tone="warn" />
+        <StatCard label="Event publishing" value={pendingEventCount} tone="warn" />
+        <StatCard label="Award decisions" value={pendingAwardCount} tone="warn" />
+        <StatCard label="Vendor KYB" value={pendingVendorCount} tone="warn" />
+        <StatCard label="Finance checks" value={pendingFinanceCount} tone="warn" />
       </div>
 
       <div className="card-premium p-4 sm:p-5">
