@@ -21,6 +21,15 @@ type Template = {
   status?: string;
 };
 
+function responseRows(response: any, key: string): any[] {
+  const payload = response?.data ?? response;
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.[key])) return payload[key];
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.items)) return payload.items;
+  return [];
+}
+
 function ConfigurationPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -32,8 +41,8 @@ function ConfigurationPage() {
     void Promise.all([adminApi.getCategories(), adminApi.getAuctionTemplates()])
       .then(([categoryResponse, templateResponse]: any[]) => {
         if (!active) return;
-        const categoryRows = Array.isArray(categoryResponse) ? categoryResponse : categoryResponse?.data ?? [];
-        const templateRows = Array.isArray(templateResponse) ? templateResponse : templateResponse?.data ?? [];
+        const categoryRows = responseRows(categoryResponse, "categories");
+        const templateRows = responseRows(templateResponse, "templates");
         setCategories(categoryRows.map((item: any) => ({
           id: String(item.id ?? item.code ?? ""),
           name: item.name ?? item.label ?? "",
