@@ -79,6 +79,17 @@ const initialForm: FormState = {
 
 type CategoryOption = { id: number; name: string; slug: string; children?: CategoryOption[] };
 
+function responseRows(value: any, keys: string[] = []): any[] {
+  if (Array.isArray(value)) return value;
+  const payload = value?.data ?? value;
+  if (Array.isArray(payload)) return payload;
+  for (const key of keys) {
+    if (Array.isArray(payload?.[key])) return payload[key];
+  }
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+}
+
 function NewAuction() {
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(initialForm);
@@ -87,13 +98,19 @@ function NewAuction() {
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+
+  useEffect(() => {
+    const urls = photoFiles.map((file) => URL.createObjectURL(file));
+    setPhotoPreviews(urls);
+    return () => urls.forEach((url) => URL.revokeObjectURL(url));
+  }, [photoFiles]);
 
   useEffect(() => {
     adminApi
       .getCategories()
       .then((res) => {
-        const data = res?.data ?? res;
-        setCategories(Array.isArray(data) ? data : []);
+        setCategories(responseRows(res, ["categories", "items"]));
       })
       .catch(() => {});
   }, []);
@@ -102,14 +119,10 @@ function NewAuction() {
     adminApi
       .getVendors({ status: "approved" })
       .then((response) => {
-        const rows = Array.isArray(response?.data)
-          ? response.data
-          : Array.isArray(response)
-            ? response
-            : [];
+        const rows = responseRows(response, ["vendors", "items"]);
         setClients(
           rows
-            .map((row: any) => ({
+            .map((row: any): Client => ({
               code: String(row.code ?? row.id ?? ""),
               name:
                 row.company_name ??
@@ -159,6 +172,23 @@ function NewAuction() {
     const continuationSlotMinutes = Number(form.continuationSlotMinutes);
     const scheduleStart = new Date(form.scheduleStart);
     const scheduleEnd = form.scheduleEnd ? new Date(form.scheduleEnd) : undefined;
+    const quantity = Number(form.quantity);
+    const reservePrice = Number(form.reservePrice);
+    const startingPrice = Number(form.startingPrice);
+    const bidIncrement = Number(form.bidIncrement);
+    const emdAmount = form.emdAmount ? Number(form.emdAmount) : undefined;
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      toast.error("Quantity must be greater than zero.");
+      return;
+    }
+    if (![reservePrice, startingPrice, bidIncrement].every((value) => Number.isFinite(value) && value >= 0)) {
+      toast.error("Prices and bid increment must be valid non-negative numbers.");
+      return;
+    }
+    if (emdAmount !== undefined && (!Number.isFinite(emdAmount) || emdAmount < 0)) {
+      toast.error("EMD amount must be a valid non-negative number.");
+      return;
+    }
     if (!Number.isInteger(maximumDurationMinutes) || maximumDurationMinutes < 1 || maximumDurationMinutes > 120) {
       toast.error("Maximum auction duration cannot exceed 120 minutes.");
       return;
@@ -200,13 +230,13 @@ function NewAuction() {
         category: form.category.trim(),
         subcategory_id: form.subcategoryId ? Number(form.subcategoryId) : undefined,
         material_type: form.category.trim(),
-        quantity: String(form.quantity),
+        quantity: String(quantity),
         uom: form.unit,
         lot_type: form.lotType,
-        reserve_price: Number(form.reservePrice) || 0,
-        starting_price: Number(form.startingPrice) || Number(form.reservePrice) || 0,
-        bid_increment: Number(form.bidIncrement) || 0,
-        emd_amount: Number(form.emdAmount) || undefined,
+        reserve_price: reservePrice,
+        starting_price: startingPrice,
+        bid_increment: bidIncrement,
+        emd_amount: emdAmount,
         description: form.description.trim() || undefined,
         terms: form.terms.trim() || undefined,
         payment_terms: form.paymentTerms.trim() || undefined,
@@ -396,10 +426,10 @@ function NewAuction() {
             />
             {photoFiles.length > 0 && (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {photoFiles.map((file) => (
+                {photoFiles.map((file, index) => (
                   <div key={file.name + file.lastModified} className="overflow-hidden rounded-lg border bg-muted">
                     <img
-                      src={URL.createObjectURL(file)}
+                      src={photoPreviews[index]}
                       alt={file.name}
                       className="aspect-video w-full object-cover"
                     />
