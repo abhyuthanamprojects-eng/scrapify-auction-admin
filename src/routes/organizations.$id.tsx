@@ -11,9 +11,10 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowLeft, Building2, Check, FileText, Landmark, MapPin, Wallet, X } from "lucide-react";
-import { getOrganization, updateStatus, type Organization } from "@/lib/organizations-store";
+import { useOrganization, type Organization } from "@/lib/organizations-store";
+import { adminApi } from "@/lib/api-client";
 import { useRole } from "@/hooks/use-role";
 import { StatusBadge } from "./organizations.index";
 import { toast } from "sonner";
@@ -32,21 +33,21 @@ function OrganizationDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const [role] = useRole();
-  const [org, setOrg] = useState<Organization | undefined>(undefined);
+  const { organization: org, loading, error, refetch } = useOrganization(id);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [reason, setReason] = useState("");
 
-  useEffect(() => {
-    setOrg(getOrganization(id));
-  }, [id]);
-
+  if (loading) {
+    return <><PageHeader title="Organization" /><div className="card-premium p-12 text-center text-muted-foreground">Loading organization…</div></>;
+  }
   if (!org) {
     return (
       <>
         <PageHeader title="Organization" />
         <div className="card-premium p-12 text-center text-muted-foreground">
-          Organization not found.
+          {error ?? "Organization not found."}
           <div className="mt-4">
+            <Button variant="outline" onClick={() => void refetch()}>Retry</Button>
             <Button asChild variant="outline">
               <Link to="/organizations">Back to Organizations</Link>
             </Button>
@@ -57,20 +58,25 @@ function OrganizationDetail() {
   }
 
   const isSuper = role === "Super Admin";
-  const canReview = isSuper && org.status === "Pending Super Admin Approval";
+  const organization = org;
+  const canReview = isSuper && organization.status === "Pending Super Admin Approval";
 
-  function approve() {
-    updateStatus(org!.id, "Approved");
-    toast.success(`${org!.companyName} approved`);
-    navigate({ to: "/organizations" });
+  async function approve() {
+    try {
+      await adminApi.approveOrganization(organization.id);
+      toast.success(`${organization.companyName} approved`);
+      navigate({ to: "/organizations" });
+    } catch (cause) { toast.error(cause instanceof Error ? cause.message : "Approval failed."); }
   }
 
-  function reject() {
+  async function reject() {
     if (!reason.trim()) return;
-    updateStatus(org!.id, "Rejected", reason.trim());
-    toast.success(`${org!.companyName} rejected`);
-    setRejectOpen(false);
-    navigate({ to: "/organizations" });
+    try {
+      await adminApi.rejectOrganization(organization.id, reason.trim());
+      toast.success(`${organization.companyName} rejected`);
+      setRejectOpen(false);
+      navigate({ to: "/organizations" });
+    } catch (cause) { toast.error(cause instanceof Error ? cause.message : "Rejection failed."); }
   }
 
   return (
@@ -124,9 +130,9 @@ function OrganizationDetail() {
           </div>
           {org.bank ? (
             <div className="grid gap-4 sm:grid-cols-3 rounded-lg bg-muted/40 p-4">
-              <ReadField label="Bank Name" value={org.bank.bankName} />
-              <ReadField label="Account Number" value={org.bank.accountNumber} />
-              <ReadField label="IFSC" value={org.bank.ifsc} />
+              <ReadField label="Bank Name" value={org.bank.bankName ?? "—"} />
+              <ReadField label="Account Number" value={org.bank.accountNumber ?? "—"} />
+              <ReadField label="IFSC" value={org.bank.ifsc ?? "—"} />
             </div>
           ) : (
             <p className="text-sm text-muted-foreground py-6 text-center">

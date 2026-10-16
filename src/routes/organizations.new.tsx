@@ -23,14 +23,13 @@ import {
 import {
   isOrgComplete,
   isUnitComplete,
-  newOrgId,
-  upsertOrganization,
   ORG_DOCUMENT_TYPES,
   type OrgDocument,
   type UnitBank,
   type Organization,
   type Unit,
 } from "@/lib/organizations-store";
+import { adminApi } from "@/lib/api-client";
 
 export const Route = createFileRoute("/organizations/new")({
   head: () => ({
@@ -109,13 +108,22 @@ function NewOrganization() {
 
   const complete = isOrgComplete(draft);
 
-  function save(status: "Draft" | "Pending Super Admin Approval") {
-    const id = newOrgId();
-    upsertOrganization({ ...draft, id, status });
-    toast.success(
-      status === "Draft" ? "Saved as draft" : "Sent for Super Admin approval",
-    );
-    navigate({ to: "/organizations" });
+  async function save(status: "Draft" | "Pending Super Admin Approval") {
+    try {
+      await adminApi.createOrganization({
+        company_name: companyName.trim(),
+        address: location.trim(),
+        total_units: totalUnits,
+        units: units.map((unit) => ({ name: unit.name.trim(), gst_number: unit.gst.trim(), location: unit.location.trim(), bank: unit.bank })),
+        bank,
+        documents: documents.map(({ id, ...document }) => document),
+        status: status === "Draft" ? "draft" : "pending_approval",
+      });
+      toast.success(status === "Draft" ? "Organization draft saved" : "Organization sent for Super Admin approval");
+      navigate({ to: "/organizations" });
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Organization could not be saved.");
+    }
   }
 
   return (

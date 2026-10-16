@@ -257,6 +257,10 @@ class ScrapifyAdminApiClient {
     return this.request<any>(`/organizations${query ? `?${query}` : ""}`);
   }
 
+  async createOrganization(data: any) {
+    return this.request<any>("/organizations", { method: "POST", body: JSON.stringify(data) });
+  }
+
   async approveOrganization(code: string) {
     return this.request<any>(`/organizations/${code}/approve`, { method: "POST" });
   }

@@ -10,6 +10,7 @@ import { useVendors } from "@/lib/vendors-store";
 import { useRole } from "@/hooks/use-role";
 import { roleCan } from "@/lib/ops/roles";
 import { adminApi } from "@/lib/api-client";
+import { useAuctionsState, type Auction } from "@/lib/auctions-store";
 
 export const Route = createFileRoute("/approvals")({
   head: () => ({
@@ -45,12 +46,13 @@ function Approvals() {
   const [selected, setSelected] = useState<Row | null>(null);
   const [reason, setReason] = useState("");
   const { vendors: apiVendors, loading: vendorsLoading } = useVendors();
+  const { auctions, loading: auctionsLoading, refetch: refetchAuctions } = useAuctionsState();
 
   const canApprove = roleCan(role, "act.approve");
   const canKyb = roleCan(role, "act.kyb");
   const canFinance = roleCan(role, "act.refund");
 
-  const pendingEventCount = events.filter((e) => ["Draft Review", "Ready to Publish"].includes(e.status)).length;
+  const pendingEventCount = auctions.filter((a) => ["Pending Approval", "Sent Back"].includes(a.status)).length;
   const pendingAwardCount = events.filter(
     (e) => e.award && (e.award.state === "Pending Approval" || e.award.state === "Winner Acceptance Pending"),
   ).length;
@@ -62,7 +64,7 @@ function Approvals() {
   // loaded, show the first queue that actually has work instead of an empty
   // table that makes the dashboard count look incorrect.
   useEffect(() => {
-    if (vendorsLoading || tab !== "Event Publishing") return;
+    if (vendorsLoading || auctionsLoading || tab !== "Event Publishing") return;
     if (pendingEventCount > 0) return;
     if (pendingAwardCount > 0) return setTab("Award Decisions");
     if (pendingVendorCount > 0) return setTab("Vendor KYB");
@@ -74,21 +76,22 @@ function Approvals() {
     pendingVendorCount,
     tab,
     vendorsLoading,
+    auctionsLoading,
   ]);
 
   const rows: Row[] = useMemo(() => {
     if (tab === "Event Publishing")
-      return events
-        .filter((e) => ["Draft Review", "Ready to Publish"].includes(e.status))
-        .map((e: AuctionEvent) => ({
-          id: e.id,
-          title: e.name,
-          context: `${e.customerName} · ${e.category} · ${e.template}`,
-          amount: e.value,
-          raisedAt: e.createdAt,
+      return auctions
+        .filter((a) => ["Pending Approval", "Sent Back"].includes(a.status))
+        .map((a: Auction) => ({
+          id: a.id,
+          title: a.title,
+          context: `${a.company} · ${a.category} · ${a.location}`,
+          amount: a.reservePriceInr,
+          raisedAt: a.submittedAt,
           sla: 24,
-          tier: e.approvals[0]?.tier ?? "L1",
-          eventId: e.id,
+          tier: "L1",
+          eventId: a.id,
         }));
     if (tab === "Award Decisions")
       return events
@@ -127,7 +130,7 @@ function Approvals() {
         tier: "Checker",
         eventId: r.eventId,
       }));
-  }, [tab, apiVendors]);
+  }, [tab, apiVendors, auctions]);
 
   const allowed = tab === "Vendor KYB" ? canKyb : tab === "Finance Maker-Checker" ? canFinance : canApprove;
 
@@ -166,10 +169,12 @@ function Approvals() {
         else if (kind === "Reject") await adminApi.rejectVendor(selected.id, reason);
       }
     } catch (err: any) {
-      console.warn("API action warning:", err);
+      toast.error(err instanceof Error ? err.message : "The approval action failed.");
+      return;
     }
 
     toast.success(`${kind} recorded for ${selected?.id}`, { description: "Audit entry created with before/after state." });
+    if (tab === "Event Publishing") await refetchAuctions();
     setSelected(null);
     setReason("");
   }

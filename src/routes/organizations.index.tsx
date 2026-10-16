@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { Info, Plus, ShieldCheck } from "lucide-react";
-import { useOrganizations, statusTone, type OrgStatus } from "@/lib/organizations-store";
+import { useOrganizationsState, statusTone, type OrgStatus } from "@/lib/organizations-store";
 import { useRole } from "@/hooks/use-role";
 import { useMemo, useState } from "react";
 
@@ -25,7 +25,7 @@ const TABS: Array<{ id: "all" | "queue"; label: string }> = [
 ];
 
 function OrganizationsList() {
-  const orgs = useOrganizations();
+  const { organizations: orgs, loading, error, refetch } = useOrganizationsState();
   const [role] = useRole();
   const isSuper = role === "Super Admin";
   const [tab, setTab] = useState<"all" | "queue">("all");
@@ -95,6 +95,8 @@ function OrganizationsList() {
       )}
 
       <div className="card-premium overflow-hidden">
+        {error && <div className="m-4 flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"><span>{error}</span><Button variant="outline" size="sm" onClick={() => void refetch()}>Retry</Button></div>}
+        {loading && <div className="p-4 text-sm text-muted-foreground">Loading organizations…</div>}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
