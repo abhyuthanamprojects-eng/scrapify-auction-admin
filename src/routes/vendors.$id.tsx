@@ -157,12 +157,13 @@ function VendorDetail() {
   }
 
   async function confirmApprove() {
-    const unverifiedDocuments = vendor.documents.filter((document) => document.status !== "approved");
-    if (vendor.userRole === "seller" && unverifiedDocuments.length > 0) {
+    const currentVendor = vendor!;
+    const unverifiedDocuments = currentVendor.documents.filter((document) => document.status !== "approved");
+    if (currentVendor.userRole === "seller" && unverifiedDocuments.length > 0) {
       toast.error("Every submitted seller document must be individually approved before vendor approval.");
       return;
     }
-    if (vendor.userRole === "seller" && !registrationFeePaid) {
+    if (currentVendor.userRole === "seller" && !registrationFeePaid) {
       toast.error("The seller registration payment must be verified before vendor approval.");
       return;
     }
