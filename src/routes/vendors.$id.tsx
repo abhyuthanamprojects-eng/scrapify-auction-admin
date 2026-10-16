@@ -88,7 +88,7 @@ export const Route = createFileRoute("/vendors/$id")({
 function VendorDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-  const { vendor, loading, refetch } = useVendor(id);
+  const { vendor, loading, error, refetch } = useVendor(id);
 
   // Master decision modals
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -128,11 +128,12 @@ function VendorDetail() {
       <>
         <PageHeader title="Vendor KYC Verification" />
         <div className="card-premium p-12 text-center text-muted-foreground">
-          Vendor application not found.
+          <p>{error ? `Unable to load vendor application: ${error.message}` : "Vendor application not found."}</p>
           <div className="mt-4">
-            <Button asChild variant="outline">
-              <Link to="/vendors">Back to Vendor List</Link>
-            </Button>
+            <div className="flex justify-center gap-2">
+              {error && <Button variant="outline" onClick={() => void refetch()}>Retry</Button>}
+              <Button asChild variant="outline"><Link to="/vendors">Back to Vendor List</Link></Button>
+            </div>
           </div>
         </div>
       </>
@@ -252,7 +253,7 @@ function VendorDetail() {
     if (status === "rejected" && !reason?.trim()) return;
     setActing(true);
     try {
-      await adminApi.verifyVendorRegistrationPayment(vendor.code, status, reason);
+      await adminApi.verifyVendorRegistrationPayment(vendor.code, status, reason ?? undefined);
       toast.success(status === "verified" ? "Payment verified and reference generated." : "Payment proof rejected.");
       refetch();
     } catch (error) {
@@ -287,7 +288,7 @@ function VendorDetail() {
 
   async function openRegistrationPaymentProof() {
     if (!vendor) return;
-    setDocumentBusy(-1);
+    setDocumentBusy("payment-proof");
     setDocumentBusyAction("view");
     try {
       const blob = await adminApi.fetchRegistrationPaymentProof(vendor.code);
@@ -508,7 +509,7 @@ function VendorDetail() {
         {registrationPayment.proofUrl && registrationPayment.status === "pending" && (
           <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-blue-200 bg-blue-50/60 p-3 text-sm">
             <span className="font-semibold text-blue-800">Payment screenshot submitted for review.</span>
-            <Button size="sm" variant="outline" onClick={openRegistrationPaymentProof} disabled={acting || documentBusy === -1}>{documentBusy === -1 ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />} View proof</Button>
+            <Button size="sm" variant="outline" onClick={openRegistrationPaymentProof} disabled={acting || documentBusy === "payment-proof"}>{documentBusy === "payment-proof" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />} View proof</Button>
             <Button size="sm" onClick={() => verifyRegistrationPayment("verified")} disabled={acting} className="ml-auto gap-1"><Check className="h-4 w-4" /> Verify payment</Button>
             <Button size="sm" variant="outline" onClick={() => verifyRegistrationPayment("rejected")} disabled={acting} className="gap-1 text-destructive"><X className="h-4 w-4" /> Reject proof</Button>
           </div>

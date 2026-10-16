@@ -118,69 +118,91 @@ export type Vendor = {
   registrationPayment: RegistrationPayment;
 };
 
+function asArray(value: unknown): any[] {
+  if (Array.isArray(value)) return value;
+  if (!value || typeof value !== "object") return [];
+  const record = value as Record<string, unknown>;
+  for (const key of ["data", "items", "results", "vendors", "documents", "participation"]) {
+    if (Array.isArray(record[key])) return record[key] as any[];
+  }
+  return [];
+}
+
+function normalizeStatus(value: unknown): VendorStatus {
+  const raw = String(value ?? "pending").trim().toLowerCase().replace(/[-_ ]+/g, "");
+  if (raw === "approved") return "Approved";
+  if (raw === "rejected") return "Rejected";
+  if (raw === "suspended") return "Suspended";
+  if (raw === "draft") return "Draft";
+  return "Pending";
+}
+
 /** Map a single vendor from the Laravel API snake_case shape to the front-end camelCase Vendor type. */
 function mapVendor(v: any): Vendor {
-  const rawStatus = (v.status || "pending") as string;
-  const status = (rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1)) as VendorStatus;
+  const source = v && typeof v === "object" ? v : {};
+  const status = normalizeStatus(source.status);
+  const materials = asArray(source.materials ?? source.material_interest);
+  const documents = asArray(source.documents);
+  const participation = asArray(source.participation);
   return {
-    id: v.code ?? v.id,
-    code: v.code ?? v.id,
-    userId: Number.isFinite(Number(v.user_id ?? v.user?.id))
-      ? Number(v.user_id ?? v.user?.id)
+    id: String(source.code ?? source.id ?? ""),
+    code: String(source.code ?? source.id ?? ""),
+    userId: Number.isFinite(Number(source.user_id ?? source.user?.id))
+      ? Number(source.user_id ?? source.user?.id)
       : undefined,
-    userRole: (v.user_role ?? v.user?.role ?? v.role) === "seller" ? "seller" : "buyer",
-    companyName: v.company_name ?? v.companyName ?? "",
-    tradeName: v.trade_name ?? v.tradeName ?? "",
-    businessType: v.business_type ?? v.businessType ?? "",
-    cinNumber: v.cin_number ?? v.cinNumber ?? "",
-    turnoverBand: v.turnover_band ?? v.turnoverBand ?? "",
-    yearsInBusiness: v.years_in_business ?? v.yearsInBusiness ?? "",
-    annualCapacity: v.annual_capacity ?? v.annualCapacity ?? "",
+    userRole: String(source.user_role ?? source.user?.role ?? source.role).toLowerCase() === "seller" ? "seller" : "buyer",
+    companyName: source.company_name ?? source.companyName ?? "",
+    tradeName: source.trade_name ?? source.tradeName ?? "",
+    businessType: source.business_type ?? source.businessType ?? "",
+    cinNumber: source.cin_number ?? source.cinNumber ?? "",
+    turnoverBand: source.turnover_band ?? source.turnoverBand ?? "",
+    yearsInBusiness: source.years_in_business ?? source.yearsInBusiness ?? "",
+    annualCapacity: source.annual_capacity ?? source.annualCapacity ?? "",
 
-    location: v.location ?? (v.city && v.state ? `${v.city}, ${v.state}` : ""),
-    address: v.address ?? "",
-    addressLine1: v.address_line1 ?? v.addressLine1 ?? v.address ?? "",
-    city: v.city ?? "",
-    state: v.state ?? "",
-    pincode: v.pincode ?? "",
-    operatingStates: v.operating_states ?? v.operatingStates ?? [],
+    location: source.location ?? (source.city && source.state ? `${source.city}, ${source.state}` : ""),
+    address: source.address ?? "",
+    addressLine1: source.address_line1 ?? source.addressLine1 ?? source.address ?? "",
+    city: source.city ?? "",
+    state: source.state ?? "",
+    pincode: source.pincode ?? "",
+    operatingStates: asArray(source.operating_states ?? source.operatingStates),
 
-    contactName: v.contact_name ?? v.contactName ?? "",
-    email: v.email ?? "",
-    registeredEmail: v.registered_email ?? v.registeredEmail ?? v.user?.email ?? v.email ?? "",
-    phone: v.phone ?? "",
+    contactName: source.contact_name ?? source.contactName ?? "",
+    email: source.email ?? "",
+    registeredEmail: source.registered_email ?? source.registeredEmail ?? source.user?.email ?? source.email ?? "",
+    phone: source.phone ?? "",
 
-    gstNumber: v.gst_number ?? v.gstNumber ?? "",
-    gstStatus: v.gst_status ?? v.gstStatus ?? "",
-    panNumber: v.pan_number ?? v.panNumber ?? "",
-    panStatus: v.pan_status ?? v.panStatus ?? "",
-    licenseNumber: v.license_number ?? v.licenseNumber ?? "",
+    gstNumber: source.gst_number ?? source.gstNumber ?? "",
+    gstStatus: source.gst_status ?? source.gstStatus ?? "",
+    panNumber: source.pan_number ?? source.panNumber ?? "",
+    panStatus: source.pan_status ?? source.panStatus ?? "",
+    licenseNumber: source.license_number ?? source.licenseNumber ?? "",
 
-    bankName: v.bank_name ?? v.bankName ?? "",
-    accountNumber: v.account_number ?? v.accountNumber ?? "",
-    ifscCode: v.ifsc_code ?? v.ifscCode ?? "",
-    accountHolderName: v.account_holder_name ?? v.accountHolderName ?? "",
-    branchName: v.branch_name ?? v.branchName ?? "",
-    accountType: v.account_type ?? v.accountType ?? "",
-    bankStatus: v.bank_status ?? v.bankStatus ?? "",
+    bankName: source.bank_name ?? source.bankName ?? "",
+    accountNumber: source.account_number ?? source.accountNumber ?? "",
+    ifscCode: source.ifsc_code ?? source.ifscCode ?? "",
+    accountHolderName: source.account_holder_name ?? source.accountHolderName ?? "",
+    branchName: source.branch_name ?? source.branchName ?? "",
+    accountType: source.account_type ?? source.accountType ?? "",
+    bankStatus: source.bank_status ?? source.bankStatus ?? "",
 
-    signatoryName: v.signatory_name ?? v.signatoryName ?? "",
-    signatoryDesignation: v.signatory_designation ?? v.signatoryDesignation ?? "",
-    signatoryEmail: v.signatory_email ?? v.signatoryEmail ?? "",
-    signatoryPhone: v.signatory_phone ?? v.signatoryPhone ?? "",
+    signatoryName: source.signatory_name ?? source.signatoryName ?? "",
+    signatoryDesignation: source.signatory_designation ?? source.signatoryDesignation ?? "",
+    signatoryEmail: source.signatory_email ?? source.signatoryEmail ?? "",
+    signatoryPhone: source.signatory_phone ?? source.signatoryPhone ?? "",
 
-    materialInterest: (v.materials || v.material_interest || []).map((m: any) =>
+    materialInterest: materials.map((m: any) =>
       typeof m === "string" ? m : m.name,
     ),
     status,
-    canBid: typeof v.can_bid === "boolean" ? v.can_bid : false,
-    createdAt: v.created_at ?? v.createdAt ?? "",
-    submittedAt: v.submitted_at ?? v.submittedAt,
-    approvedAt: v.approved_at ?? v.approvedAt,
-    rejectionReason: v.rejection_reason ?? v.rejectionReason,
-    rejectionItems: v.rejection_items ?? v.rejectionItems ?? [],
-    suspensionReason: v.suspension_reason ?? v.suspensionReason,
-    documents: (v.documents || []).map((d: any) => ({
+    canBid: typeof source.can_bid === "boolean" ? source.can_bid : Boolean(source.canBid),
+    createdAt: source.created_at ?? source.createdAt ?? "",
+    submittedAt: source.submitted_at ?? source.submittedAt,
+    approvedAt: source.approved_at ?? source.approvedAt,
+    rejectionReason: source.rejection_reason ?? source.rejectionReason,
+    rejectionItems: asArray(source.rejection_items ?? source.rejectionItems),
+    suspensionReason: source.suspension_reason ?? source.suspensionReason,
+    documents: documents.map((d: any) => ({
       id: String(d.id),
       key: d.key ?? d.doc_key,
       name: d.name ?? d.kind ?? "",
@@ -196,7 +218,7 @@ function mapVendor(v: any): Vendor {
       ocrExtractedData: d.ocr_extracted_data ?? d.ocrExtractedData,
       approvedOn: d.approved_on ?? d.approvedOn,
     })),
-    participation: (v.participation || []).map((p: any) => ({
+    participation: participation.map((p: any) => ({
       id: String(p.id),
       auction: p.auction ?? "",
       date: p.date ?? "",
@@ -205,22 +227,22 @@ function mapVendor(v: any): Vendor {
       amountInr: p.amount_inr ?? p.amountInr ?? 0,
     })),
     registrationPayment: {
-      method: v.registration_payment?.method ?? null,
-      reference: v.registration_payment?.reference ?? null,
-      status: v.registration_payment?.status ?? "not_started",
-      amount: v.registration_payment?.amount ?? null,
-      baseAmount: v.registration_payment?.base_amount ?? null,
-      discountAmount: v.registration_payment?.discount_amount ?? null,
-      offerCode: v.registration_payment?.offer_code ?? null,
-      offerDescription: v.registration_payment?.offer_description ?? null,
-      gateway: v.registration_payment?.gateway ?? null,
-      paidAt: v.registration_payment?.paid_at ?? null,
-      proofUrl: v.registration_payment?.proof_url ?? null,
-      transactionId: v.registration_payment?.transaction_id ?? null,
-      verificationReference: v.registration_payment?.verification_reference ?? null,
-      submittedAt: v.registration_payment?.submitted_at ?? null,
-      verifiedAt: v.registration_payment?.verified_at ?? null,
-      rejectionReason: v.registration_payment?.rejection_reason ?? null,
+      method: source.registration_payment?.method ?? source.registrationPayment?.method ?? null,
+      reference: source.registration_payment?.reference ?? source.registrationPayment?.reference ?? null,
+      status: source.registration_payment?.status ?? source.registrationPayment?.status ?? "not_started",
+      amount: source.registration_payment?.amount ?? source.registrationPayment?.amount ?? null,
+      baseAmount: source.registration_payment?.base_amount ?? source.registrationPayment?.baseAmount ?? null,
+      discountAmount: source.registration_payment?.discount_amount ?? source.registrationPayment?.discountAmount ?? null,
+      offerCode: source.registration_payment?.offer_code ?? source.registrationPayment?.offerCode ?? null,
+      offerDescription: source.registration_payment?.offer_description ?? source.registrationPayment?.offerDescription ?? null,
+      gateway: source.registration_payment?.gateway ?? source.registrationPayment?.gateway ?? null,
+      paidAt: source.registration_payment?.paid_at ?? source.registrationPayment?.paidAt ?? null,
+      proofUrl: source.registration_payment?.proof_url ?? source.registrationPayment?.proofUrl ?? null,
+      transactionId: source.registration_payment?.transaction_id ?? source.registrationPayment?.transactionId ?? null,
+      verificationReference: source.registration_payment?.verification_reference ?? source.registrationPayment?.verificationReference ?? null,
+      submittedAt: source.registration_payment?.submitted_at ?? source.registrationPayment?.submittedAt ?? null,
+      verifiedAt: source.registration_payment?.verified_at ?? source.registrationPayment?.verifiedAt ?? null,
+      rejectionReason: source.registration_payment?.rejection_reason ?? source.registrationPayment?.rejectionReason ?? null,
     },
   };
 }
@@ -235,18 +257,14 @@ export async function fetchVendors(params: Record<string, any> = {}): Promise<Ve
   const list = Array.isArray(payload)
     ? payload
     : (payload?.vendors ?? payload?.items ?? payload?.data ?? []);
-  return list.map(mapVendor);
+  return asArray(list).map(mapVendor);
 }
 
 export async function fetchVendorById(id: string): Promise<Vendor | null> {
-  try {
-    const res = await adminApi.getVendor(id);
-    const data = (res as any).data ?? res;
-    return mapVendor(data);
-  } catch (err) {
-    console.error("fetchVendorById error:", err);
-    return null;
-  }
+  const res = await adminApi.getVendor(id);
+  const data = (res as any).data ?? res;
+  const record = data && typeof data === "object" ? data as Record<string, unknown> : {};
+  return mapVendor(record.vendor ?? record.item ?? data);
 }
 
 export async function approveVendorApi(

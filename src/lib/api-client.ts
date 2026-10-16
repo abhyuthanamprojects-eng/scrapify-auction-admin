@@ -123,6 +123,42 @@ class ScrapifyAdminApiClient {
     return json;
   }
 
+  private async requestBlob(endpoint: string, fallbackMessage: string): Promise<Blob> {
+    const url = endpoint.startsWith("http")
+      ? endpoint
+      : `${API_BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        headers: {
+          Accept: "application/octet-stream",
+          ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+        },
+      });
+    } catch {
+      throw new Error("Network error: Unable to reach the server. Please check your connection.");
+    }
+    if (res.status === 401) {
+      this.handleUnauthorized();
+      throw new ApiUnauthorizedError("Your session has expired. Please log in again.");
+    }
+    if (res.status === 403) {
+      const json = await res.json().catch(() => ({}));
+      throw new ApiForbiddenError(json.message || "You don't have permission to access this document.", json.error?.code);
+    }
+    if (!res.ok) {
+      let message = fallbackMessage;
+      try {
+        const json = await res.json();
+        message = json.message || json.error?.message || message;
+      } catch {
+        // Keep the safe generic message for non-JSON server errors.
+      }
+      throw new Error(message);
+    }
+    return res.blob();
+  }
+
   private handleUnauthorized() {
     this.setToken(null);
     if (typeof window !== "undefined") {
@@ -256,9 +292,7 @@ class ScrapifyAdminApiClient {
   }
 
   async fetchRegistrationPaymentProof(code: string) {
-    const response = await fetch(`${API_BASE_URL}/vendors/${code}/registration-payment/proof`, { headers: this.token ? { Authorization: `Bearer ${this.token}` } : {} });
-    if (!response.ok) throw new Error("Payment proof could not be loaded.");
-    return response.blob();
+    return this.requestBlob(`/vendors/${code}/registration-payment/proof`, "Payment proof could not be loaded.");
   }
 
   async deleteVendorUser(userId: number, email: string) {
@@ -311,8 +345,8 @@ class ScrapifyAdminApiClient {
       this.handleUnauthorized();
       throw new ApiUnauthorizedError();
     }
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Document upload failed");
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.message || json.error?.message || "Document upload failed");
     return json;
   }
 
@@ -354,23 +388,7 @@ class ScrapifyAdminApiClient {
   }
 
   async fetchVendorDocument(vendorCode: string, docId: number | string): Promise<Blob> {
-    const res = await fetch(this.getVendorDocumentDownloadUrl(vendorCode, docId), {
-      headers: {
-        Accept: "application/octet-stream",
-        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
-      },
-    });
-    if (!res.ok) {
-      let message = "Document could not be downloaded";
-      try {
-        const json = await res.json();
-        message = json.message || message;
-      } catch {
-        // Keep the safe generic message for non-JSON server errors.
-      }
-      throw new Error(message);
-    }
-    return res.blob();
+    return this.requestBlob(this.getVendorDocumentDownloadUrl(vendorCode, docId), "Document could not be downloaded");
   }
 
   /* ---------------- Auctions & Control Room ---------------- */

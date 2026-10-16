@@ -56,7 +56,7 @@ const TABS: Array<{ id: TabKey; label: string }> = [
 ];
 
 function VendorsList() {
-  const { vendors, loading } = useVendors();
+  const { vendors, loading, error, refetch } = useVendors();
   const [tab, setTab] = useState<TabKey>("pending");
   const [q, setQ] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -127,6 +127,15 @@ function VendorsList() {
           </Button>
         }
       />
+
+      {error && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">
+          <span>Unable to load vendor records: {error.message || "The API returned an error."}</span>
+          <Button type="button" variant="outline" size="sm" onClick={() => void refetch()}>
+            Retry
+          </Button>
+        </div>
+      )}
 
       <div className="mb-4 flex items-center gap-2 flex-wrap">
         {TABS.map((t) => (
