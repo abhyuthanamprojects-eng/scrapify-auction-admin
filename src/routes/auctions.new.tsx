@@ -211,6 +211,7 @@ function NewAuction() {
     }
 
     setSaving(true);
+    let createdCode = "";
     try {
       const response = await adminApi.createAuction({
         client_code: isSelfOwned ? undefined : form.clientCode,
@@ -253,33 +254,40 @@ function NewAuction() {
         schedule_start: scheduleStart.toISOString(),
         schedule_end: scheduleEnd?.toISOString(),
       });
-      const created = response?.data ?? response;
-      const code = String(created?.code ?? created?.auction?.code ?? created?.id ?? "");
-      if (code) {
-        await adminApi.updateAuctionConfiguration(code, {
+      const created = response?.data?.auction ?? response?.data?.data?.auction ?? response?.data ?? response;
+      createdCode = String(created?.code ?? created?.auction_code ?? created?.reference ?? created?.id ?? "");
+      if (!createdCode) {
+        throw new Error("The API did not return the created auction code.");
+      }
+      await adminApi.updateAuctionConfiguration(createdCode, {
           initial_slot_minutes: initialSlotMinutes,
           continuation_slot_minutes: continuationSlotMinutes,
           maximum_auction_duration_minutes: maximumDurationMinutes,
           bid_cutoff_ms: 500,
           continuation_mode: "MANUAL_ADMIN",
-        });
-        if (photoFiles.length > 0) {
-          await Promise.all(photoFiles.map((file) => adminApi.uploadAuctionPhoto(code, file)));
-        }
+      });
+      if (photoFiles.length > 0) {
+        await Promise.all(photoFiles.map((file) => adminApi.uploadAuctionPhoto(createdCode, file)));
       }
       toast.success(
-        code
+        createdCode
           ? isSelfOwned
-            ? `${code} created for self.`
-            : `${code} created for the selected client.`
+            ? `${createdCode} created for self.`
+            : `${createdCode} created for the selected client.`
           : "Auction created successfully.",
       );
       navigate({
-        to: code ? "/auctions/$id" : "/auctions",
-        params: code ? { id: code } : undefined,
+        to: "/auctions/$id",
+        params: { id: createdCode },
       });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to create the auction.");
+      const message = error instanceof Error ? error.message : "Unable to create the auction.";
+      if (createdCode) {
+        toast.error(`Auction ${createdCode} was created as a draft, but setup is incomplete: ${message}`);
+        navigate({ to: "/auctions/$id", params: { id: createdCode }});
+      } else {
+        toast.error(message);
+      }
     } finally {
       setSaving(false);
     }

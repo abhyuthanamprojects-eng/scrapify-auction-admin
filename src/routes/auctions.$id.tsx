@@ -169,6 +169,17 @@ function AuctionReview() {
       toast.error("Confirm that the submitted auction documents and terms have been reviewed.");
       return;
     }
+    const isForward = [a?.direction, (a as any)?.auction_type, (a as any)?.type]
+      .some((value) => String(value ?? "").toLowerCase() === "forward");
+    const requiredTypes = isForward ? ["catalog", "photographs"] : ["catalog"];
+    const unverified = requiredTypes.filter((type) => {
+      const doc = auctionDocs.find((item: any) => item.doc_type === type);
+      return !doc || !["verified", "approved"].includes(String(doc.status ?? "").toLowerCase());
+    });
+    if (unverified.length > 0) {
+      toast.error(`Required documents must be uploaded and verified before approval: ${unverified.join(", ")}.`);
+      return;
+    }
     setApproving(true);
     try {
       await adminApi.approveAuction(a.id, {
@@ -740,7 +751,8 @@ function AuctionReview() {
               </Label>
               <div className="mt-2 space-y-1.5">
                 {(() => {
-                  const isForward = (a as any).auction_type === "forward" || (a as any).type === "forward";
+                  const isForward = [a?.direction, (a as any)?.auction_type, (a as any)?.type]
+                    .some((value) => String(value ?? "").toLowerCase() === "forward");
                   const docTypeLabels: Record<string, string> = {
                     catalog: "Catalog PDF",
                     tnc: "Terms & Conditions PDF",
