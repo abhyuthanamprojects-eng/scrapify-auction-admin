@@ -158,6 +158,13 @@ function Approvals() {
   async function decide(kind: "Approve" | "Reject" | "Send Back") {
     if (!allowed) return toast.error(`Your role (${role}) cannot action this queue.`);
     if (kind !== "Approve" && reason.trim().length < 8) return toast.error("A reason is mandatory for reject and send-back.");
+
+    // Award and finance queues still need their dedicated API list/action
+    // contracts. Never report a decision as recorded while this screen only
+    // has compatibility rows from the legacy operations model.
+    if (tab === "Award Decisions" || tab === "Finance Maker-Checker") {
+      return toast.error(`${tab} actions are unavailable until the API queue is connected.`);
+    }
     
     try {
       if (tab === "Event Publishing" && selected?.eventId) {

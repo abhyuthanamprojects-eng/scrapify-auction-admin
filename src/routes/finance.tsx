@@ -172,7 +172,7 @@ function FinanceConsole() {
       header: "",
       align: "right",
       render: (r) => (
-        <Button size="sm" variant="outline" className="h-7 text-xs" disabled={!canRefund} onClick={() => toast.success(`Retry queued for ${r.id}`)}>
+        <Button size="sm" variant="outline" className="h-7 text-xs" disabled={!canRefund} onClick={() => toast.error("Refund retry is not available from the API yet. No retry was queued.")}>
           Retry
         </Button>
       ),
