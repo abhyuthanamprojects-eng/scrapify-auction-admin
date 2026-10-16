@@ -255,7 +255,39 @@ function EventWorkspace() {
     }
     setReviewSubmitting(true);
     try {
-      if (reviewAction === "approve") await adminApi.approveAuction(id);
+      if (reviewAction === "approve") {
+        const documentResponse = await adminApi.getAuctionDocuments(id);
+        const documents = Array.isArray(documentResponse?.data?.data)
+          ? documentResponse.data.data
+          : Array.isArray(documentResponse?.data)
+            ? documentResponse.data
+            : Array.isArray(documentResponse)
+              ? documentResponse
+              : [];
+        const direction = String(
+          event.raw?.direction ?? event.raw?.auction_type ?? event.raw?.type ?? event.direction,
+        ).toLowerCase();
+        const requiredTypes = direction.includes("reverse") ? ["catalog"] : ["catalog", "photographs"];
+        const missing = requiredTypes.filter((type) => {
+          const document = documents.find((item: any) =>
+            String(item.doc_type ?? item.type ?? item.document_type ?? item.category ?? "")
+              .toLowerCase()
+              .includes(type === "photographs" ? "photo" : type),
+          );
+          return !document || !["verified", "approved"].includes(
+            String(document.status ?? document.review_status ?? "").toLowerCase(),
+          );
+        });
+        if (missing.length > 0) {
+          throw new Error(
+            `Approval blocked. Verify required auction documents first: ${missing.join(", ")}.`,
+          );
+        }
+        await adminApi.approveAuction(id, {
+          documents_verified: true,
+          ...(reviewComment.trim() ? { remarks: reviewComment.trim() } : {}),
+        });
+      }
       if (reviewAction === "changes") await adminApi.sendBackAuction(id, reviewComment.trim());
       if (reviewAction === "reject") await adminApi.rejectAuction(id, reviewComment.trim());
       toast.success(
@@ -1163,6 +1195,42 @@ function mapApiAuction(auction: any, fallbackId: string): any {
   const reserve = Number(auction.reserve_price_inr ?? auction.reserve ?? 0);
   const currentPrice = Number(auction.current_highest_inr ?? auction.current_price ?? reserve);
   const customer = auction.customer ?? {};
+  const rawParticipants = Array.isArray(auction.participants)
+    ? auction.participants
+    : Array.isArray(auction.registrations)
+      ? auction.registrations
+      : Array.isArray(auction.vendors)
+        ? auction.vendors
+        : [];
+  const rawBids = Array.isArray(auction.bids) ? auction.bids : [];
+  const participants = rawParticipants.map((participant: any, index: number) => ({
+    id: String(participant.id ?? participant.vendor_id ?? participant.user_id ?? index),
+    alias: participant.alias ?? participant.bidder_alias ?? participant.vendor_name ?? "—",
+    vendorId: String(participant.vendor_id ?? participant.vendor?.id ?? participant.id ?? index),
+    qualified: Boolean(participant.qualified ?? participant.is_qualified ?? participant.approved),
+    documentsOk: Boolean(
+      participant.documentsOk ?? participant.documents_ok ?? participant.documents_verified,
+    ),
+    securityPaid: Boolean(
+      participant.securityPaid ?? participant.security_paid ?? participant.emd_paid,
+    ),
+    bidCount: Number(participant.bid_count ?? participant.bids_count ?? 0),
+    risk: participant.risk ?? participant.risk_level ?? "Unknown",
+    ip: participant.ip ?? participant.ip_address ?? "—",
+    device: participant.device ?? participant.device_name ?? "—",
+  }));
+  const bids = rawBids.map((bid: any, index: number) => ({
+    id: String(bid.id ?? index),
+    seq: Number(bid.sequence ?? bid.seq ?? index + 1),
+    alias: bid.alias ?? bid.bidder_alias ?? bid.vendor_name ?? "—",
+    vendorId: String(bid.vendor_id ?? bid.user_id ?? "—"),
+    amount: Number(bid.amount ?? bid.bid_amount ?? bid.price ?? 0),
+    previousPrice: Number(bid.previous_price ?? bid.previous_amount ?? 0),
+    step: Number(bid.step ?? bid.increment ?? 0),
+    serverTime: bid.server_time ?? bid.created_at ?? "",
+    status: bid.status ?? "Accepted",
+    ipRisk: bid.ip_risk ?? bid.risk ?? "Unknown",
+  }));
 
   const apiOrigin = (import.meta.env.VITE_API_BASE_URL || "https://api.scrapifyauctions.com/api/v1")
     .replace(/\/api\/v1\/?$/, "");
@@ -1194,9 +1262,9 @@ function mapApiAuction(auction: any, fallbackId: string): any {
     reserve,
     bidCount: Number(auction.bids_count ?? auction.bid_count ?? 0),
     bidVelocity: Number(auction.bid_velocity ?? 0),
-    participants: [],
-    bids: [],
-    risk: "high",
+    participants,
+    bids,
+    risk: auction.risk ?? auction.risk_level ?? "Unknown",
     startAt: auction.published_at ?? auction.schedule_start ?? auction.created_at ?? "",
     endAt: auction.schedule_end ?? auction.closed_at ?? "",
     createdAt: auction.created_at ?? "",
@@ -1216,6 +1284,6 @@ function mapApiAuction(auction: any, fallbackId: string): any {
     alerts: auction.alerts ?? [],
     photos: (Array.isArray(auction.photos) ? auction.photos : [])
       .map(photoUrl)
-      .filter((photo): photo is string => Boolean(photo)),
+      .filter((photo: string | null): photo is string => Boolean(photo)),
   };
 }
