@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { auctionStatusTone, formatInr, useAuctions, type AuctionStatus } from "@/lib/auctions-store";
+import { auctionStatusTone, formatInr, useAuctionsState, type AuctionStatus } from "@/lib/auctions-store";
 import { AuctionOverviewChart } from "@/components/admin/auction-overview-chart";
 
 export const Route = createFileRoute("/auctions/")({
@@ -12,7 +12,7 @@ export const Route = createFileRoute("/auctions/")({
 });
 
 function ApprovalQueue() {
-  const auctions = useAuctions();
+  const { auctions, loading, error, refetch } = useAuctionsState();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<AuctionStatus | "all">("Pending Approval");
 
@@ -33,6 +33,14 @@ function ApprovalQueue() {
   return (
     <>
       <AuctionOverviewChart auctions={auctions} />
+
+      {error && (
+        <div className="card-premium mb-4 flex items-center justify-between gap-3 border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          <span>Unable to load the approval queue: {error}</span>
+          <Button variant="outline" size="sm" onClick={() => void refetch()}>Retry</Button>
+        </div>
+      )}
+      {loading && <div className="mb-4 text-sm text-muted-foreground">Loading auctions…</div>}
 
       <div className="card-premium p-4 mb-4">
         <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground mb-3">

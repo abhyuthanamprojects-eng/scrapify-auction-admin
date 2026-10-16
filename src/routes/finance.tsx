@@ -9,7 +9,7 @@ import { adminApi } from "@/lib/api-client";
 import { useRole } from "@/hooks/use-role";
 import { roleCan } from "@/lib/ops/roles";
 
-type Security = { id: string; vendorName: string; eventId: string; amount: number; mode: string; state: string; since: string };
+type Security = { id: string; emdId: number | null; vendorName: string; eventId: string; amount: number; mode: string; state: string; since: string };
 type Payment = { id: string; type: string; eventId: string; vendorName: string; customerName: string; amount: number; provider: string; status: string; at: string };
 type Refund = { id: string; vendorName: string; eventId: string; amount: number; reason: string; dueDate: string; status: string; failureReason?: string };
 type Settlement = { id: string; vendorName?: string; eventId: string; amount?: number; initiated?: string; cleared?: string; bank?: string; status: string; customerName: string; gross: number; fee: number; tax: number; net: number; dueDate?: string; ageDays: number };
@@ -48,21 +48,31 @@ function FinanceConsole() {
   const [reconItems, setReconItems] = useState<ReconItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [busyEmd, setBusyEmd] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const summary = await adminApi.getFinanceSummary();
+        const [summaryResult, emdResult] = await Promise.allSettled([
+          adminApi.getFinanceSummary(),
+          adminApi.getEmdList(),
+        ]);
+        if (summaryResult.status === "rejected") throw summaryResult.reason;
+        const summaryPayload = summaryResult.value;
+        const summary = summaryPayload?.data ?? summaryPayload;
+        const emdPayload = emdResult.status === "fulfilled" ? emdResult.value : null;
+        const emdData = emdPayload?.data ?? emdPayload;
+        const emdRows = Array.isArray(emdData) ? emdData : Array.isArray(emdData?.items) ? emdData.items : Array.isArray(emdData?.emd_list) ? emdData.emd_list : Array.isArray(summary.emd_list) ? summary.emd_list : [];
         // Map API response to component types
-        setSecurities((summary.emd_list || []).map((s: any) => ({
-          id: s.code,
+        setSecurities(emdRows.map((s: any) => ({
+          id: String(s.code ?? s.reference ?? s.id ?? s.emd_id ?? ""),
+          emdId: Number.isFinite(Number(s.id ?? s.emd_id)) ? Number(s.id ?? s.emd_id) : null,
           vendorName: s.vendor_name,
           eventId: s.auction_code,
-          amount: s.amount,
+          amount: Number(s.amount ?? s.amount_inr ?? 0),
           mode: s.mode || 'Bank Transfer',
-          state: s.status,
+          state: s.status ?? s.state ?? "Unknown",
           since: s.locked_since || new Date().toISOString(),
         })));
         setPayments((summary.payments || []).map((p: any) => ({
@@ -76,18 +86,36 @@ function FinanceConsole() {
           status: p.status,
           at: p.created_at,
         })));
-        setRefunds([]);
-        setSettlements([]);
-        setInvoices([]);
-        setReconItems([]);
+        setRefunds(Array.isArray(summary.refunds) ? summary.refunds : []);
+        setSettlements(Array.isArray(summary.settlements) ? summary.settlements : []);
+        setInvoices(Array.isArray(summary.invoices) ? summary.invoices : []);
+        setReconItems(Array.isArray(summary.reconciliation) ? summary.reconciliation : Array.isArray(summary.recon_items) ? summary.recon_items : []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load finance data');
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, []);
+  useEffect(() => { void fetchData(); }, []);
+
+  async function changeEmdState(security: Security, action: "release" | "forfeit") {
+    if (!security.emdId) {
+      toast.error("This EMD record has no actionable numeric ID.");
+      return;
+    }
+    const key = `${action}:${security.id}`;
+    setBusyEmd(key);
+    try {
+      if (action === "release") await adminApi.releaseEmd(security.emdId);
+      else await adminApi.forfeitEmd(security.emdId);
+      toast.success(action === "release" ? "EMD release completed." : "EMD forfeiture completed.");
+      await fetchData();
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "EMD action failed.");
+    } finally {
+      setBusyEmd(null);
+    }
+  }
 
   const eventLink = (id: string) => (
     <Link to="/events/$id" params={{ id }} className="text-primary hover:underline">
@@ -107,10 +135,10 @@ function FinanceConsole() {
       header: "",
       render: (s) => (
         <div className="flex justify-end gap-1.5">
-          <Button size="sm" variant="outline" className="h-7 text-xs" disabled={!canRefund} onClick={() => toast.success(`Refund initiated for ${s.id}`)}>
+          <Button size="sm" variant="outline" className="h-7 text-xs" disabled={!canRefund || !s.emdId || busyEmd === `release:${s.id}`} onClick={() => void changeEmdState(s, "release")}>
             Refund
           </Button>
-          <Button size="sm" variant="destructive" className="h-7 text-xs" disabled={!canForfeit} onClick={() => toast.success(`Forfeiture queued for ${s.id}`)}>
+          <Button size="sm" variant="destructive" className="h-7 text-xs" disabled={!canForfeit || !s.emdId || busyEmd === `forfeit:${s.id}`} onClick={() => void changeEmdState(s, "forfeit")}>
             Forfeit
           </Button>
         </div>

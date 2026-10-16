@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { auctionStatusTone, formatInr, getAuction, updateAuction, type Auction } from "@/lib/auctions-store";
+import { auctionStatusTone, formatInr, useAuction, type Auction } from "@/lib/auctions-store";
 import { adminApi } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -19,7 +19,8 @@ function AuctionReview() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const a = getAuction(id);
+  const { auction, loading: auctionLoading, error: auctionError, refetch: refetchAuction } = useAuction(id);
+  const a = auction as Auction;
   const [modal, setModal] = useState<null | "sendback" | "reject" | "archive">(null);
   const [reason, setReason] = useState("");
   const [result, setResult] = useState<any>(null);
@@ -51,43 +52,35 @@ function AuctionReview() {
   const [approveRemarks, setApproveRemarks] = useState("");
   const [approving, setApproving] = useState(false);
 
-  if (!a) {
-    return (
-      <div className="card-premium p-12 text-center">
-        <p className="text-muted-foreground">Auction not found.</p>
-        <Button asChild className="mt-4" variant="outline"><Link to="/auctions">Back</Link></Button>
-      </div>
-    );
-  }
-
-  const t = auctionStatusTone(a.status);
-  const canArchive = ["Super Admin", "Admin"].includes(user?.role ?? "")
-    && !["Live", "Closed", "Cancelled"].includes(a.status);
+  const t = auctionStatusTone(a?.status ?? "");
+  const canArchive = Boolean(a) && ["Super Admin", "Admin"].includes(user?.role ?? "")
+    && !["Live", "Closed", "Cancelled"].includes(a?.status);
 
   useEffect(() => {
-    if (!['Closed', 'Live', 'closed', 'live'].includes(a.status)) return;
-    Promise.allSettled([adminApi.getAuctionResult(a.id), adminApi.getAuctionSettlement(a.id), adminApi.getAwards(a.id)]).then(([resultResponse, settlementResponse, awardsResponse]) => {
+    if (!auction || !['Closed', 'Live', 'closed', 'live'].includes(auction.status)) return;
+    Promise.allSettled([adminApi.getAuctionResult(auction.id), adminApi.getAuctionSettlement(auction.id), adminApi.getAwards(auction.id)]).then(([resultResponse, settlementResponse, awardsResponse]) => {
       if (resultResponse.status === 'fulfilled') setResult(resultResponse.value?.data ?? resultResponse.value);
       if (settlementResponse.status === 'fulfilled') setSettlement(settlementResponse.value?.data ?? settlementResponse.value);
       if (awardsResponse.status === 'fulfilled') setAwards(awardsResponse.value?.data ?? []);
     });
-  }, [a.id, a.status]);
+  }, [auction?.id, auction?.status]);
 
   useEffect(() => {
-    if (!(a as any).template_id) return;
-    adminApi.getAuctionTemplateReview(a.id)
+    if (!auction || !(auction as any).template_id) return;
+    adminApi.getAuctionTemplateReview(auction.id)
       .then((res: any) => setTemplateReview(res?.data ?? res))
       .catch(() => {});
-  }, [a.id]);
+  }, [auction?.id]);
 
   // Fetch auction documents
   useEffect(() => {
+    if (!auction) return;
     setAuctionDocsLoading(true);
-    adminApi.getAuctionDocuments(a.id)
+    adminApi.getAuctionDocuments(auction.id)
       .then((res: any) => setAuctionDocs(Array.isArray(res) ? res : res?.data ?? []))
       .catch(() => setAuctionDocs([]))
       .finally(() => setAuctionDocsLoading(false));
-  }, [a.id]);
+  }, [auction?.id]);
 
   async function loadParsedItems() {
     if (parsedItemsOpen) { setParsedItemsOpen(false); return; }
@@ -172,16 +165,19 @@ function AuctionReview() {
   }
 
   async function confirmApprove() {
+    if (!approveDocsChecked) {
+      toast.error("Confirm that the submitted auction documents and terms have been reviewed.");
+      return;
+    }
     setApproving(true);
     try {
       await adminApi.approveAuction(a.id, {
         documents_verified: true,
         remarks: approveRemarks.trim() || undefined,
       });
-      updateAuction(a.id, { status: "Approved" });
       toast.success(`Auction ${a.id} approved and moved to Publish queue.`);
       setApproveDialogOpen(false);
-      navigate({ to: "/auctions" });
+      await refetchAuction();
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to approve auction");
     } finally {
@@ -204,15 +200,24 @@ function AuctionReview() {
   async function submitModal() {
     if (!reason.trim()) return toast.error("A reason is required.");
     if (modal === "sendback") {
-      updateAuction(a!.id, { status: "Sent Back", reviewComment: reason });
-      toast.success("Sent back to seller with your comments.");
+      try {
+        await adminApi.sendBackAuction(a.id, reason.trim());
+        toast.success("Sent back to seller with your comments.");
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Auction could not be sent back.");
+        return;
+      }
     } else if (modal === "reject") {
-      updateAuction(a!.id, { status: "Rejected", reviewComment: reason });
-      toast.success("Auction rejected. Seller notified.");
+      try {
+        await adminApi.rejectAuction(a.id, reason.trim());
+        toast.success("Auction rejected. Seller notified.");
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Auction could not be rejected.");
+        return;
+      }
     } else if (modal === "archive") {
       try {
-        await adminApi.archiveAuction(a!.id, reason);
-        updateAuction(a!.id, { status: "Cancelled", reviewComment: reason });
+        await adminApi.archiveAuction(a.id, reason.trim());
         toast.success("Auction archived. Its history remains retained for audit.");
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Auction could not be archived.");
@@ -222,6 +227,21 @@ function AuctionReview() {
     setModal(null);
     setReason("");
     navigate({ to: "/auctions" });
+  }
+
+  if (auctionLoading) {
+    return <div className="card-premium p-12 text-center text-muted-foreground">Loading auction details…</div>;
+  }
+  if (auctionError || !auction) {
+    return (
+      <div className="card-premium p-12 text-center">
+        <p className="text-muted-foreground">{auctionError ?? "Auction not found."}</p>
+        <div className="mt-4 flex justify-center gap-2">
+          <Button onClick={() => void refetchAuction()} variant="outline">Retry</Button>
+          <Button asChild variant="outline"><Link to="/auctions">Back</Link></Button>
+        </div>
+      </div>
+    );
   }
 
   return (

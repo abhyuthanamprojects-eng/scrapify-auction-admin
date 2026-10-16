@@ -44,7 +44,6 @@ type LiveState = {
   eligible_participants?: number;
   connected_participants?: number | null;
   last_bid_at?: string | null;
-  starting_price_inr?: number | null;
   bid_increment_inr?: number | null;
   hard_end_at?: string | null;
   initial_slot_minutes?: number;
@@ -131,7 +130,8 @@ function LiveMonitor() {
 
   const loadAuctions = useCallback(async () => {
     const response = await adminApi.getAuctions({ status: "published,approved,live" });
-    const rows = Array.isArray(response?.data) ? response.data : [];
+    const payload = response?.data ?? response;
+    const rows = Array.isArray(payload) ? payload : Array.isArray(payload?.items) ? payload.items : Array.isArray(payload?.auctions) ? payload.auctions : [];
     const normalizedRows = rows.map((a: any) => ({
       code: a.code ?? a.id,
       title: a.title ?? "Untitled auction",
@@ -143,10 +143,10 @@ function LiveMonitor() {
       quantity: a.quantity ?? a.lot_quantity,
       image: a.image_url ?? a.cover_image_url ?? a.thumbnail_url ?? a.photos?.[0] ?? null,
     }));
-    const liveRows = normalizedRows.filter((a) => a.status.toLowerCase() === "live");
+    const liveRows = normalizedRows.filter((a: AuctionSummary) => a.status.toLowerCase() === "live");
     const visibleRows = liveRows.length > 0 ? liveRows : normalizedRows;
     setAuctions(visibleRows);
-    if ((!selected || !visibleRows.some((a) => a.code === selected)) && visibleRows[0]) {
+    if ((!selected || !visibleRows.some((a: AuctionSummary) => a.code === selected)) && visibleRows[0]) {
       setSelected(visibleRows[0].code);
     }
   }, [selected]);
@@ -162,7 +162,8 @@ function LiveMonitor() {
       const next = liveResponse?.data ?? liveResponse;
       setState(next);
       setReadiness(readinessResponse?.data ?? readinessResponse);
-      setBids(Array.isArray(bidsResponse?.data) ? bidsResponse.data : []);
+      const bidPayload = bidsResponse?.data ?? bidsResponse;
+      setBids(Array.isArray(bidPayload) ? bidPayload : Array.isArray(bidPayload?.items) ? bidPayload.items : Array.isArray(bidPayload?.bids) ? bidPayload.bids : []);
       if (next?.server_time) setOffset(new Date(next.server_time).getTime() - Date.now());
       setStale(false);
     } catch (error) {

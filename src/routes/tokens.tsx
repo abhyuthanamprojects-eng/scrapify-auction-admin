@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Copy, Plus, Trash2, KeyRound } from "lucide-react";
 import { toast } from "sonner";
-import { createToken, revokeToken, tokenShareLink, tokenStatusTone, useAuctions, useTokens, type TokenType } from "@/lib/auctions-store";
+import { createToken, revokeToken, tokenShareLink, tokenStatusTone, useAuctions, useTokensState, type TokenType } from "@/lib/auctions-store";
 
 export const Route = createFileRoute("/tokens")({
   head: () => ({
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/tokens")({
 });
 
 function TokensPage() {
-  const tokens = useTokens();
+  const { tokens, loading: tokensLoading, error: tokensError, refetch: refetchTokens } = useTokensState();
   const auctions = useAuctions();
   const [open, setOpen] = useState(false);
   const [auctionId, setAuctionId] = useState<string>("");
@@ -34,12 +34,17 @@ function TokensPage() {
     [auctions],
   );
 
-  function generate() {
+  async function generate() {
     if (!auctionId || !expiresAt) return toast.error("Auction and expiry are required.");
-    createToken({ auctionId, type, expiresAt: new Date(expiresAt).toISOString() });
-    toast.success("Token generated.");
-    setOpen(false);
-    setAuctionId(""); setType("View Only"); setExpiresAt("");
+    try {
+      await createToken({ auctionId, type, expiresAt: new Date(expiresAt).toISOString() });
+      toast.success("Token generated.");
+      setOpen(false);
+      setAuctionId(""); setType("View Only"); setExpiresAt("");
+      await refetchTokens();
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Token could not be generated.");
+    }
   }
 
   function copy(link: string) {
@@ -58,6 +63,9 @@ function TokensPage() {
           </Button>
         }
       />
+
+      {tokensError && <div className="card-premium mb-4 flex items-center justify-between gap-3 border-red-200 bg-red-50 p-4 text-sm text-red-800"><span>Unable to load access tokens: {tokensError}</span><Button variant="outline" size="sm" onClick={() => void refetchTokens()}>Retry</Button></div>}
+      {tokensLoading && <div className="mb-4 text-sm text-muted-foreground">Loading tokens…</div>}
 
       <div className="card-premium overflow-hidden">
         <div className="overflow-x-auto">
@@ -100,7 +108,7 @@ function TokensPage() {
                         <Copy className="h-3.5 w-3.5" /> Copy Link
                       </Button>
                       {t.status === "Active" && (
-                        <Button size="sm" variant="outline" className="gap-1.5 border-red-300 text-red-700 hover:bg-red-50" onClick={() => { revokeToken(t.id); toast.success("Token revoked."); }}>
+                        <Button size="sm" variant="outline" className="gap-1.5 border-red-300 text-red-700 hover:bg-red-50" onClick={async () => { try { await revokeToken(t.id); toast.success("Token revoked."); await refetchTokens(); } catch (cause) { toast.error(cause instanceof Error ? cause.message : "Token could not be revoked."); } }}>
                           <Trash2 className="h-3.5 w-3.5" /> Revoke
                         </Button>
                       )}

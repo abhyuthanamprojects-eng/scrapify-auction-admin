@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { auctionStatusTone, formatInr, updateAuction, useAuctions } from "@/lib/auctions-store";
+import { auctionStatusTone, formatInr, useAuctionsState } from "@/lib/auctions-store";
 import { adminApi } from "@/lib/api-client";
 
 export const Route = createFileRoute("/auctions/publish")({
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/auctions/publish")({
 const CHANNELS = ["Email", "SMS", "Portal"] as const;
 
 function PublishScreen() {
-  const auctions = useAuctions();
+  const { auctions, loading, error, refetch } = useAuctionsState();
   const rows = useMemo(() => auctions.filter((a) => a.status === "Approved"), [auctions]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [channels, setChannels] = useState<string[]>([...CHANNELS]);
@@ -31,17 +31,19 @@ function PublishScreen() {
     if (channels.length === 0) return toast.error("Select at least one notification channel.");
     try {
       await adminApi.publishAuction(target.id, channels);
+      toast.success(`${target.id} published — notified via ${channels.join(", ")}.`);
+      setOpenId(null);
+      setChannels([...CHANNELS]);
+      await refetch();
     } catch (e) {
-      console.warn("API publish failed, updating local state", e);
+      toast.error(e instanceof Error ? e.message : "Auction could not be published.");
     }
-    updateAuction(target.id, { status: "Published", publishedAt: new Date().toISOString(), publishChannels: channels });
-    toast.success(`${target.id} published — notified via ${channels.join(", ")}.`);
-    setOpenId(null);
-    setChannels([...CHANNELS]);
   }
 
   return (
     <>
+      {error && <div className="card-premium mb-4 flex items-center justify-between gap-3 border-red-200 bg-red-50 p-4 text-sm text-red-800"><span>Unable to load publish queue: {error}</span><Button variant="outline" size="sm" onClick={() => void refetch()}>Retry</Button></div>}
+      {loading && <div className="mb-4 text-sm text-muted-foreground">Loading publish queue…</div>}
       <div className="card-premium overflow-hidden">
         <div className="px-5 py-3 border-b border-border/60 bg-muted/20">
           <div className="text-xs uppercase tracking-wider text-muted-foreground">Approved & Awaiting Publish</div>
