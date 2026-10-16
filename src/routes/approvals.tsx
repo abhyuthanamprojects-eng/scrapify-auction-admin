@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ChipTabs, DataTable, DetailDrawer, Field, FieldGrid, StatCard, StatusPill, type Column } from "@/components/ops/ops-ui";
-import { ageLabel, events, fmtDate, fmtMoney, refunds, type AuctionEvent } from "@/lib/ops/data";
+import { ageLabel, fmtDate, fmtMoney } from "@/lib/ops/data";
 import { useVendors } from "@/lib/vendors-store";
 import { useRole } from "@/hooks/use-role";
 import { roleCan } from "@/lib/ops/roles";
@@ -31,6 +31,7 @@ type Tab = (typeof TABS)[number];
 
 type Row = {
   id: string;
+  approvalId?: number;
   title: string;
   context: string;
   amount: number;
@@ -40,6 +41,27 @@ type Row = {
   eventId?: string;
 };
 
+function approvalRows(payload: any): any[] {
+  const candidates = [
+    payload,
+    payload?.data,
+    payload?.data?.data,
+    payload?.data?.items,
+    payload?.data?.approvals,
+    payload?.items,
+    payload?.approvals,
+    payload?.results,
+  ];
+  return candidates.find(Array.isArray) ?? [];
+}
+
+function approvalBucket(row: any): "award" | "finance" | "other" {
+  const value = String(row.queue ?? row.type ?? row.approval_type ?? row.kind ?? row.category ?? "").toLowerCase();
+  if (value.includes("award") || value.includes("winner")) return "award";
+  if (value.includes("finance") || value.includes("refund") || value.includes("settlement") || value.includes("emd")) return "finance";
+  return "other";
+}
+
 function Approvals() {
   const [role] = useRole();
   const [tab, setTab] = useState<Tab>("Event Publishing");
@@ -47,24 +69,43 @@ function Approvals() {
   const [reason, setReason] = useState("");
   const { vendors: apiVendors, loading: vendorsLoading } = useVendors();
   const { auctions, loading: auctionsLoading, refetch: refetchAuctions } = useAuctionsState();
+  const [apiApprovalRows, setApiApprovalRows] = useState<any[]>([]);
+  const [approvalsLoading, setApprovalsLoading] = useState(true);
+  const [approvalsError, setApprovalsError] = useState<string | null>(null);
 
   const canApprove = roleCan(role, "act.approve");
   const canKyb = roleCan(role, "act.kyb");
   const canFinance = roleCan(role, "act.refund");
 
   const pendingEventCount = auctions.filter((a) => ["Pending Approval", "Sent Back"].includes(a.status)).length;
-  const pendingAwardCount = events.filter(
-    (e) => e.award && (e.award.state === "Pending Approval" || e.award.state === "Winner Acceptance Pending"),
-  ).length;
+  const pendingAwardCount = apiApprovalRows.filter((row) => approvalBucket(row) === "award").length;
   const pendingVendorCount = apiVendors.filter((v) => v.status === "Pending").length;
-  const pendingFinanceCount = refunds.filter((r) => ["Queued", "On Hold", "Failed"].includes(r.status)).length;
+  const pendingFinanceCount = apiApprovalRows.filter((row) => approvalBucket(row) === "finance").length;
+
+  useEffect(() => {
+    let active = true;
+    setApprovalsLoading(true);
+    setApprovalsError(null);
+    void adminApi.getApprovals({ status: "pending" })
+      .then((response) => {
+        if (active) setApiApprovalRows(approvalRows(response));
+      })
+      .catch((cause) => {
+        if (active) {
+          setApiApprovalRows([]);
+          setApprovalsError(cause instanceof Error ? cause.message : "Unable to load approval queues from the API.");
+        }
+      })
+      .finally(() => { if (active) setApprovalsLoading(false); });
+    return () => { active = false; };
+  }, []);
 
   // The dashboard can surface a non-default queue (for example Vendor KYB),
   // while this page initially opens on Event Publishing. Once API data has
   // loaded, show the first queue that actually has work instead of an empty
   // table that makes the dashboard count look incorrect.
   useEffect(() => {
-    if (vendorsLoading || auctionsLoading || tab !== "Event Publishing") return;
+    if (vendorsLoading || auctionsLoading || approvalsLoading || tab !== "Event Publishing") return;
     if (pendingEventCount > 0) return;
     if (pendingAwardCount > 0) return setTab("Award Decisions");
     if (pendingVendorCount > 0) return setTab("Vendor KYB");
@@ -77,6 +118,7 @@ function Approvals() {
     tab,
     vendorsLoading,
     auctionsLoading,
+    approvalsLoading,
   ]);
 
   const rows: Row[] = useMemo(() => {
@@ -94,17 +136,18 @@ function Approvals() {
           eventId: a.id,
         }));
     if (tab === "Award Decisions")
-      return events
-        .filter((e) => e.award && (e.award.state === "Pending Approval" || e.award.state === "Winner Acceptance Pending"))
-        .map((e) => ({
-          id: `AWD-${e.id}`,
-          title: `Award ${e.name}`,
-          context: `${e.award!.winner} at ${fmtMoney(e.award!.amount)} · runner-up ${e.award!.runnerUp}`,
-          amount: e.award!.amount,
-          raisedAt: e.endAt,
-          sla: 48,
-          tier: "L2",
-          eventId: e.id,
+      return apiApprovalRows
+        .filter((approval) => approvalBucket(approval) === "award")
+        .map((approval) => ({
+          id: String(approval.code ?? approval.reference ?? approval.id),
+          approvalId: Number(approval.id),
+          title: String(approval.title ?? approval.name ?? approval.subject ?? "Award decision"),
+          context: String(approval.context ?? approval.description ?? approval.reason ?? "Awaiting award decision"),
+          amount: Number(approval.amount ?? approval.amount_inr ?? 0),
+          raisedAt: String(approval.created_at ?? approval.raised_at ?? approval.submitted_at ?? ""),
+          sla: Number(approval.sla_hours ?? approval.sla ?? 48),
+          tier: String(approval.tier ?? "L2"),
+          eventId: approval.auction_code ?? approval.event_id ?? approval.auction?.code,
         }));
     if (tab === "Vendor KYB")
       return apiVendors
@@ -118,19 +161,20 @@ function Approvals() {
           sla: 24,
           tier: "Compliance",
         }));
-    return refunds
-      .filter((r) => r.status === "Queued" || r.status === "On Hold" || r.status === "Failed")
-      .map((r) => ({
-        id: r.id,
-        title: `Refund ${r.vendorName}`,
-        context: `${r.reason} · ${r.eventId}${r.failureReason ? ` · ${r.failureReason}` : ""}`,
-        amount: r.amount,
-        raisedAt: r.dueDate,
-        sla: 72,
-        tier: "Checker",
-        eventId: r.eventId,
+    return apiApprovalRows
+      .filter((approval) => approvalBucket(approval) === "finance")
+      .map((approval) => ({
+        id: String(approval.code ?? approval.reference ?? approval.id),
+        approvalId: Number(approval.id),
+        title: String(approval.title ?? approval.name ?? approval.subject ?? "Finance approval"),
+        context: String(approval.context ?? approval.description ?? approval.reason ?? "Awaiting finance decision"),
+        amount: Number(approval.amount ?? approval.amount_inr ?? 0),
+        raisedAt: String(approval.created_at ?? approval.raised_at ?? approval.submitted_at ?? ""),
+        sla: Number(approval.sla_hours ?? approval.sla ?? 72),
+        tier: String(approval.tier ?? "Checker"),
+        eventId: approval.auction_code ?? approval.event_id ?? approval.auction?.code,
       }));
-  }, [tab, apiVendors, auctions]);
+  }, [tab, apiVendors, auctions, apiApprovalRows]);
 
   const allowed = tab === "Vendor KYB" ? canKyb : tab === "Finance Maker-Checker" ? canFinance : canApprove;
 
@@ -159,11 +203,8 @@ function Approvals() {
     if (!allowed) return toast.error(`Your role (${role}) cannot action this queue.`);
     if (kind !== "Approve" && reason.trim().length < 8) return toast.error("A reason is mandatory for reject and send-back.");
 
-    // Award and finance queues still need their dedicated API list/action
-    // contracts. Never report a decision as recorded while this screen only
-    // has compatibility rows from the legacy operations model.
-    if (tab === "Award Decisions" || tab === "Finance Maker-Checker") {
-      return toast.error(`${tab} actions are unavailable until the API queue is connected.`);
+    if ((tab === "Award Decisions" || tab === "Finance Maker-Checker") && !selected?.approvalId) {
+      return toast.error("This approval row has no API approval identifier; no decision was recorded.");
     }
     
     try {
@@ -174,6 +215,9 @@ function Approvals() {
       } else if (tab === "Vendor KYB" && selected?.id) {
         if (kind === "Approve") await adminApi.approveVendor(selected.id);
         else if (kind === "Reject") await adminApi.rejectVendor(selected.id, reason);
+      } else if (selected?.approvalId) {
+        const decision = kind === "Approve" ? "approved" : kind === "Reject" ? "rejected" : "escalated";
+        await adminApi.decideApproval(selected.approvalId, decision, reason.trim() || undefined);
       }
     } catch (err: any) {
       toast.error(err instanceof Error ? err.message : "The approval action failed.");
@@ -182,6 +226,10 @@ function Approvals() {
 
     toast.success(`${kind} recorded for ${selected?.id}`, { description: "Audit entry created with before/after state." });
     if (tab === "Event Publishing") await refetchAuctions();
+    if (tab === "Award Decisions" || tab === "Finance Maker-Checker") {
+      const response = await adminApi.getApprovals({ status: "pending" });
+      setApiApprovalRows(approvalRows(response));
+    }
     setSelected(null);
     setReason("");
   }
@@ -201,6 +249,7 @@ function Approvals() {
       </div>
 
       <div className="card-premium p-4 sm:p-5">
+        {approvalsError && <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700">Approval API unavailable: {approvalsError}</div>}
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <ChipTabs tabs={TABS} value={tab} onChange={setTab} />
           {!allowed && <span className="text-xs text-accent">Read-only for the {role} role</span>}
