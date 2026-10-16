@@ -53,6 +53,8 @@ function AuctionReview() {
   const [approving, setApproving] = useState(false);
 
   const t = auctionStatusTone(a?.status ?? "");
+  const isForward = [a?.direction, (a as any)?.auction_type, (a as any)?.type]
+    .some((value) => String(value ?? "").toLowerCase() === "forward");
   const canArchive = Boolean(a) && ["Super Admin", "Admin"].includes(user?.role ?? "")
     && !["Live", "Closed", "Cancelled"].includes(a?.status);
 
@@ -169,13 +171,14 @@ function AuctionReview() {
       toast.error("Confirm that the submitted auction documents and terms have been reviewed.");
       return;
     }
-    const isForward = [a?.direction, (a as any)?.auction_type, (a as any)?.type]
-      .some((value) => String(value ?? "").toLowerCase() === "forward");
     const requiredTypes = isForward ? ["catalog", "photographs"] : ["catalog"];
     const unverified = requiredTypes.filter((type) => {
       const doc = auctionDocs.find((item: any) => item.doc_type === type);
       return !doc || !["verified", "approved"].includes(String(doc.status ?? "").toLowerCase());
     });
+    const materialUpload = templateReview?.upload;
+    const materialListReady = !isForward || Boolean(materialUpload?.confirmed_at);
+    if (!materialListReady) unverified.push("material_list");
     if (unverified.length > 0) {
       toast.error(`Required documents must be uploaded and verified before approval: ${unverified.join(", ")}.`);
       return;
@@ -793,18 +796,18 @@ function AuctionReview() {
                 })()}
 
                 {/* Material list status */}
-                {templateReview?.upload && (
+                {isForward && (
                   <div className="flex items-center justify-between rounded-md border border-border p-2 text-xs">
                     <span className="font-medium text-foreground flex items-center gap-1.5">
                       Material List
-                      {((a as any).auction_type === "forward" || (a as any).type === "forward") && <span className="text-red-500 text-[10px]">*</span>}
+                      <span className="text-red-500 text-[10px]">*</span>
                     </span>
                     <Badge variant="outline" className={`text-[10px] ${
-                      templateReview.upload.status === "processed" || templateReview.upload.status === "active"
+                      templateReview?.upload?.confirmed_at
                         ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"
                         : "border-amber-500/30 bg-amber-500/10 text-amber-600"
                     }`}>
-                      {(templateReview.upload.status || "PENDING").toUpperCase()}
+                      {templateReview?.upload?.confirmed_at ? "CONFIRMED" : "NOT CONFIRMED"}
                     </Badge>
                   </div>
                 )}
