@@ -157,6 +157,15 @@ function VendorDetail() {
   }
 
   async function confirmApprove() {
+    const unverifiedDocuments = vendor.documents.filter((document) => document.status !== "approved");
+    if (vendor.userRole === "seller" && unverifiedDocuments.length > 0) {
+      toast.error("Every submitted seller document must be individually approved before vendor approval.");
+      return;
+    }
+    if (vendor.userRole === "seller" && !registrationFeePaid) {
+      toast.error("The seller registration payment must be verified before vendor approval.");
+      return;
+    }
     setActing(true);
     try {
       await approveVendorApi(vendor!.id, {
@@ -167,7 +176,7 @@ function VendorDetail() {
         description: "KYC approved and wallet provisioned. Account is now eligible for live auctions.",
       });
       setApproveOpen(false);
-      refetch();
+      await refetch();
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to approve vendor");
     } finally {

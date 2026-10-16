@@ -211,7 +211,9 @@ function mapVendor(v: any): Vendor {
       available: d.available !== false,
       sizeKb: d.size_kb ?? d.sizeKb ?? 0,
       uploadedAt: d.uploaded_at ?? d.uploadedAt ?? "",
-      status: d.status ?? "approved",
+      // Missing status is not proof of verification. Treat legacy/incomplete
+      // payloads as pending so a reviewer cannot approve on an ambiguous row.
+      status: d.status ?? "pending",
       reason: d.reason ?? "",
       ocrStatus: d.ocr_status ?? d.ocrStatus,
       ocrConfidence: d.ocr_confidence ?? d.ocrConfidence,
