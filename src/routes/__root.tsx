@@ -42,24 +42,25 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: { error: unknown; reset: () => void }) {
   const router = useRouter();
+  const normalizedError = error instanceof Error ? error : new Error("Unexpected application error");
 
   useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
+    reportLovableError(normalizedError, { boundary: "tanstack_root_error_component" });
+  }, [normalizedError]);
 
   // If it's an auth error, redirect to login instead of showing error page
-  if (error instanceof ApiUnauthorizedError) {
+  if (normalizedError instanceof ApiUnauthorizedError) {
     if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
       window.location.href = "/login";
     }
     return null;
   }
 
-  const isForbidden = error instanceof ApiForbiddenError;
+  const isForbidden = normalizedError instanceof ApiForbiddenError;
   const isNetworkError =
-    error.message?.includes("Network error") || error.message?.includes("Failed to fetch");
+    normalizedError.message.includes("Network error") || normalizedError.message.includes("Failed to fetch");
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -89,9 +90,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             <p className="mt-2 text-sm text-muted-foreground">
               An unexpected error occurred. You can try refreshing or head back home.
             </p>
-            {import.meta.env.DEV && error.message && (
+            {import.meta.env.DEV && normalizedError.message && (
               <pre className="mt-3 max-h-32 overflow-auto rounded bg-muted p-2 text-left text-xs text-destructive">
-                {error.message}
+                {normalizedError.message}
               </pre>
             )}
           </>
