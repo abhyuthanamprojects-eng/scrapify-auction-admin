@@ -103,11 +103,19 @@ function FinanceConsole() {
       toast.error("This EMD record has no actionable numeric ID.");
       return;
     }
+    let reason = "";
+    if (action === "forfeit") {
+      reason = (window.prompt("Reason for forfeiting this EMD (recorded in the audit trail):") ?? "").trim();
+      if (!reason) {
+        toast.error("A reason is required to forfeit an EMD.");
+        return;
+      }
+    }
     const key = `${action}:${security.id}`;
     setBusyEmd(key);
     try {
       if (action === "release") await adminApi.releaseEmd(security.emdId);
-      else await adminApi.forfeitEmd(security.emdId);
+      else await adminApi.forfeitEmd(security.emdId, reason);
       toast.success(action === "release" ? "EMD release completed." : "EMD forfeiture completed.");
       await fetchData();
     } catch (cause) {

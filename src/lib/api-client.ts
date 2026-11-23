@@ -735,15 +735,18 @@ class ScrapifyAdminApiClient {
 
   async getEmdList(params: Record<string, any> = {}) {
     const query = new URLSearchParams(params).toString();
-    return this.request<any>(`/emd${query ? `?${query}` : ""}`);
+    return this.request<any>(`/admin/emd${query ? `?${query}` : ""}`);
   }
 
   async releaseEmd(id: number) {
-    return this.request<any>(`/emd/${id}/release`, { method: "POST" });
+    return this.request<any>(`/admin/emd/${id}/release`, { method: "POST" });
   }
 
-  async forfeitEmd(id: number) {
-    return this.request<any>(`/emd/${id}/forfeit`, { method: "POST" });
+  async forfeitEmd(id: number, reason: string) {
+    return this.request<any>(`/emd/${id}/forfeit`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
   }
 
   /* ---------------- Inspections & Gate Passes ---------------- */

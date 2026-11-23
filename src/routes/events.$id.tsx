@@ -635,7 +635,7 @@ function EventWorkspace() {
 
       {tab === "Lots & Items" && (
         <Section title="Lots & items">
-          <DataTable
+          <DataTable<EventLot>
             rows={event.lots}
             columns={[
               { key: "name", header: "Lot", render: (l) => l.name, sortValue: (l) => l.name },
@@ -1187,6 +1187,16 @@ function EventWorkspace() {
   );
 }
 
+type EventLot = {
+  id: string;
+  name: string;
+  qty: number;
+  unit: string;
+  basePrice: number;
+  currentPrice: number;
+  h1: string | null;
+};
+
 function mapApiAuction(auction: any, fallbackId: string): any {
   const status = String(auction.status ?? "").toLowerCase();
   const normalizedStatus = status
@@ -1275,7 +1285,15 @@ function mapApiAuction(auction: any, fallbackId: string): any {
     antiSnipe: Number(auction.anti_snipe_minutes ?? auction.anti_snipe ?? 0),
     termsVersion: auction.terms_version ?? "—",
     integrityScore: Number(auction.integrity_score ?? 0),
-    lots: auction.lots ?? [],
+    lots: (auction.sub_lots ?? auction.lots ?? []).map((l: any) => ({
+      id: String(l.id ?? l.code ?? ""),
+      name: l.name ?? "—",
+      qty: Number(l.quantity ?? l.qty ?? 0),
+      unit: l.uom ?? l.unit ?? "",
+      basePrice: Number(l.reserve_price_inr ?? l.reference_value_inr ?? l.basePrice ?? 0),
+      currentPrice: Number(l.current_bid_inr ?? l.final_price_inr ?? l.currentPrice ?? 0),
+      h1: l.h1 ?? (l.bidders ? `${l.bidders} bidder${l.bidders === 1 ? "" : "s"}` : null),
+    })),
     inspection: auction.inspection ?? null,
     clarifications: auction.clarifications ?? [],
     approvals: auction.approvals ?? [],
