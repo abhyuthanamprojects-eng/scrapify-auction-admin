@@ -9,6 +9,8 @@ import { adminApi } from "@/lib/api-client";
 import { useRole } from "@/hooks/use-role";
 import { roleCan } from "@/lib/ops/roles";
 
+// The API reports EMD status in lowercase ("locked", "released", "forfeited").
+const isEmdHeld = (state: string) => ["locked", "held"].includes(state.toLowerCase());
 type Security = { id: string; emdId: number | null; vendorName: string; eventId: string; amount: number; mode: string; state: string; since: string };
 type Payment = { id: string; type: string; eventId: string; vendorName: string; customerName: string; amount: number; provider: string; status: string; at: string };
 type Refund = { id: string; vendorName: string; eventId: string; amount: number; reason: string; dueDate: string; status: string; failureReason?: string };
@@ -69,11 +71,11 @@ function FinanceConsole() {
           id: String(s.code ?? s.reference ?? s.id ?? s.emd_id ?? ""),
           emdId: Number.isFinite(Number(s.id ?? s.emd_id)) ? Number(s.id ?? s.emd_id) : null,
           vendorName: s.vendor_name,
-          eventId: s.auction_code,
+          eventId: s.auction_code ?? s.auction_id ?? "",
           amount: Number(s.amount ?? s.amount_inr ?? 0),
           mode: s.mode || 'Bank Transfer',
           state: s.status ?? s.state ?? "Unknown",
-          since: s.locked_since || new Date().toISOString(),
+          since: s.locked_at ?? s.locked_since ?? "",
         })));
         setPayments((summary.payments || []).map((p: any) => ({
           id: p.id,
@@ -137,16 +139,16 @@ function FinanceConsole() {
     { key: "a", header: "Amount", align: "right", render: (s) => fmtMoney(s.amount), sortValue: (s) => s.amount },
     { key: "m", header: "Mode", render: (s) => s.mode, sortValue: (s) => s.mode },
     { key: "st", header: "State", render: (s) => <StatusPill value={s.state} />, sortValue: (s) => s.state },
-    { key: "si", header: "Held since", render: (s) => fmtDay(s.since), sortValue: (s) => s.since },
+    { key: "si", header: "Held since", render: (s) => (s.since ? fmtDay(s.since) : "—"), sortValue: (s) => s.since },
     {
       key: "act",
       header: "",
       render: (s) => (
         <div className="flex justify-end gap-1.5">
-          <Button size="sm" variant="outline" className="h-7 text-xs" disabled={!canRefund || !s.emdId || busyEmd === `release:${s.id}`} onClick={() => void changeEmdState(s, "release")}>
+          <Button size="sm" variant="outline" className="h-7 text-xs" disabled={!canRefund || !s.emdId || !isEmdHeld(s.state) || busyEmd === `release:${s.id}`} onClick={() => void changeEmdState(s, "release")}>
             Refund
           </Button>
-          <Button size="sm" variant="destructive" className="h-7 text-xs" disabled={!canForfeit || !s.emdId || busyEmd === `forfeit:${s.id}`} onClick={() => void changeEmdState(s, "forfeit")}>
+          <Button size="sm" variant="destructive" className="h-7 text-xs" disabled={!canForfeit || !s.emdId || !isEmdHeld(s.state) || busyEmd === `forfeit:${s.id}`} onClick={() => void changeEmdState(s, "forfeit")}>
             Forfeit
           </Button>
         </div>
@@ -220,7 +222,7 @@ function FinanceConsole() {
     { key: "s", header: "Status", render: (r) => <StatusPill value={r.status} />, sortValue: (r) => r.status },
   ];
 
-  const held = securities.filter((s) => s.state === "Held").reduce((a, s) => a + s.amount, 0);
+  const held = securities.filter((s) => isEmdHeld(s.state)).reduce((a, s) => a + s.amount, 0);
 
   if (loading) {
     return (
@@ -253,7 +255,7 @@ function FinanceConsole() {
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-6">
         <StatCard label="EMD held" value={fmtMoney(held)} />
-        <StatCard label="Forfeited" value={fmtMoney(securities.filter((s) => s.state === "Forfeited").reduce((a, s) => a + s.amount, 0))} tone="danger" />
+        <StatCard label="Forfeited" value={fmtMoney(securities.filter((s) => s.state.toLowerCase() === "forfeited").reduce((a, s) => a + s.amount, 0))} tone="danger" />
         <StatCard label="Refunds pending" value={refunds.filter((r) => r.status !== "Refunded").length} tone="warn" />
         <StatCard label="Settlement due" value={fmtMoney(settlements.filter((s) => s.status !== "Paid").reduce((a, s) => a + s.net, 0))} tone="warn" />
         <StatCard label="Overdue invoices" value={invoices.filter((i) => i.status === "Overdue").length} tone="danger" />
